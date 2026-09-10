@@ -54,8 +54,8 @@ async function runConcurrencyTests() {
     await Availability.create({
       professionalId: profile._id,
       dayOfWeek: day,
-      isAvailable: true,
-      timeSlots: [{ startTime: '09:00', endTime: '18:00' }],
+      enabled: true,
+      timeRanges: [{ startTime: '09:00', endTime: '18:00' }],
     });
   }
   console.log('✓ Test professional and weekly availability initialized');
@@ -64,7 +64,7 @@ async function runConcurrencyTests() {
   // TEST 1: Simultaneous Double Booking Race Condition
   // ============================================================
   console.log('\n--- [TEST 1] Simultaneous Concurrent Booking Race (10 Competitors) ---');
-  const targetDate = '2026-11-20';
+  const targetDate = '2026-09-20';
   const targetTime = '10:00';
   const competitorsCount = 10;
 
@@ -86,6 +86,9 @@ async function runConcurrencyTests() {
 
   console.log(`Success count: ${successes.length} (Expected: 1)`);
   console.log(`Failure count: ${failures.length} (Expected: ${competitorsCount - 1})`);
+  if (failures.length > 0) {
+    console.log('Sample failure reason:', failures[0].reason);
+  }
 
   if (successes.length !== 1) {
     throw new Error(`CRITICAL DOUBLE BOOKING DETECTED! Expected 1 success, got ${successes.length}`);
@@ -116,7 +119,7 @@ async function runConcurrencyTests() {
   // ============================================================
   console.log('\n--- [TEST 2] Idempotency Key Handling (3 Duplicate Requests) ---');
   const testIdempotencyKey = 'idemp_key_safe_test_999';
-  const slotDate = '2026-11-20';
+  const slotDate = '2026-09-20';
   const slotTime = '11:00';
 
   const [req1, req2, req3] = await Promise.all([
@@ -171,7 +174,7 @@ async function runConcurrencyTests() {
   let duplicateBlocked = false;
   try {
     await createPublicBooking('dr-specialist', {
-      date: '2026-11-20',
+      date: '2026-09-20',
       startTime: '11:00', // Ananya already has this slot
       customerName: 'Ananya Sharma',
       customerPhone: '9123456780',
@@ -194,7 +197,7 @@ async function runConcurrencyTests() {
   console.log('\n--- [TEST 4] Max Active Bookings per Professional (Limit: 3) ---');
   // Ananya already has 1 booking (11:00). Let's book 2 more (12:00, 14:00)
   await createPublicBooking('dr-specialist', {
-    date: '2026-11-20',
+    date: '2026-09-20',
     startTime: '12:00',
     customerName: 'Ananya Sharma',
     customerPhone: '9123456780',
@@ -202,7 +205,7 @@ async function runConcurrencyTests() {
   });
 
   await createPublicBooking('dr-specialist', {
-    date: '2026-11-20',
+    date: '2026-09-20',
     startTime: '14:00',
     customerName: 'Ananya Sharma',
     customerPhone: '9123456780',
@@ -213,7 +216,7 @@ async function runConcurrencyTests() {
   let spamLimitBlocked = false;
   try {
     await createPublicBooking('dr-specialist', {
-      date: '2026-11-20',
+      date: '2026-09-20',
       startTime: '15:00',
       customerName: 'Ananya Sharma',
       customerPhone: '9123456780',
@@ -235,7 +238,7 @@ async function runConcurrencyTests() {
   // ============================================================
   console.log('\n--- [TEST 5] Temporary Slot Hold & Atomic Confirmation ---');
   const holdResult = await holdPublicSlot('dr-specialist', {
-    date: '2026-11-21',
+    date: '2026-09-21',
     startTime: '09:30',
   });
 
@@ -245,7 +248,7 @@ async function runConcurrencyTests() {
 
   // Confirm booking using hold token
   const confirmedBooking = await createPublicBooking('dr-specialist', {
-    date: '2026-11-21',
+    date: '2026-09-21',
     startTime: '09:30',
     customerName: 'Kavita Iyer',
     customerPhone: '9888877777',
