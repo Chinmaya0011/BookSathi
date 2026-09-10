@@ -1,0 +1,12 @@
+{
+  "name": "booksaathi-monorepo",
+  "version": "1.0.0",
+  "description": "Monorepo for BookSaathi online booking platform for Indian professionals",
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "seed": "npm --prefix backend run seed",
+    "test:concurrency": "npm --prefix backend run test:concurrency",
+    "test:payments": "npm --prefix backend run test:payments"
+  }
+}

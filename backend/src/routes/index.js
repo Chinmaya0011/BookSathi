@@ -1,0 +1,40 @@
+import { Router } from 'express';
+import authRoutes from './authRoutes.js';
+import professionalRoutes from './professionalRoutes.js';
+import availabilityRoutes from './availabilityRoutes.js';
+import blockedDateRoutes from './blockedDateRoutes.js';
+import appointmentTypeRoutes from './appointmentTypeRoutes.js';
+import appointmentRoutes from './appointmentRoutes.js';
+import userAppointmentRoutes from './userAppointmentRoutes.js';
+import notificationRoutes from './notificationRoutes.js';
+import bookingLinkRoutes from './bookingLinkRoutes.js';
+import publicRoutes from './publicRoutes.js';
+import paymentRoutes from './paymentRoutes.js';
+import adminRoutes from './adminRoutes.js';
+import grievanceRoutes from './grievanceRoutes.js';
+import qrBannerRoutes from './qrBannerRoutes.js';
+import subscriptionRoutes from './subscriptionRoutes.js';
+import chatRoutes from './chatRoutes.js';
+
+const router = Router();
+
+router.use('/auth', authRoutes);
+router.use('/chat', chatRoutes);
+router.use('/user/appointments', userAppointmentRoutes);
+router.use('/user-appointments', userAppointmentRoutes);
+router.use('/notifications', notificationRoutes);
+router.use('/professional', professionalRoutes);
+router.use('/availability', availabilityRoutes);
+router.use('/blocked-dates', blockedDateRoutes);
+router.use('/appointment-types', appointmentTypeRoutes);
+router.use('/appointments', appointmentRoutes);
+router.use('/booking-link', bookingLinkRoutes);
+router.use('/payments', paymentRoutes);
+router.use('/admin', adminRoutes);
+router.use('/grievances', grievanceRoutes);
+router.use('/qr-banner', qrBannerRoutes);
+router.use('/subscriptions', subscriptionRoutes);
+router.use('/public', publicRoutes);
+router.use('/professionals', publicRoutes);
+
+export default router;
