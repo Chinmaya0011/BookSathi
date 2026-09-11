@@ -23,8 +23,13 @@ import { toast } from 'sonner';
 export default function FloatingChatWidget() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Dedicated AI Bot State
   const [aiMessages, setAiMessages] = useState([]);
@@ -174,9 +179,9 @@ export default function FloatingChatWidget() {
 
   const messagesPageLink = role === 'ADMIN' ? '/admin/messages' : '/dashboard/messages';
 
-  // Only render the AI Chat-Bot icon on the main dashboard page
+  // Only render the AI Chat-Bot icon after mount and on the main dashboard page
   const isDashboardPage = pathname === '/dashboard' || pathname === '/admin';
-  if (!isDashboardPage) {
+  if (!mounted || !isDashboardPage) {
     return null;
   }
 

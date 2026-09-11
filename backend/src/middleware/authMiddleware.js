@@ -5,14 +5,19 @@ import { Availability } from '../models/Availability.js';
 import { AppointmentType } from '../models/AppointmentType.js';
 import { errorResponse } from '../utils/response.js';
 
+/**
+ * Primary Authentication Middleware
+ * Accepts Bearer Token or httpOnly Cookie.
+ * Immediately rejects inactive users AND suspended/blocked professionals.
+ */
 export const authenticate = async (req, res, next) => {
   try {
     let token = null;
 
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
-    } else if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
+    } else if (req.cookies && (req.cookies.accessToken || req.cookies.token)) {
+      token = req.cookies.accessToken || req.cookies.token;
     }
 
     if (!token) {
@@ -34,6 +39,11 @@ export const authenticate = async (req, res, next) => {
         profile.userId = user._id;
         await profile.save();
       }
+    }
+
+    // Immediate rejection of suspended / blocked professionals on next request
+    if (profile && (profile.status === 'SUSPENDED' || profile.status === 'DEACTIVATED' || profile.status === 'BLOCKED')) {
+      return errorResponse(res, 403, 'Access denied. Your professional account has been suspended or deactivated.');
     }
 
     if (!profile && user.role === 'PROFESSIONAL') {
@@ -61,6 +71,7 @@ export const authenticate = async (req, res, next) => {
           languages: ['English', 'Hindi'],
           yearsOfExperience: 5,
           isPublic: true,
+          status: 'ACTIVE',
         });
 
         const availabilityDocs = [];
@@ -122,8 +133,8 @@ export const optionalAuth = async (req, res, next) => {
     let token = null;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
-    } else if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
+    } else if (req.cookies && (req.cookies.accessToken || req.cookies.token)) {
+      token = req.cookies.accessToken || req.cookies.token;
     }
 
     if (token) {
@@ -142,11 +153,44 @@ export const optionalAuth = async (req, res, next) => {
   }
 };
 
+/**
+ * Strict Admin Guard: Requires role ADMIN + isActive
+ */
 export const requireAdmin = (req, res, next) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
-    return errorResponse(res, 403, 'Access denied. Administrator privileges required.');
+  if (!req.user || req.user.role !== 'ADMIN' || !req.user.isActive) {
+    return errorResponse(res, 403, 'Access denied. Active administrator privileges required.');
   }
   next();
 };
 
 export const requireSuperAdmin = requireAdmin;
+
+/**
+ * CSRF Protection Middleware for Cookie-based Authentication
+ * Verifies X-CSRF-Token or X-XSRF-Token header against csrfToken cookie
+ * on state-changing requests when authenticated via cookies without Bearer header.
+ */
+export const verifyCsrf = (req, res, next) => {
+  // If request uses Bearer token in header, CSRF is not required (browser does not auto-attach custom headers)
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    return next();
+  }
+
+  // Safe HTTP methods do not mutate state
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+
+  // If request is authenticated via cookies, verify CSRF token
+  const hasAuthCookie = req.cookies && (req.cookies.accessToken || req.cookies.token);
+  if (hasAuthCookie) {
+    const headerCsrf = req.headers['x-csrf-token'] || req.headers['x-xsrf-token'] || req.body?._csrf;
+    const cookieCsrf = req.cookies.csrfToken;
+
+    if (!headerCsrf || !cookieCsrf || headerCsrf !== cookieCsrf) {
+      return errorResponse(res, 403, 'CSRF validation failed: Invalid or missing CSRF token for cookie session.');
+    }
+  }
+
+  next();
+};

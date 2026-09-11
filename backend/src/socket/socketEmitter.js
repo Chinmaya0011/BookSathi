@@ -1,4 +1,5 @@
 import { Notification } from '../models/Notification.js';
+import { toSocketAppointment } from '../serializers/appointmentSerializer.js';
 
 let ioInstance = null;
 
@@ -45,6 +46,7 @@ export const sendAndPersistNotification = async ({
         ioInstance.to(`professional:${professionalId.toString()}`).emit('notification:new', notification);
       }
       if (recipientRole === 'ADMIN') {
+        ioInstance.to('admin:ops').emit('notification:new', notification);
         ioInstance.to('role:admin').emit('notification:new', notification);
       }
     }
@@ -58,13 +60,17 @@ export const sendAndPersistNotification = async ({
 
 /**
  * Appointment Created Event
+ * Emitted strictly to professional room, admin:ops, and user (if authenticated).
+ * Never broadcast globally.
  */
 export const emitAppointmentCreated = async (appointment, professional, user = null) => {
   if (!ioInstance) return;
 
+  const sanitizedAppointment = toSocketAppointment(appointment);
+
   const payload = {
     event: 'appointment:created',
-    appointment,
+    appointment: sanitizedAppointment,
     professional: {
       id: professional._id,
       name: professional.name,
@@ -82,19 +88,20 @@ export const emitAppointmentCreated = async (appointment, professional, user = n
     timestamp: new Date().toISOString(),
   };
 
-  // Notify professional
+  // 1. Notify professional
   const proId = (professional._id || professional).toString();
   ioInstance.to(`professional:${proId}`).emit('appointment:created', payload);
 
-  // Notify user if authenticated
+  // 2. Notify user if authenticated
   if (appointment.userId) {
     const userId = appointment.userId.toString();
     ioInstance.to(`user:${userId}`).emit('appointment:created', payload);
   }
 
-  // Notify admin channel for real-time monitoring
+  // 3. Notify admin ops
+  ioInstance.to('admin:ops').emit('appointment:created', payload);
   ioInstance.to('role:admin').emit('appointment:created', payload);
-  ioInstance.to('role:admin').emit('admin:activity', {
+  ioInstance.to('admin:ops').emit('admin:activity', {
     type: 'APPOINTMENT_CREATED',
     message: `New appointment booked for ${professional.name} by ${appointment.customerName} on ${appointment.dateString} at ${appointment.startTime}`,
     appointmentId: appointment._id,
@@ -107,7 +114,7 @@ export const emitAppointmentCreated = async (appointment, professional, user = n
     recipientRole: 'PROFESSIONAL',
     type: 'APPOINTMENT_CREATED',
     title: 'New Appointment Booked',
-    message: `${appointment.customerName} booked ${appointment.appointmentTypeName} for ${appointment.dateString} at ${appointment.startTime}`,
+    message: `${appointment.customerName} booked ${appointment.appointmentTypeName || 'Appointment'} for ${appointment.dateString} at ${appointment.startTime}`,
     link: '/dashboard',
     appointmentId: appointment._id,
     metadata: { appointmentCode: appointment.appointmentCode },
@@ -133,9 +140,11 @@ export const emitAppointmentCreated = async (appointment, professional, user = n
 export const emitAppointmentConfirmed = async (appointment, professional, user = null) => {
   if (!ioInstance) return;
 
+  const sanitizedAppointment = toSocketAppointment(appointment);
+
   const payload = {
     event: 'appointment:confirmed',
-    appointment,
+    appointment: sanitizedAppointment,
     professional: {
       id: professional._id,
       name: professional.name,
@@ -143,24 +152,32 @@ export const emitAppointmentConfirmed = async (appointment, professional, user =
     timestamp: new Date().toISOString(),
   };
 
-  // Broadcast to appointment room, user room, and admin room
-  const apptId = appointment._id.toString();
-  ioInstance.to(`appointment:${apptId}`).emit('appointment:confirmed', payload);
-  ioInstance.to(`appointment:${apptId}`).emit('appointment:status_changed', {
+  const statusPayload = {
     appointmentId: appointment._id,
     status: 'CONFIRMED',
-  });
+    appointment: sanitizedAppointment,
+  };
+
+  const apptId = appointment._id.toString();
+  ioInstance.to(`appointment:${apptId}`).emit('appointment:confirmed', payload);
+  ioInstance.to(`appointment:${apptId}`).emit('appointment:status_changed', statusPayload);
 
   if (appointment.userId) {
-    ioInstance.to(`user:${appointment.userId.toString()}`).emit('appointment:confirmed', payload);
-    ioInstance.to(`user:${appointment.userId.toString()}`).emit('appointment:status_changed', {
-      appointmentId: appointment._id,
-      status: 'CONFIRMED',
-    });
+    const userId = appointment.userId.toString();
+    ioInstance.to(`user:${userId}`).emit('appointment:confirmed', payload);
+    ioInstance.to(`user:${userId}`).emit('appointment:status_changed', statusPayload);
+  }
+
+  if (appointment.appointmentCode) {
+    ioInstance.to(`booking:${appointment.appointmentCode}`).emit('appointment:confirmed', payload);
+    ioInstance.to(`booking:${appointment.appointmentCode}`).emit('appointment:status_changed', statusPayload);
   }
 
   const proId = (professional._id || professional).toString();
   ioInstance.to(`professional:${proId}`).emit('appointment:confirmed', payload);
+  ioInstance.to(`professional:${proId}`).emit('appointment:status_changed', statusPayload);
+
+  ioInstance.to('admin:ops').emit('appointment:confirmed', payload);
   ioInstance.to('role:admin').emit('appointment:confirmed', payload);
 
   // Persistent Notification for User
@@ -184,22 +201,29 @@ export const emitAppointmentConfirmed = async (appointment, professional, user =
 export const emitAppointmentRejected = async (appointment, professional, reason = '') => {
   if (!ioInstance) return;
 
+  const sanitizedAppointment = toSocketAppointment(appointment);
+
   const payload = {
     event: 'appointment:rejected',
-    appointment,
+    appointment: sanitizedAppointment,
     reason,
     timestamp: new Date().toISOString(),
   };
 
+  const statusPayload = {
+    appointmentId: appointment._id,
+    status: 'REJECTED',
+    appointment: sanitizedAppointment,
+  };
+
   const apptId = appointment._id.toString();
   ioInstance.to(`appointment:${apptId}`).emit('appointment:rejected', payload);
+  ioInstance.to(`appointment:${apptId}`).emit('appointment:status_changed', statusPayload);
 
   if (appointment.userId) {
-    ioInstance.to(`user:${appointment.userId.toString()}`).emit('appointment:rejected', payload);
-    ioInstance.to(`user:${appointment.userId.toString()}`).emit('appointment:status_changed', {
-      appointmentId: appointment._id,
-      status: 'REJECTED',
-    });
+    const userId = appointment.userId.toString();
+    ioInstance.to(`user:${userId}`).emit('appointment:rejected', payload);
+    ioInstance.to(`user:${userId}`).emit('appointment:status_changed', statusPayload);
 
     await sendAndPersistNotification({
       userId: appointment.userId,
@@ -212,6 +236,16 @@ export const emitAppointmentRejected = async (appointment, professional, reason 
     });
   }
 
+  if (appointment.appointmentCode) {
+    ioInstance.to(`booking:${appointment.appointmentCode}`).emit('appointment:rejected', payload);
+    ioInstance.to(`booking:${appointment.appointmentCode}`).emit('appointment:status_changed', statusPayload);
+  }
+
+  const proId = (professional._id || professional).toString();
+  ioInstance.to(`professional:${proId}`).emit('appointment:rejected', payload);
+  ioInstance.to(`professional:${proId}`).emit('appointment:status_changed', statusPayload);
+
+  ioInstance.to('admin:ops').emit('appointment:rejected', payload);
   ioInstance.to('role:admin').emit('appointment:rejected', payload);
 };
 
@@ -221,26 +255,44 @@ export const emitAppointmentRejected = async (appointment, professional, reason 
 export const emitAppointmentCancelled = async (appointment, professional, cancelledBy = 'USER', reason = '') => {
   if (!ioInstance) return;
 
+  const sanitizedAppointment = toSocketAppointment(appointment);
+
   const payload = {
     event: 'appointment:cancelled',
-    appointment,
+    appointment: sanitizedAppointment,
     cancelledBy,
     reason,
     timestamp: new Date().toISOString(),
   };
 
+  const statusPayload = {
+    appointmentId: appointment._id,
+    status: 'CANCELLED',
+    appointment: sanitizedAppointment,
+  };
+
   const apptId = appointment._id.toString();
   ioInstance.to(`appointment:${apptId}`).emit('appointment:cancelled', payload);
+  ioInstance.to(`appointment:${apptId}`).emit('appointment:status_changed', statusPayload);
 
   const proId = (professional._id || professional).toString();
   ioInstance.to(`professional:${proId}`).emit('appointment:cancelled', payload);
+  ioInstance.to(`professional:${proId}`).emit('appointment:status_changed', statusPayload);
 
   if (appointment.userId) {
-    ioInstance.to(`user:${appointment.userId.toString()}`).emit('appointment:cancelled', payload);
+    const userId = appointment.userId.toString();
+    ioInstance.to(`user:${userId}`).emit('appointment:cancelled', payload);
+    ioInstance.to(`user:${userId}`).emit('appointment:status_changed', statusPayload);
   }
 
+  if (appointment.appointmentCode) {
+    ioInstance.to(`booking:${appointment.appointmentCode}`).emit('appointment:cancelled', payload);
+    ioInstance.to(`booking:${appointment.appointmentCode}`).emit('appointment:status_changed', statusPayload);
+  }
+
+  ioInstance.to('admin:ops').emit('appointment:cancelled', payload);
   ioInstance.to('role:admin').emit('appointment:cancelled', payload);
-  ioInstance.to('role:admin').emit('admin:activity', {
+  ioInstance.to('admin:ops').emit('admin:activity', {
     type: 'APPOINTMENT_CANCELLED',
     message: `Appointment #${appointment.appointmentCode} was cancelled by ${cancelledBy}. ${reason ? `(${reason})` : ''}`,
     appointmentId: appointment._id,
@@ -279,9 +331,11 @@ export const emitAppointmentCancelled = async (appointment, professional, cancel
 export const emitAppointmentRescheduled = async (appointment, professional) => {
   if (!ioInstance) return;
 
+  const sanitizedAppointment = toSocketAppointment(appointment);
+
   const payload = {
     event: 'appointment:rescheduled',
-    appointment,
+    appointment: sanitizedAppointment,
     professional: {
       id: professional._id,
       name: professional.name,
@@ -289,14 +343,24 @@ export const emitAppointmentRescheduled = async (appointment, professional) => {
     timestamp: new Date().toISOString(),
   };
 
+  const statusPayload = {
+    appointmentId: appointment._id,
+    status: 'RESCHEDULED',
+    appointment: sanitizedAppointment,
+  };
+
   const apptId = appointment._id.toString();
   ioInstance.to(`appointment:${apptId}`).emit('appointment:rescheduled', payload);
+  ioInstance.to(`appointment:${apptId}`).emit('appointment:status_changed', statusPayload);
 
   const proId = (professional._id || professional).toString();
   ioInstance.to(`professional:${proId}`).emit('appointment:rescheduled', payload);
+  ioInstance.to(`professional:${proId}`).emit('appointment:status_changed', statusPayload);
 
   if (appointment.userId) {
-    ioInstance.to(`user:${appointment.userId.toString()}`).emit('appointment:rescheduled', payload);
+    const userId = appointment.userId.toString();
+    ioInstance.to(`user:${userId}`).emit('appointment:rescheduled', payload);
+    ioInstance.to(`user:${userId}`).emit('appointment:status_changed', statusPayload);
 
     await sendAndPersistNotification({
       userId: appointment.userId,
@@ -309,6 +373,12 @@ export const emitAppointmentRescheduled = async (appointment, professional) => {
     });
   }
 
+  if (appointment.appointmentCode) {
+    ioInstance.to(`booking:${appointment.appointmentCode}`).emit('appointment:rescheduled', payload);
+    ioInstance.to(`booking:${appointment.appointmentCode}`).emit('appointment:status_changed', statusPayload);
+  }
+
+  ioInstance.to('admin:ops').emit('appointment:rescheduled', payload);
   ioInstance.to('role:admin').emit('appointment:rescheduled', payload);
 };
 
@@ -318,15 +388,31 @@ export const emitAppointmentRescheduled = async (appointment, professional) => {
 export const emitAppointmentRescheduleRequested = async (appointment, professional, requestDetails) => {
   if (!ioInstance) return;
 
+  const sanitizedAppointment = toSocketAppointment(appointment);
+
   const payload = {
     event: 'appointment:reschedule_requested',
-    appointment,
+    appointment: sanitizedAppointment,
     requestDetails,
     timestamp: new Date().toISOString(),
   };
 
   const proId = (professional._id || professional).toString();
   ioInstance.to(`professional:${proId}`).emit('appointment:reschedule_requested', payload);
+
+  const apptId = appointment._id.toString();
+  ioInstance.to(`appointment:${apptId}`).emit('appointment:reschedule_requested', payload);
+
+  if (appointment.userId) {
+    ioInstance.to(`user:${appointment.userId.toString()}`).emit('appointment:reschedule_requested', payload);
+  }
+
+  if (appointment.appointmentCode) {
+    ioInstance.to(`booking:${appointment.appointmentCode}`).emit('appointment:reschedule_requested', payload);
+  }
+
+  ioInstance.to('admin:ops').emit('appointment:reschedule_requested', payload);
+  ioInstance.to('role:admin').emit('appointment:reschedule_requested', payload);
 
   await sendAndPersistNotification({
     professionalId: professional._id,
@@ -345,17 +431,32 @@ export const emitAppointmentRescheduleRequested = async (appointment, profession
 export const emitAppointmentCompleted = async (appointment, professional) => {
   if (!ioInstance) return;
 
+  const sanitizedAppointment = toSocketAppointment(appointment);
+
   const payload = {
     event: 'appointment:completed',
-    appointment,
+    appointment: sanitizedAppointment,
     timestamp: new Date().toISOString(),
+  };
+
+  const statusPayload = {
+    appointmentId: appointment._id,
+    status: 'COMPLETED',
+    appointment: sanitizedAppointment,
   };
 
   const apptId = appointment._id.toString();
   ioInstance.to(`appointment:${apptId}`).emit('appointment:completed', payload);
+  ioInstance.to(`appointment:${apptId}`).emit('appointment:status_changed', statusPayload);
+
+  const proId = (professional._id || professional).toString();
+  ioInstance.to(`professional:${proId}`).emit('appointment:completed', payload);
+  ioInstance.to(`professional:${proId}`).emit('appointment:status_changed', statusPayload);
 
   if (appointment.userId) {
-    ioInstance.to(`user:${appointment.userId.toString()}`).emit('appointment:completed', payload);
+    const userId = appointment.userId.toString();
+    ioInstance.to(`user:${userId}`).emit('appointment:completed', payload);
+    ioInstance.to(`user:${userId}`).emit('appointment:status_changed', statusPayload);
 
     await sendAndPersistNotification({
       userId: appointment.userId,
@@ -368,6 +469,12 @@ export const emitAppointmentCompleted = async (appointment, professional) => {
     });
   }
 
+  if (appointment.appointmentCode) {
+    ioInstance.to(`booking:${appointment.appointmentCode}`).emit('appointment:completed', payload);
+    ioInstance.to(`booking:${appointment.appointmentCode}`).emit('appointment:status_changed', statusPayload);
+  }
+
+  ioInstance.to('admin:ops').emit('appointment:completed', payload);
   ioInstance.to('role:admin').emit('appointment:completed', payload);
 };
 
@@ -377,11 +484,13 @@ export const emitAppointmentCompleted = async (appointment, professional) => {
 export const emitAppointmentStatusChanged = async (appointment, professional, status) => {
   if (!ioInstance) return;
 
+  const sanitizedAppointment = toSocketAppointment(appointment);
+
   const payload = {
     event: 'appointment:status_changed',
     appointmentId: appointment._id,
     status,
-    appointment,
+    appointment: sanitizedAppointment,
     timestamp: new Date().toISOString(),
   };
 
@@ -395,5 +504,10 @@ export const emitAppointmentStatusChanged = async (appointment, professional, st
     ioInstance.to(`user:${appointment.userId.toString()}`).emit('appointment:status_changed', payload);
   }
 
+  if (appointment.appointmentCode) {
+    ioInstance.to(`booking:${appointment.appointmentCode}`).emit('appointment:status_changed', payload);
+  }
+
+  ioInstance.to('admin:ops').emit('appointment:status_changed', payload);
   ioInstance.to('role:admin').emit('appointment:status_changed', payload);
 };

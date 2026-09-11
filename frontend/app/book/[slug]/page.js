@@ -10,7 +10,7 @@ import BookingSuccessView from '@/components/booking/BookingSuccessView';
 import BookingCheckoutModal from '@/components/booking/BookingCheckoutModal';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
-import { AlertCircle, ShieldCheck, Lock, Sparkles, CheckCircle2, CalendarX2, Settings, Search } from 'lucide-react';
+import { AlertCircle, ShieldCheck, Lock, Sparkles, CheckCircle2, CalendarX2, Settings, Search, ArrowLeft } from 'lucide-react';
 import { getProfessionalPublicUrl } from '@/lib/urlHelpers';
 import { useAuthStore } from '@/stores/useAuthStore';
 import Link from 'next/link';
@@ -70,62 +70,73 @@ export default function PublicBookingPage() {
 
   if (loadingProfile) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex flex-col items-center justify-center p-4">
-        <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center mb-4 text-indigo-400">
-          <Sparkles className="w-6 h-6 animate-spin" />
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="w-14 h-14 rounded-3xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center mb-4 text-indigo-400 shadow-2xl relative z-10">
+          <Sparkles className="w-7 h-7 animate-pulse text-indigo-400" />
         </div>
-        <Spinner size="lg" label="Loading practitioner booking calendar..." className="text-white" />
+        <Spinner size="lg" label="Loading practitioner booking calendar..." className="text-white relative z-10" />
       </div>
     );
   }
 
   if (error || !profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-rose-600/10 rounded-full blur-3xl pointer-events-none" />
         <EmptyState
           icon={AlertCircle}
           title="Practitioner Not Found"
           description={error || 'The requested practitioner profile or booking link is inactive or does not exist.'}
-          className="max-w-md w-full bg-slate-900/90 border-slate-800 text-white shadow-2xl rounded-3xl"
+          className="max-w-md w-full bg-slate-900/90 border-slate-800 text-white shadow-2xl rounded-3xl relative z-10 backdrop-blur-xl"
         />
       </div>
     );
   }
 
   const hasServices = Boolean(profile.appointmentTypes && profile.appointmentTypes.length > 0);
-  const isOwner = Boolean(user && (user._id === profile._id || user.bookingSlug === slug || user.email === profile.email));
+  const isOwner = Boolean(
+    user && (user._id === profile._id || user.bookingSlug === slug || user.email === profile.email)
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex flex-col justify-between py-5 sm:py-10 px-3.5 sm:px-6 selection:bg-indigo-600 selection:text-white">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between py-4 sm:py-8 px-3.5 sm:px-6 selection:bg-indigo-600 selection:text-white relative overflow-hidden">
+      {/* Dynamic ambient backdrop glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-gradient-to-b from-indigo-600/15 via-violet-600/10 to-transparent blur-3xl pointer-events-none" />
+
       <link rel="canonical" href={canonicalUrl} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:title" content={`${profile.name} • Book Appointment | BookSaathi`} />
-      <meta property="og:description" content={`Book an appointment directly with ${profile.name} (${profile.profession}) on BookSaathi.`} />
-      
+      <meta
+        property="og:description"
+        content={`Book an appointment directly with ${profile.name} (${profile.profession}) on BookSaathi.`}
+      />
+
       {/* Top Header Bar */}
-      <header className="max-w-2xl w-full mx-auto mb-4 flex items-center justify-between text-xs px-2">
+      <header className="max-w-2xl w-full mx-auto mb-4 flex items-center justify-between text-xs px-2 relative z-10">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-md shadow-indigo-600/30 group-hover:scale-105 transition-transform">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center font-black text-sm shadow-md shadow-indigo-600/30 group-hover:scale-105 transition-transform">
             B
           </div>
-          <span className="font-extrabold text-white text-sm tracking-tight">
+          <span className="font-extrabold text-white text-sm sm:text-base tracking-tight">
             Book<span className="text-indigo-400">Saathi</span>
           </span>
         </Link>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 text-[11px] font-medium backdrop-blur-md">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 text-[11px] font-semibold backdrop-blur-md shadow-2xs">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <Lock className="w-3 h-3 text-emerald-400" />
           <span>256-Bit SSL Secured</span>
         </div>
       </header>
 
-      {/* Main Booking Container */}
-      <main className="max-w-2xl w-full mx-auto bg-white rounded-3xl sm:rounded-[32px] shadow-2xl shadow-indigo-950/40 border border-slate-200/80 overflow-hidden text-slate-900 ring-1 ring-white/10">
+      {/* Main Booking Card Container */}
+      <main className="max-w-2xl w-full mx-auto bg-white rounded-3xl sm:rounded-[32px] shadow-2xl shadow-indigo-950/50 border border-slate-200/80 overflow-hidden text-slate-900 ring-1 ring-white/10 relative z-10 transition-all duration-300">
         {/* Doctor Hero Card */}
         <div className="bg-slate-950">
           <BookingDoctorHero profile={profile} />
           {hasServices && (
-            <div className="px-6 pb-4">
+            <div className="px-5 sm:px-7 pb-4">
               <BookingStepIndicator currentStep={currentStep} />
             </div>
           )}
@@ -246,25 +257,35 @@ export default function PublicBookingPage() {
       />
 
       {/* Footer Branding & Guarantees */}
-      <footer className="mt-8 max-w-2xl w-full mx-auto text-center space-y-3">
-        <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-slate-400">
-          <span className="flex items-center gap-1">
+      <footer className="mt-8 max-w-2xl w-full mx-auto text-center space-y-3 relative z-10">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-[11px] text-slate-400">
+          <span className="flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
             <span>Direct Practitioner Booking</span>
           </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Zero Booking Convenience Fees</span>
+            <span>Zero Convenience Fees</span>
           </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Instant Calendar & WhatsApp Sync</span>
+            <span>Instant WhatsApp & Calendar Sync</span>
           </span>
+        </div>
+
+        <div className="pt-1">
+          <Link
+            href="/lookup"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span>Already booked? Find your appointment with your phone number</span>
+          </Link>
         </div>
 
         <p className="text-xs text-slate-500">
           Powered by{' '}
-          <span className="font-bold text-slate-300">BookSaathi</span> Healthcare & Professional Scheduling Network (India)
+          <span className="font-bold text-slate-300">BookSaathi</span> Scheduling Network (India)
         </p>
       </footer>
     </div>

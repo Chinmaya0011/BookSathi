@@ -2,22 +2,34 @@ import {
   registerCustomer,
   registerProfessional,
   loginUser,
+  rotateRefreshToken,
+  revokeRefreshToken,
   updateUserProfile,
   changePassword,
   createPasswordResetToken,
   resetUserPassword,
+  generateCsrfToken,
+  setAuthCookies,
+  clearAuthCookies,
 } from '../services/authService.js';
 import { successResponse, errorResponse } from '../utils/response.js';
 
 export const register = async (req, res, next) => {
   try {
     const role = (req.body.role || 'USER').toUpperCase();
+    const meta = {
+      userAgent: req.headers['user-agent'] || '',
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '',
+    };
+
     let result;
     if (role === 'PROFESSIONAL') {
-      result = await registerProfessional(req.body);
+      result = await registerProfessional(req.body, meta);
     } else {
-      result = await registerCustomer(req.body);
+      result = await registerCustomer(req.body, meta);
     }
+
+    setAuthCookies(res, result);
     return successResponse(res, 201, 'Account registered successfully', result);
   } catch (err) {
     next(err);
@@ -27,8 +39,40 @@ export const register = async (req, res, next) => {
 export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    const result = await loginUser(email, password);
+    const meta = {
+      userAgent: req.headers['user-agent'] || '',
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '',
+    };
+
+    const result = await loginUser(email, password, meta);
+    setAuthCookies(res, result);
     return successResponse(res, 200, 'Logged in successfully', result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const refresh = async (req, res, next) => {
+  try {
+    const rawRefreshToken = req.body.refreshToken || req.cookies?.refreshToken;
+    const meta = {
+      userAgent: req.headers['user-agent'] || '',
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '',
+    };
+
+    const result = await rotateRefreshToken(rawRefreshToken, meta);
+    setAuthCookies(res, result);
+    return successResponse(res, 200, 'Token refreshed successfully', result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getCsrfToken = async (req, res, next) => {
+  try {
+    const csrfToken = req.cookies?.csrfToken || generateCsrfToken();
+    setAuthCookies(res, { csrfToken });
+    return successResponse(res, 200, 'CSRF token retrieved', { csrfToken });
   } catch (err) {
     next(err);
   }
@@ -74,7 +118,17 @@ export const updatePassword = async (req, res, next) => {
 };
 
 export const logout = async (req, res) => {
-  return successResponse(res, 200, 'Logged out successfully');
+  try {
+    const rawRefreshToken = req.body?.refreshToken || req.cookies?.refreshToken;
+    if (rawRefreshToken) {
+      await revokeRefreshToken(rawRefreshToken);
+    }
+    clearAuthCookies(res);
+    return successResponse(res, 200, 'Logged out successfully');
+  } catch (err) {
+    clearAuthCookies(res);
+    return successResponse(res, 200, 'Logged out successfully');
+  }
 };
 
 export const forgotPassword = async (req, res, next) => {
@@ -99,7 +153,12 @@ export const forgotPassword = async (req, res, next) => {
 export const resetPassword = async (req, res, next) => {
   try {
     const { token, password } = req.body;
-    const result = await resetUserPassword(token, password);
+    const meta = {
+      userAgent: req.headers['user-agent'] || '',
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '',
+    };
+    const result = await resetUserPassword(token, password, meta);
+    setAuthCookies(res, result);
     return successResponse(res, 200, 'Password updated successfully', result);
   } catch (err) {
     next(err);

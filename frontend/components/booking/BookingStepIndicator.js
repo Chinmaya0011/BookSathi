@@ -5,13 +5,13 @@ import { cn } from '@/lib/utils';
 
 export default function BookingStepIndicator({ currentStep }) {
   const steps = [
-    { id: 1, label: 'Service & Slot', icon: Calendar },
-    { id: 2, label: 'Client Details', icon: User },
-    { id: 3, label: 'Confirmation', icon: CheckCircle2 },
+    { id: 1, label: 'Service & Time', shortLabel: 'Slot', icon: Calendar },
+    { id: 2, label: 'Patient Info', shortLabel: 'Details', icon: User },
+    { id: 3, label: 'Confirmation', shortLabel: 'Confirmed', icon: CheckCircle2 },
   ];
 
   return (
-    <div className="pt-3 pb-1 border-t border-white/10 flex items-center justify-between text-xs">
+    <div className="pt-3.5 pb-1 border-t border-white/10 flex items-center justify-between text-xs">
       {steps.map((step, idx) => {
         const isCompleted = currentStep > step.id;
         const isCurrent = currentStep === step.id;
@@ -22,11 +22,11 @@ export default function BookingStepIndicator({ currentStep }) {
             <div className="flex items-center gap-2">
               <div
                 className={cn(
-                  'w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs transition-all',
+                  'w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300',
                   isCompleted
-                    ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30 ring-2 ring-emerald-400/40'
+                    ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30 ring-2 ring-emerald-400/30'
                     : isCurrent
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-400/50 scale-105'
+                    ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-600/40 ring-2 ring-indigo-400/50 scale-105'
                     : 'bg-white/10 text-slate-400 border border-white/10'
                 )}
               >
@@ -44,14 +44,26 @@ export default function BookingStepIndicator({ currentStep }) {
               >
                 {step.label}
               </span>
+              <span
+                className={cn(
+                  'font-bold text-[10px] transition-colors sm:hidden',
+                  isCompleted
+                    ? 'text-emerald-300'
+                    : isCurrent
+                    ? 'text-white font-black'
+                    : 'text-slate-500'
+                )}
+              >
+                {step.shortLabel}
+              </span>
             </div>
 
             {idx < steps.length - 1 && (
-              <div className="flex-1 mx-3 h-0.5 rounded-full overflow-hidden bg-white/10">
+              <div className="flex-1 mx-2 sm:mx-3 h-0.5 rounded-full overflow-hidden bg-white/10">
                 <div
                   className={cn(
-                    'h-full transition-all duration-300',
-                    currentStep > step.id ? 'w-full bg-emerald-500' : 'w-0'
+                    'h-full transition-all duration-500',
+                    currentStep > step.id ? 'w-full bg-gradient-to-r from-emerald-500 to-indigo-500' : 'w-0'
                   )}
                 />
               </div>

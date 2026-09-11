@@ -7,16 +7,214 @@ import { AppointmentType } from '../models/AppointmentType.js';
 import { slugify } from '../utils/slugify.js';
 import { isReservedSlug } from '../utils/reservedSlugs.js';
 
-export const generateToken = (userId) => {
+export const ACCESS_TOKEN_EXPIRES_IN = '15m'; // 15 minutes access token
+export const REFRESH_TOKEN_EXPIRES_DAYS = 7; // 7 days refresh token
+export const MAX_FAILED_LOGIN_ATTEMPTS = 5; // Lock after 5 failed attempts
+export const LOCK_TIME_MS = 15 * 60 * 1000; // 15 minutes lockout
+
+/**
+ * Generate 15-minute Access Token
+ */
+export const generateAccessToken = (user) => {
   const secret = process.env.JWT_SECRET || 'booksaathi_jwt_super_secret_key_2026_indian_professionals';
-  const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
-  return jwt.sign({ id: userId }, secret, { expiresIn });
+  const id = user._id || user.id || user;
+  const role = user.role || 'USER';
+  return jwt.sign({ id, role }, secret, { expiresIn: ACCESS_TOKEN_EXPIRES_IN });
+};
+
+// Backwards compatibility alias
+export const generateToken = (userId, role = 'USER') => {
+  return generateAccessToken({ _id: userId, role });
+};
+
+/**
+ * Generate 7-day Rotating Refresh Token and persist SHA-256 hash in User document
+ */
+export const generateRefreshToken = async (user, { userAgent = '', ipAddress = '' } = {}) => {
+  const rawRefreshToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawRefreshToken).digest('hex');
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000);
+
+  const userDoc = user instanceof User ? user : await User.findById(user._id || user);
+  if (!userDoc) {
+    throw new Error('User not found for refresh token generation');
+  }
+
+  // Prune expired tokens and append new token
+  const now = new Date();
+  const currentTokens = (userDoc.refreshTokens || []).filter((rt) => rt.expiresAt > now);
+  currentTokens.push({
+    tokenHash,
+    createdAt: now,
+    expiresAt,
+    userAgent,
+    ipAddress,
+  });
+
+  userDoc.refreshTokens = currentTokens;
+  await userDoc.save({ validateBeforeSave: false });
+
+  return rawRefreshToken;
+};
+
+/**
+ * Generate CSRF Token
+ */
+export const generateCsrfToken = () => {
+  return crypto.randomBytes(24).toString('hex');
+};
+
+/**
+ * Helper to set secure httpOnly cookies
+ */
+export const setAuthCookies = (res, { accessToken, refreshToken, csrfToken }) => {
+  const isProd = process.env.NODE_ENV === 'production';
+  const sameSite = isProd ? 'none' : 'lax';
+
+  if (accessToken) {
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite,
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+    res.cookie('token', accessToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite,
+      maxAge: 15 * 60 * 1000,
+    });
+  }
+
+  if (refreshToken) {
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite,
+      path: '/',
+      maxAge: REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000, // 7 days
+    });
+  }
+
+  if (csrfToken) {
+    res.cookie('csrfToken', csrfToken, {
+      httpOnly: false, // Readable by client JS to send in X-CSRF-Token header
+      secure: isProd,
+      sameSite,
+      path: '/',
+      maxAge: REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000,
+    });
+  }
+};
+
+/**
+ * Helper to clear authentication cookies on logout
+ */
+export const clearAuthCookies = (res) => {
+  const isProd = process.env.NODE_ENV === 'production';
+  const sameSite = isProd ? 'none' : 'lax';
+  const opts = { httpOnly: true, secure: isProd, sameSite };
+
+  res.clearCookie('accessToken', opts);
+  res.clearCookie('token', opts);
+  res.clearCookie('refreshToken', { ...opts, path: '/' });
+  res.clearCookie('csrfToken', { httpOnly: false, secure: isProd, sameSite, path: '/' });
+};
+
+/**
+ * Rotate Refresh Token: Invalidate old token and issue new access & refresh tokens
+ */
+export const rotateRefreshToken = async (rawRefreshToken, { userAgent = '', ipAddress = '' } = {}) => {
+  if (!rawRefreshToken) {
+    const error = new Error('Refresh token is required.');
+    error.statusCode = 401;
+    error.isOperational = true;
+    throw error;
+  }
+
+  const tokenHash = crypto.createHash('sha256').update(rawRefreshToken).digest('hex');
+  const now = new Date();
+
+  const user = await User.findOne({
+    'refreshTokens.tokenHash': tokenHash,
+    'refreshTokens.expiresAt': { $gt: now },
+  });
+
+  if (!user) {
+    const error = new Error('Invalid or expired refresh token. Please log in again.');
+    error.statusCode = 401;
+    error.isOperational = true;
+    throw error;
+  }
+
+  if (!user.isActive) {
+    const error = new Error('Account has been deactivated. Please contact support.');
+    error.statusCode = 403;
+    error.isOperational = true;
+    throw error;
+  }
+
+  // Remove used refresh token
+  user.refreshTokens = (user.refreshTokens || []).filter((rt) => rt.tokenHash !== tokenHash && rt.expiresAt > now);
+
+  // Generate new refresh token
+  const newRawRefreshToken = crypto.randomBytes(32).toString('hex');
+  const newTokenHash = crypto.createHash('sha256').update(newRawRefreshToken).digest('hex');
+  const newExpiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000);
+
+  user.refreshTokens.push({
+    tokenHash: newTokenHash,
+    createdAt: now,
+    expiresAt: newExpiresAt,
+    userAgent,
+    ipAddress,
+  });
+
+  await user.save({ validateBeforeSave: false });
+
+  const accessToken = generateAccessToken(user);
+  const csrfToken = generateCsrfToken();
+
+  let profile = null;
+  if (user.role === 'PROFESSIONAL') {
+    profile = await ProfessionalProfile.findOne({ userId: user._id });
+  }
+
+  return {
+    user: {
+      id: user._id,
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      avatar: user.avatar,
+      timezone: user.timezone,
+    },
+    profile,
+    accessToken,
+    refreshToken: newRawRefreshToken,
+    token: accessToken, // for backward compatibility
+    csrfToken,
+  };
+};
+
+/**
+ * Revoke a refresh token on logout
+ */
+export const revokeRefreshToken = async (rawRefreshToken) => {
+  if (!rawRefreshToken) return;
+  const tokenHash = crypto.createHash('sha256').update(rawRefreshToken).digest('hex');
+  await User.updateOne(
+    { 'refreshTokens.tokenHash': tokenHash },
+    { $pull: { refreshTokens: { tokenHash } } }
+  );
 };
 
 /**
  * Register a Customer / User account
  */
-export const registerCustomer = async (userData) => {
+export const registerCustomer = async (userData, { userAgent = '', ipAddress = '' } = {}) => {
   const existingUser = await User.findOne({ email: userData.email.toLowerCase() });
   if (existingUser) {
     const error = new Error('An account with this email address already exists.');
@@ -32,9 +230,13 @@ export const registerCustomer = async (userData) => {
     password: userData.password,
     role: 'USER',
     timezone: userData.timezone || 'Asia/Kolkata',
+    failedLoginAttempts: 0,
+    lockUntil: null,
   });
 
-  const token = generateToken(user._id);
+  const accessToken = generateAccessToken(user);
+  const refreshToken = await generateRefreshToken(user, { userAgent, ipAddress });
+  const csrfToken = generateCsrfToken();
 
   return {
     user: {
@@ -46,7 +248,10 @@ export const registerCustomer = async (userData) => {
       role: user.role,
       timezone: user.timezone,
     },
-    token,
+    accessToken,
+    refreshToken,
+    token: accessToken,
+    csrfToken,
   };
 };
 
@@ -54,7 +259,7 @@ export const registerCustomer = async (userData) => {
  * Register a new professional user and automatically set up initial profile,
  * default Monday-Saturday availability, and default appointment type.
  */
-export const registerProfessional = async (userData) => {
+export const registerProfessional = async (userData, { userAgent = '', ipAddress = '' } = {}) => {
   const existingUser = await User.findOne({ email: userData.email.toLowerCase() });
   if (existingUser) {
     const error = new Error('An account with this email address already exists.');
@@ -87,6 +292,8 @@ export const registerProfessional = async (userData) => {
     password: userData.password,
     role: 'PROFESSIONAL',
     timezone: userData.timezone || 'Asia/Kolkata',
+    failedLoginAttempts: 0,
+    lockUntil: null,
   });
 
   // Create Professional Profile
@@ -106,7 +313,7 @@ export const registerProfessional = async (userData) => {
     isPublic: true,
   });
 
-  // Create default Weekly Availability (Monday to Saturday: 09:00 - 13:00, 17:00 - 20:00)
+  // Create default Weekly Availability
   const availabilityDocs = [];
   for (let day = 0; day <= 6; day++) {
     const isWeekend = day === 0;
@@ -146,7 +353,9 @@ export const registerProfessional = async (userData) => {
     enabled: true,
   });
 
-  const token = generateToken(user._id);
+  const accessToken = generateAccessToken(user);
+  const refreshToken = await generateRefreshToken(user, { userAgent, ipAddress });
+  const csrfToken = generateCsrfToken();
 
   return {
     user: {
@@ -158,14 +367,17 @@ export const registerProfessional = async (userData) => {
       timezone: user.timezone,
     },
     profile,
-    token,
+    accessToken,
+    refreshToken,
+    token: accessToken,
+    csrfToken,
   };
 };
 
 /**
- * Universal Login for any role (USER, PROFESSIONAL, ADMIN)
+ * Universal Login with Account Lockout after N Failed Attempts
  */
-export const loginUser = async (email, password) => {
+export const loginUser = async (email, password, { userAgent = '', ipAddress = '' } = {}) => {
   const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
   if (!user) {
     const error = new Error('Invalid email or password.');
@@ -174,14 +386,40 @@ export const loginUser = async (email, password) => {
     throw error;
   }
 
+  // 1. Check if Account is Locked
+  if (user.lockUntil && user.lockUntil > new Date()) {
+    const remainingMinutes = Math.max(1, Math.ceil((user.lockUntil.getTime() - Date.now()) / 60000));
+    const error = new Error(`Account is temporarily locked due to too many failed login attempts. Please try again after ${remainingMinutes} minute(s) or reset your password.`);
+    error.statusCode = 423; // 423 Locked
+    error.isOperational = true;
+    throw error;
+  }
+
+  // 2. Compare Password
   const isMatch = await user.comparePassword(password, user.password);
   if (!isMatch) {
-    const error = new Error('Invalid email or password.');
+    user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+
+    if (user.failedLoginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+      user.lockUntil = new Date(Date.now() + LOCK_TIME_MS);
+      user.failedLoginAttempts = 0; // Reset counter after lockout trigger
+      await user.save({ validateBeforeSave: false });
+
+      const error = new Error(`Account locked for 15 minutes due to ${MAX_FAILED_LOGIN_ATTEMPTS} consecutive failed login attempts.`);
+      error.statusCode = 423;
+      error.isOperational = true;
+      throw error;
+    }
+
+    await user.save({ validateBeforeSave: false });
+    const attemptsRemaining = MAX_FAILED_LOGIN_ATTEMPTS - user.failedLoginAttempts;
+    const error = new Error(`Invalid email or password. ${attemptsRemaining} attempt(s) remaining before account lockout.`);
     error.statusCode = 401;
     error.isOperational = true;
     throw error;
   }
 
+  // 3. Check if Active
   if (!user.isActive) {
     const error = new Error('Your account has been deactivated. Please contact support.');
     error.statusCode = 403;
@@ -189,16 +427,24 @@ export const loginUser = async (email, password) => {
     throw error;
   }
 
+  // 4. Successful Login: Reset Lockout and Failed Counters
+  user.failedLoginAttempts = 0;
+  user.lockUntil = null;
+  await user.save({ validateBeforeSave: false });
+
   let profile = null;
   if (user.role === 'PROFESSIONAL') {
     profile = await ProfessionalProfile.findOne({ userId: user._id });
   }
 
-  const token = generateToken(user._id);
+  const accessToken = generateAccessToken(user);
+  const refreshToken = await generateRefreshToken(user, { userAgent, ipAddress });
+  const csrfToken = generateCsrfToken();
 
   return {
     user: {
       id: user._id,
+      _id: user._id,
       name: user.name || (profile ? profile.name : ''),
       email: user.email,
       phone: user.phone || (profile ? profile.phone : ''),
@@ -207,7 +453,10 @@ export const loginUser = async (email, password) => {
       timezone: user.timezone,
     },
     profile,
-    token,
+    accessToken,
+    refreshToken,
+    token: accessToken, // for backward compatibility
+    csrfToken,
   };
 };
 
@@ -282,6 +531,8 @@ export const changePassword = async (userId, currentPassword, newPassword) => {
   }
 
   user.password = newPassword;
+  user.failedLoginAttempts = 0;
+  user.lockUntil = null;
   await user.save();
 
   return { success: true, message: 'Password changed successfully' };
@@ -309,7 +560,7 @@ export const createPasswordResetToken = async (email) => {
 /**
  * Reset password using token
  */
-export const resetUserPassword = async (rawToken, newPassword) => {
+export const resetUserPassword = async (rawToken, newPassword, { userAgent = '', ipAddress = '' } = {}) => {
   const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
 
   const user = await User.findOne({
@@ -327,10 +578,14 @@ export const resetUserPassword = async (rawToken, newPassword) => {
   user.password = newPassword;
   user.passwordResetToken = undefined;
   user.passwordResetExpires = undefined;
+  user.failedLoginAttempts = 0;
+  user.lockUntil = null;
   await user.save();
 
-  const token = generateToken(user._id);
+  const accessToken = generateAccessToken(user);
+  const refreshToken = await generateRefreshToken(user, { userAgent, ipAddress });
   const profile = await ProfessionalProfile.findOne({ userId: user._id });
+  const csrfToken = generateCsrfToken();
 
   return {
     user: {
@@ -340,6 +595,9 @@ export const resetUserPassword = async (rawToken, newPassword) => {
       role: user.role,
     },
     profile,
-    token,
+    accessToken,
+    refreshToken,
+    token: accessToken,
+    csrfToken,
   };
 };

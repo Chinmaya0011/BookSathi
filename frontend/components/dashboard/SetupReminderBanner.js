@@ -38,20 +38,20 @@ export default function SetupReminderBanner() {
   return (
     <aside
       aria-label="Profile setup reminder"
-      className="bg-gradient-to-r from-amber-500/10 via-amber-50/70 to-indigo-50/70 border-b border-amber-300/60 px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-2 transition-all animate-in slide-in-from-top duration-300 relative z-20"
+      className="bg-amber-50/80 border-b border-amber-200/80 px-3.5 sm:px-6 lg:px-8 py-2.5 transition-all animate-in slide-in-from-top duration-300 relative z-20"
     >
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-        {/* Left Side: Icon & Hinglish Message */}
+        {/* Left Side: Icon & Message */}
         <div className="flex items-start sm:items-center gap-2.5 min-w-0">
-          <div className="w-7 h-7 rounded-xl bg-amber-500/15 border border-amber-400/40 text-amber-700 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0 shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 animate-pulse text-amber-600" />
+          <div className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
           </div>
 
           <div className="min-w-0">
-            <p className="text-xs sm:text-[13px] font-bold text-slate-800 leading-snug">
-              <span className="font-extrabold text-amber-900 mr-1.5">Action Required:</span>
+            <p className="text-xs text-slate-800 leading-snug">
+              <span className="font-bold text-amber-900 mr-1.5">Action Required:</span>
               {message ||
-                'Aapka profile abhi complete nahi hai. Consultation Services & Pricing aur Weekly Availability complete karein taaki aap consultations start kar sakein.'}
+                'Aapka profile abhi complete nahi hai. Consultation Services & Pricing aur Weekly Availability complete karein.'}
             </p>
           </div>
         </div>
@@ -66,17 +66,16 @@ export default function SetupReminderBanner() {
                 key={item.id}
                 href={item.path}
                 className={cn(
-                  'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border',
+                  'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all border',
                   isActivePage
-                    ? 'bg-amber-600 text-white border-amber-700 shadow-2xs ring-2 ring-amber-400/30'
-                    : 'bg-white/90 hover:bg-white text-amber-950 border-amber-300/80 hover:border-amber-400 shadow-2xs'
+                    ? 'bg-amber-600 text-white border-amber-700 shadow-2xs'
+                    : 'bg-white hover:bg-amber-100/50 text-amber-900 border-amber-200 shadow-2xs'
                 )}
               >
                 {item.id === 'availability' && <Calendar className="w-3 h-3 text-amber-700" />}
                 {item.id === 'services' && <Layers className="w-3 h-3 text-amber-700" />}
                 {item.id === 'profile' && <UserCheck className="w-3 h-3 text-amber-700" />}
                 <span>{item.title}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
               </Link>
             );
           })}
@@ -85,10 +84,10 @@ export default function SetupReminderBanner() {
           {primaryActionPath && (
             <Link
               href={primaryActionPath}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs shrink-0 group"
+              className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-900 hover:bg-indigo-600 text-white text-xs font-semibold transition-all shrink-0 group"
             >
               <span>{primaryActionText || 'Complete Setup'}</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform text-indigo-200" />
+              <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           )}
         </div>

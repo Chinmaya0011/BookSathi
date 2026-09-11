@@ -1,22 +1,16 @@
 import { z } from 'zod';
+import { CANONICAL_PROFESSIONS, normalizeProfession } from '../utils/professionHelpers.js';
 
 export const updateProfileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').optional(),
   email: z.string().email('Valid email is required').optional(),
   phone: z.string().min(10, 'Valid phone number is required').optional(),
-  profession: z.enum([
-    'Doctor',
-    'CA',
-    'Lawyer',
-    'Consultant',
-    'Therapist',
-    'Tutor',
-    'Trainer',
-    'Nutritionist',
-    'Coach',
-    'Freelancer',
-    'Other',
-  ]).optional(),
+  profession: z
+    .preprocess(
+      (val) => (typeof val === 'string' ? normalizeProfession(val) : val),
+      z.enum(CANONICAL_PROFESSIONS)
+    )
+    .optional(),
   specialization: z.string().optional(),
   profileImage: z.string().optional(),
   bio: z.string().max(1000, 'Bio cannot exceed 1000 characters').optional(),

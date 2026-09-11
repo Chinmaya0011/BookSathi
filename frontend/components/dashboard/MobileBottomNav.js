@@ -206,9 +206,7 @@ export default function MobileBottomNav({ onOpenManualModal }) {
       title: 'PRACTICE SETUP',
       items: [
         { label: 'Professional Profile', href: '/dashboard/profile', icon: User, desc: 'Doctor/CA bio & details' },
-        { label: 'Public Booking Page', href: '/dashboard/booking-link', icon: ExternalLink, desc: 'Live subdomain link' },
-        { label: 'Reception QR Kit', href: '/dashboard/booking-link?tab=qr', icon: QrCode, desc: 'Order acrylic standee kit' },
-        { label: 'Subscription & Pro', href: '/dashboard/subscription', icon: Sparkles, desc: 'Membership & limits' },
+        { label: 'Booking Link & Plan', href: '/dashboard/booking-link', icon: Sparkles, desc: 'Link, QR code & Pro tier' },
       ],
     },
     {

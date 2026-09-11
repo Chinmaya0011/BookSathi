@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { timeToMinutes, minutesToTime, createUtcDateFromLocal } from '../utils/dateHelpers.js';
 
 const appointmentSchema = new mongoose.Schema(
   {
@@ -53,7 +54,7 @@ const appointmentSchema = new mongoose.Schema(
       required: true,
     },
     dateString: {
-      type: String, // YYYY-MM-DD
+      type: String, // YYYY-MM-DD (in Asia/Kolkata)
       required: true,
       index: true,
     },
@@ -64,6 +65,30 @@ const appointmentSchema = new mongoose.Schema(
     endTime: {
       type: String, // HH:mm
       required: true,
+    },
+    startMinutes: {
+      type: Number, // 0 - 1439
+      required: true,
+      min: 0,
+      max: 1439,
+      index: true,
+    },
+    endMinutes: {
+      type: Number, // 1 - 1440
+      required: true,
+      min: 1,
+      max: 1440,
+      index: true,
+    },
+    startAt: {
+      type: Date, // UTC Date
+      required: true,
+      index: true,
+    },
+    endAt: {
+      type: Date, // UTC Date
+      required: true,
+      index: true,
     },
     duration: {
       type: Number,
@@ -100,27 +125,27 @@ const appointmentSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
-        'PENDING',
-        'HELD',
+        'HOLD',
+        'BOOKED',
+        'DONE',
+        'CANCELLED',
         'CONFIRMED',
-        'REJECTED',
-        'ARRIVED',
-        'WAITING',
+        'PENDING',
         'IN_PROGRESS',
         'COMPLETED',
-        'CANCELLED',
+        'REJECTED',
         'NO_SHOW',
-        'RESCHEDULE_REQUESTED',
-        'RESCHEDULED',
+        'HELD',
         'EXPIRED',
+        'RESCHEDULE_REQUESTED',
       ],
-      default: 'PENDING',
+      default: 'BOOKED',
       index: true,
     },
     rescheduleRequest: {
       requestedDate: { type: String }, // YYYY-MM-DD
       requestedTime: { type: String }, // HH:mm
-      requestedBy: { type: String, enum: ['USER', 'PROFESSIONAL'] },
+      requestedBy: { type: String, enum: ['USER', 'CUSTOMER', 'GUEST', 'PROFESSIONAL', 'ADMIN'] },
       reason: { type: String, default: '' },
       requestedAt: { type: Date },
     },
@@ -130,12 +155,11 @@ const appointmentSchema = new mongoose.Schema(
     },
     cancelledBy: {
       type: String,
-      enum: ['USER', 'PROFESSIONAL', 'ADMIN'],
+      enum: ['USER', 'CUSTOMER', 'GUEST', 'PROFESSIONAL', 'ADMIN', 'SYSTEM'],
     },
     holdExpiresAt: {
       type: Date,
       default: null,
-      index: true,
     },
     holdToken: {
       type: String,
@@ -146,6 +170,22 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       default: null,
       index: true,
+    },
+    cancelTokenHash: {
+      type: String,
+      default: null,
+      select: false, // Never leaked in list/get queries
+      index: true,
+    },
+    cancelAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
+    lastCancelAttemptAt: {
+      type: Date,
+      default: null,
+      select: false,
     },
     paymentStatus: {
       type: String,
@@ -162,16 +202,33 @@ const appointmentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Payment',
     },
+    /**
+     * DPDP ACT, 2023 COMPLIANCE NOTE:
+     * - Customer phone, customer email, and consultation notes constitute Digital Personal Data under India's DPDP Act, 2023.
+     * - `reason`: Patient-provided booking complaint / visit summary (patient-visible).
+     * - `notes`: Private consultation & clinical observations (professional + admin only, strictly restricted).
+     * - `notesUpdatedAt`, `notesUpdatedBy`: Audit metadata for consultation notes modification.
+     * - Data Retention / Deletion Policy Hook: Personal identifiable data and clinical notes are subject to periodic retention schedules and data erasure requests.
+     */
     notes: {
       type: String,
       default: '',
-      select: false, // Hidden by default from public / lean queries to protect privacy
+      select: false, // Private clinical/consultation data: never fetched by default
+    },
+    notesUpdatedAt: {
+      type: Date,
+      default: null,
+    },
+    notesUpdatedBy: {
+      type: String,
+      enum: ['PROFESSIONAL', 'ADMIN', 'SYSTEM'],
+      default: null,
     },
     cancelReason: {
       type: String,
       default: '',
     },
-    // Timestamps for lifecycle & analytics
+    // Timestamps for lifecycle
     confirmedAt: {
       type: Date,
       default: null,
@@ -202,29 +259,57 @@ const appointmentSchema = new mongoose.Schema(
   }
 );
 
-// Compound index for slot generation and dashboard querying
+// Pre-validate hook to calculate integer minutes and UTC timestamps
+appointmentSchema.pre('validate', function (next) {
+  if (this.startTime && (this.startMinutes === undefined || this.startMinutes === null)) {
+    this.startMinutes = timeToMinutes(this.startTime);
+  }
+  if (!this.endTime && this.startTime && this.duration) {
+    this.endTime = minutesToTime(this.startMinutes + this.duration);
+  }
+  if (this.endTime && (this.endMinutes === undefined || this.endMinutes === null)) {
+    this.endMinutes = timeToMinutes(this.endTime);
+  }
+  if (this.dateString && this.startMinutes !== undefined && !this.startAt) {
+    this.startAt = createUtcDateFromLocal(this.dateString, this.startMinutes, this.timezone || 'Asia/Kolkata');
+  }
+  if (this.dateString && this.endMinutes !== undefined && !this.endAt) {
+    this.endAt = createUtcDateFromLocal(this.dateString, this.endMinutes, this.timezone || 'Asia/Kolkata');
+  }
+  if (!this.appointmentDate && this.dateString) {
+    const [year, month, day] = this.dateString.split('-').map(Number);
+    this.appointmentDate = new Date(Date.UTC(year, month - 1, day));
+  }
+  if ((this.status === 'HOLD' || this.status === 'HELD') && !this.holdExpiresAt) {
+    this.holdExpiresAt = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes default TTL
+  }
+  next();
+});
+
+// Indexes for high performance querying & overlap lookups
 appointmentSchema.index({ professionalId: 1, dateString: 1 });
 appointmentSchema.index({ professionalId: 1, dateString: 1, status: 1 });
 appointmentSchema.index({ professionalId: 1, status: 1 });
+appointmentSchema.index({ professionalId: 1, dateString: 1, startMinutes: 1, endMinutes: 1, status: 1 });
 
 appointmentSchema.index({ userId: 1, status: 1 });
 appointmentSchema.index({ customerPhone: 1, status: 1 });
 appointmentSchema.index({ professionalId: 1, idempotencyKey: 1 }, { sparse: true });
 
-// Critical Double Booking Prevention Partial Unique Index:
-// Guarantees at database-level that no two active appointments (or active non-expired holds)
-// can occupy the exact same slot for the same professional!
+// TTL index for automatic expiration of temporary holds
+appointmentSchema.index({ holdExpiresAt: 1 }, { expireAfterSeconds: 0, sparse: true });
+
+// Last-resort guard for exact start collision
 appointmentSchema.index(
-  { professionalId: 1, dateString: 1, startTime: 1 },
+  { professionalId: 1, dateString: 1, startMinutes: 1 },
   {
     unique: true,
     partialFilterExpression: {
       status: {
-        $in: ['CONFIRMED', 'PENDING', 'ARRIVED', 'WAITING', 'IN_PROGRESS', 'HELD'],
+        $in: ['HOLD', 'HELD', 'PENDING', 'CONFIRMED', 'IN_PROGRESS', 'BOOKED'],
       },
     },
   }
 );
 
 export const Appointment = mongoose.model('Appointment', appointmentSchema);
-

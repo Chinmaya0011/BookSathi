@@ -1,3 +1,81 @@
+export const APP_TZ = 'Asia/Kolkata';
+
+/**
+ * Convert IST calendar date (YYYY-MM-DD) and time (HH:mm string or integer minutes 0-1440) to exact UTC Date.
+ * Handles exact timezone offset for Asia/Kolkata (+05:30) across midnight boundaries.
+ */
+export const fromIst = (dateString, hhmm) => {
+  if (!dateString || hhmm === undefined || hhmm === null) return null;
+  const [year, month, day] = dateString.split('-').map(Number);
+
+  let hours = 0;
+  let minutes = 0;
+  if (typeof hhmm === 'number') {
+    hours = Math.floor(hhmm / 60);
+    minutes = hhmm % 60;
+  } else if (typeof hhmm === 'string' && hhmm.includes(':')) {
+    const parts = hhmm.split(':').map(Number);
+    hours = parts[0];
+    minutes = parts[1];
+  } else {
+    return null;
+  }
+
+  const pad = (n) => String(n).padStart(2, '0');
+  // Asia/Kolkata is fixed UTC+05:30 (no daylight saving time shifts)
+  const isoStr = `${year}-${pad(month)}-${pad(day)}T${pad(hours)}:${pad(minutes)}:00+05:30`;
+  return new Date(isoStr);
+};
+
+/**
+ * Convert UTC Date (or timestamp) to IST calendar parts:
+ * returns { dateString, hhmm, startMinutes, hours, minutes, date }
+ */
+export const toIstParts = (date = new Date()) => {
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+
+  const dateStrFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: APP_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const dateString = dateStrFormatter.format(d); // YYYY-MM-DD
+
+  const timeFormatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: APP_TZ,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  const hhmm = timeFormatter.format(d); // HH:mm
+  const [hours, minutes] = hhmm.split(':').map(Number);
+  const startMinutes = hours * 60 + minutes;
+
+  return {
+    dateString,
+    hhmm,
+    startMinutes,
+    hours,
+    minutes,
+    date: d,
+  };
+};
+
+/**
+ * Get current moment in IST with calendar date and minute parts
+ */
+export const nowIst = () => {
+  const now = new Date();
+  const parts = toIstParts(now);
+  return {
+    ...parts,
+    currentMinutes: parts.startMinutes,
+    timestamp: now.getTime(),
+  };
+};
+
 /**
  * Helper to convert HH:mm string to total minutes from midnight
  */
@@ -30,7 +108,7 @@ export const format12Hour = (time24) => {
 /**
  * Get date string in YYYY-MM-DD format based on a given timezone
  */
-export const getDateString = (date = new Date(), timezone = 'Asia/Kolkata') => {
+export const getDateString = (date = new Date(), timezone = APP_TZ) => {
   const d = new Date(date);
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
@@ -44,7 +122,7 @@ export const getDateString = (date = new Date(), timezone = 'Asia/Kolkata') => {
 /**
  * Get current time in HH:mm based on a given timezone
  */
-export const getCurrentTimeString = (timezone = 'Asia/Kolkata') => {
+export const getCurrentTimeString = (timezone = APP_TZ) => {
   const formatter = new Intl.DateTimeFormat('en-GB', {
     timeZone: timezone,
     hour: '2-digit',
@@ -135,4 +213,12 @@ export const generateAppointmentCode = () => {
   const num = Math.floor(10000 + Math.random() * 90000);
   return `BS-${num}`;
 };
+
+/**
+ * Convert dateString (YYYY-MM-DD) and minutesFromMidnight (0-1440) in Asia/Kolkata timezone to UTC Date
+ */
+export const createUtcDateFromLocal = (dateString, minutesFromMidnight) => {
+  return fromIst(dateString, minutesFromMidnight);
+};
+
 

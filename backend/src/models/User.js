@@ -53,6 +53,38 @@ const userSchema = new mongoose.Schema(
       type: Date,
       select: false,
     },
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lockUntil: {
+      type: Date,
+      default: null,
+    },
+    refreshTokens: [
+      {
+        tokenHash: {
+          type: String,
+          required: true,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+        expiresAt: {
+          type: Date,
+          required: true,
+        },
+        userAgent: {
+          type: String,
+          default: '',
+        },
+        ipAddress: {
+          type: String,
+          default: '',
+        },
+      },
+    ],
   },
   {
     timestamps: true,

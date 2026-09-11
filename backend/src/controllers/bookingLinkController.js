@@ -49,10 +49,12 @@ export const checkSlugAvailability = async (req, res, next) => {
       });
     }
 
-    const existing = await ProfessionalProfile.findOne({
-      bookingSlug: cleanSlug,
-      userId: { $ne: req.user._id },
-    });
+    const query = { bookingSlug: cleanSlug };
+    if (req.user?._id) {
+      query.userId = { $ne: req.user._id };
+    }
+
+    const existing = await ProfessionalProfile.findOne(query);
 
     return successResponse(res, 200, 'Slug checked', {
       slug: cleanSlug,

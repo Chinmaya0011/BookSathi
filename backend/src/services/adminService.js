@@ -11,6 +11,7 @@ import { PricingPlan } from '../models/PricingPlan.js';
 import { Grievance } from '../models/Grievance.js';
 import { SystemSetting } from '../models/SystemSetting.js';
 import { getDateString } from '../utils/dateHelpers.js';
+import { toAdminAppointment } from '../serializers/appointmentSerializer.js';
 
 /**
  * Helper to record Super Admin actions
@@ -270,7 +271,7 @@ export const getAllAppointmentsAdmin = async (query = {}) => {
   ]);
 
   return {
-    appointments,
+    appointments: appointments.map((a) => toAdminAppointment(a, { auditLogged: false })),
     pagination: {
       total,
       page: Number(page),
@@ -278,6 +279,76 @@ export const getAllAppointmentsAdmin = async (query = {}) => {
       totalPages: Math.ceil(total / Number(limit)),
     },
   };
+};
+
+/**
+ * 4b. Get Single Appointment Details with Notes (Admin read - writes SystemAuditLog)
+ */
+export const getAppointmentDetailsAdmin = async (appointmentId, adminUser, ipAddress = '') => {
+  const appointment = await Appointment.findById(appointmentId)
+    .select('+notes +notesUpdatedAt +notesUpdatedBy')
+    .populate('professionalId', 'name profession bookingSlug phone email')
+    .populate('appointmentTypeId', 'name duration fee')
+    .populate('userId', 'name email phone');
+
+  if (!appointment) {
+    const err = new Error('Appointment not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // Mandatory SystemAuditLog on admin viewing private clinical/consultation notes
+  await recordAuditLog({
+    adminId: adminUser._id,
+    adminEmail: adminUser.email,
+    action: 'READ_APPOINTMENT_NOTES',
+    targetType: 'APPOINTMENT',
+    targetId: appointment._id,
+    details: {
+      appointmentCode: appointment.appointmentCode,
+      hasNotes: Boolean(appointment.notes),
+      customerName: appointment.customerName,
+    },
+    ipAddress,
+  });
+
+  return toAdminAppointment(appointment, { auditLogged: true });
+};
+
+/**
+ * 4c. Update Appointment Clinical Notes by Admin (Admin write - writes SystemAuditLog)
+ */
+export const updateAppointmentNotesAdmin = async (appointmentId, adminUser, notes, ipAddress = '') => {
+  const appointment = await Appointment.findById(appointmentId).select('+notes');
+  if (!appointment) {
+    const err = new Error('Appointment not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const oldNotesLength = appointment.notes ? appointment.notes.length : 0;
+  appointment.notes = notes;
+  appointment.notesUpdatedAt = new Date();
+  appointment.notesUpdatedBy = 'ADMIN';
+  await appointment.save();
+
+  // Mandatory SystemAuditLog on admin updating notes
+  await recordAuditLog({
+    adminId: adminUser._id,
+    adminEmail: adminUser.email,
+    action: 'UPDATE_APPOINTMENT_NOTES',
+    targetType: 'APPOINTMENT',
+    targetId: appointment._id,
+    details: {
+      appointmentCode: appointment.appointmentCode,
+      oldNotesLength,
+      newNotesLength: notes ? notes.length : 0,
+      notesUpdatedBy: 'ADMIN',
+    },
+    ipAddress,
+  });
+
+  return toAdminAppointment(appointment, { auditLogged: true });
 };
 
 /**
@@ -310,7 +381,7 @@ export const updateAppointmentStatusAdmin = async (appointmentId, adminUser, { s
     },
   });
 
-  return appointment;
+  return toAdminAppointment(appointment);
 };
 
 /**
@@ -393,9 +464,15 @@ export const getAllUsersAdmin = async (query = {}) => {
 };
 
 /**
- * 8. Update User Role / Lock / Password
+ * 8. Update User Role / Lock / Password with Strict Role Elevation & Audit Logging
  */
 export const updateUserAdmin = async (userId, adminUser, data) => {
+  if (!adminUser || adminUser.role !== 'ADMIN' || !adminUser.isActive) {
+    const err = new Error('Access denied. Active administrator privileges required.');
+    err.statusCode = 403;
+    throw err;
+  }
+
   const user = await User.findById(userId);
   if (!user) {
     const err = new Error('User not found');
@@ -403,25 +480,154 @@ export const updateUserAdmin = async (userId, adminUser, data) => {
     throw err;
   }
 
-  const { role, isActive, newPassword } = data;
+  const { role, isActive, newPassword, unlockAccount } = data;
+  const oldRole = user.role;
+  const oldActive = user.isActive;
 
-  if (role) user.role = role;
-  if (isActive !== undefined) user.isActive = isActive;
+  // Role Change Rules
+  if (role && role !== oldRole) {
+    // 1. Target !== Actor Check
+    if (user._id.toString() === adminUser._id.toString()) {
+      const err = new Error('Cannot modify or elevate your own administrative role.');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // 2. Role Elevation to ADMIN
+    if (role === 'ADMIN') {
+      if (process.env.NODE_ENV === 'production' && process.env.ALLOW_ADMIN_PROMOTION !== 'true') {
+        const err = new Error('Role elevation to ADMIN is disabled in this environment (ALLOW_ADMIN_PROMOTION is not enabled).');
+        err.statusCode = 403;
+        throw err;
+      }
+
+      user.role = 'ADMIN';
+
+      await recordAuditLog({
+        adminId: adminUser._id,
+        adminEmail: adminUser.email,
+        action: 'ROLE_ELEVATION_ADMIN',
+        targetType: 'USER',
+        targetId: user._id.toString(),
+        details: {
+          promotedBy: adminUser.email,
+          targetUserEmail: user.email,
+          previousRole: oldRole,
+          newRole: 'ADMIN',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } else if (role === 'PROFESSIONAL') {
+      // 3. Role Elevation to PROFESSIONAL (Allowed by Admin)
+      user.role = 'PROFESSIONAL';
+
+      // Ensure a Professional Profile exists for the newly elevated professional
+      let profile = await ProfessionalProfile.findOne({ userId: user._id });
+      if (!profile) {
+        let baseSlug = (user.email.split('@')[0] || 'pro').toLowerCase().replace(/[^a-z0-9]/g, '-');
+        if (baseSlug.length < 3) baseSlug = 'pro-' + Math.floor(1000 + Math.random() * 9000);
+        let uniqueSlug = baseSlug;
+        let counter = 1;
+        while (await ProfessionalProfile.findOne({ bookingSlug: uniqueSlug })) {
+          uniqueSlug = `${baseSlug}-${counter}`;
+          counter++;
+        }
+
+        profile = await ProfessionalProfile.create({
+          userId: user._id,
+          name: user.name || user.email.split('@')[0] || 'Professional',
+          email: user.email,
+          phone: user.phone || '+91 99999 99999',
+          profession: 'Doctor',
+          specialization: 'General Practice',
+          city: 'Bhubaneswar',
+          state: 'Odisha',
+          bookingSlug: uniqueSlug,
+          consultationFee: 500,
+          languages: ['English', 'Hindi'],
+          yearsOfExperience: 5,
+          isPublic: true,
+          status: 'ACTIVE',
+        });
+      }
+
+      await recordAuditLog({
+        adminId: adminUser._id,
+        adminEmail: adminUser.email,
+        action: 'ROLE_ELEVATION_PROFESSIONAL',
+        targetType: 'USER',
+        targetId: user._id.toString(),
+        details: {
+          promotedBy: adminUser.email,
+          targetUserEmail: user.email,
+          previousRole: oldRole,
+          newRole: 'PROFESSIONAL',
+        },
+      });
+    } else {
+      user.role = role;
+      await recordAuditLog({
+        adminId: adminUser._id,
+        adminEmail: adminUser.email,
+        action: 'UPDATE_USER_ROLE',
+        targetType: 'USER',
+        targetId: user._id.toString(),
+        details: {
+          changedBy: adminUser.email,
+          targetUserEmail: user.email,
+          previousRole: oldRole,
+          newRole: role,
+        },
+      });
+    }
+  }
+
+  // Active / Suspension Status
+  if (isActive !== undefined && isActive !== oldActive) {
+    user.isActive = isActive;
+
+    // Sync status with ProfessionalProfile if present
+    const profile = await ProfessionalProfile.findOne({ userId: user._id });
+    if (profile) {
+      profile.status = isActive ? 'ACTIVE' : 'SUSPENDED';
+      await profile.save();
+    }
+
+    await recordAuditLog({
+      adminId: adminUser._id,
+      adminEmail: adminUser.email,
+      action: isActive ? 'USER_ACCOUNT_ACTIVATED' : 'USER_ACCOUNT_SUSPENDED',
+      targetType: 'USER',
+      targetId: user._id.toString(),
+      details: {
+        adminEmail: adminUser.email,
+        targetUserEmail: user.email,
+        newStatus: isActive ? 'ACTIVE' : 'SUSPENDED',
+      },
+    });
+  }
+
+  // Account Unlock
+  if (unlockAccount) {
+    user.failedLoginAttempts = 0;
+    user.lockUntil = null;
+    await recordAuditLog({
+      adminId: adminUser._id,
+      adminEmail: adminUser.email,
+      action: 'USER_ACCOUNT_UNLOCKED',
+      targetType: 'USER',
+      targetId: user._id.toString(),
+      details: { adminEmail: adminUser.email, targetUserEmail: user.email },
+    });
+  }
+
   if (newPassword) {
-    user.password = newPassword; // Will trigger pre('save') bcrypt hashing
+    user.password = newPassword;
+    user.failedLoginAttempts = 0;
+    user.lockUntil = null;
   }
 
   await user.save();
-
-  await recordAuditLog({
-    adminId: adminUser._id,
-    adminEmail: adminUser.email,
-    action: 'UPDATE_USER_RBAC',
-    targetType: 'USER',
-    targetId: user._id,
-    details: { userEmail: user.email, updatedRole: role, isActive },
-  });
-
   return user;
 };
 

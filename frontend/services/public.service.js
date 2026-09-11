@@ -70,9 +70,20 @@ export const publicService = {
     return this.bookAppointment(slug, data);
   },
 
+  // Zero-login customer booking lookup by phone number
+  async lookupByPhone(phone) {
+    const res = await api.get('/public/lookup', { params: { phone } });
+    return res.data;
+  },
+
+  // 1-tap rebooking helper
+  async getRebooking(phone) {
+    const res = await api.get('/public/book-again', { params: { phone } });
+    return res.data;
+  },
+
   getIcsDownloadUrl(slug, appointmentCode) {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     return `${baseUrl}/api/public/${slug}/ics/${appointmentCode}`;
   },
 };
-

@@ -2,6 +2,10 @@ import { Server as SocketIOServer } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { ProfessionalProfile } from '../models/ProfessionalProfile.js';
+import { Appointment } from '../models/Appointment.js';
+import { Conversation } from '../models/Conversation.js';
+import { hashCancelToken } from '../services/appointmentService.js';
+import { otpService } from '../services/otpService.js';
 import { setSocketServer } from './socketEmitter.js';
 
 let ioInstance = null;
@@ -78,14 +82,78 @@ export const initSocket = (httpServer) => {
 
     // 3. Join admin channels if ADMIN
     if (user.role === 'ADMIN') {
+      socket.join('admin:ops');
       socket.join(`admin:${userId}`);
       socket.join('role:admin');
     }
 
-    // Dynamic room authorization for specific appointments
-    socket.on('join:appointment', async (appointmentId) => {
-      if (!appointmentId) return;
-      socket.join(`appointment:${appointmentId}`);
+    // Secure guest / public booking room join with valid cancelToken or manageSessionToken
+    socket.on('join:booking', async (data = {}, callback) => {
+      try {
+        const { appointmentCode, cancelToken, sessionToken } = data;
+        if (!appointmentCode) {
+          if (callback) callback({ success: false, error: 'Appointment code is required.' });
+          return;
+        }
+
+        const appointment = await Appointment.findOne({ appointmentCode }).select('+cancelTokenHash');
+        if (!appointment) {
+          socket.emit('join:booking_error', { message: 'Appointment not found.' });
+          if (callback) callback({ success: false, error: 'Appointment not found.' });
+          return;
+        }
+
+        let isAuthorized = false;
+        if (cancelToken && appointment.cancelTokenHash && hashCancelToken(cancelToken) === appointment.cancelTokenHash) {
+          isAuthorized = true;
+        } else if (sessionToken && otpService.verifyManageSessionToken(sessionToken, appointmentCode)) {
+          isAuthorized = true;
+        } else if (user.role === 'ADMIN' || (appointment.userId && appointment.userId.toString() === userId)) {
+          isAuthorized = true;
+        }
+
+        if (!isAuthorized) {
+          socket.emit('join:booking_error', { message: 'Unauthorized booking credentials.' });
+          if (callback) callback({ success: false, error: 'Unauthorized.' });
+          return;
+        }
+
+        socket.join(`booking:${appointmentCode}`);
+        if (callback) callback({ success: true });
+      } catch (err) {
+        if (callback) callback({ success: false, error: err.message });
+      }
+    });
+
+    // Dynamic room authorization for specific appointments (Strict Membership Check)
+    socket.on('join:appointment', async (appointmentId, callback) => {
+      try {
+        if (!appointmentId) return;
+
+        const appointment = await Appointment.findById(appointmentId);
+        if (!appointment) {
+          socket.emit('join:appointment_error', { message: 'Appointment not found.' });
+          if (callback) callback({ success: false, error: 'Appointment not found.' });
+          return;
+        }
+
+        const isOwner = appointment.userId && appointment.userId.toString() === userId;
+        const isPro = socket.profile && appointment.professionalId.toString() === socket.profile._id.toString();
+        const isAdmin = user.role === 'ADMIN';
+
+        if (!isOwner && !isPro && !isAdmin) {
+          socket.emit('join:appointment_error', {
+            message: 'Unauthorized. You are not a participant in this appointment.',
+          });
+          if (callback) callback({ success: false, error: 'Unauthorized.' });
+          return;
+        }
+
+        socket.join(`appointment:${appointmentId}`);
+        if (callback) callback({ success: true });
+      } catch (err) {
+        if (callback) callback({ success: false, error: err.message });
+      }
     });
 
     socket.on('leave:appointment', (appointmentId) => {
@@ -93,10 +161,36 @@ export const initSocket = (httpServer) => {
       socket.leave(`appointment:${appointmentId}`);
     });
 
-    // Real-time Chat Conversation Rooms & Typing Indicators
-    socket.on('join:conversation', (conversationId) => {
-      if (!conversationId) return;
-      socket.join(`conversation:${conversationId}`);
+    // Real-time Chat Conversation Rooms (Strict Membership Check)
+    socket.on('join:conversation', async (conversationId, callback) => {
+      try {
+        if (!conversationId) return;
+
+        const conversation = await Conversation.findById(conversationId);
+        if (!conversation) {
+          socket.emit('join:conversation_error', { message: 'Conversation not found.' });
+          if (callback) callback({ success: false, error: 'Conversation not found.' });
+          return;
+        }
+
+        const isParticipant = conversation.participants?.some(
+          (p) => p.user && p.user.toString() === userId
+        );
+        const isAdmin = user.role === 'ADMIN';
+
+        if (!isParticipant && !isAdmin) {
+          socket.emit('join:conversation_error', {
+            message: 'Unauthorized. You are not a participant in this conversation.',
+          });
+          if (callback) callback({ success: false, error: 'Unauthorized.' });
+          return;
+        }
+
+        socket.join(`conversation:${conversationId}`);
+        if (callback) callback({ success: true });
+      } catch (err) {
+        if (callback) callback({ success: false, error: err.message });
+      }
     });
 
     socket.on('leave:conversation', (conversationId) => {

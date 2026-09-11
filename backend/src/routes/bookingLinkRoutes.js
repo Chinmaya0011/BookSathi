@@ -4,16 +4,18 @@ import {
   checkSlugAvailability,
   updateBookingSlug,
 } from '../controllers/bookingLinkController.js';
-import { authenticate } from '../middleware/authMiddleware.js';
+import { authenticate, optionalAuth } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validateMiddleware.js';
 import { updateSlugSchema } from '../validators/profileValidators.js';
 
 const router = Router();
 
-router.use(authenticate);
+// Public check for signup / onboarding
+router.get('/check', optionalAuth, checkSlugAvailability);
 
+// Authenticated routes
+router.use(authenticate);
 router.get('/', getBookingLinkDetails);
-router.get('/check', checkSlugAvailability);
 router.patch('/', validate(updateSlugSchema), updateBookingSlug);
 
 export default router;

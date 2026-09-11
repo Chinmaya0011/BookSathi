@@ -64,9 +64,14 @@ export const sendEmail = async ({ to, subject, html, text, type, role, appointme
 /**
  * Send booking confirmation emails to both customer and professional
  */
-export const sendBookingNotifications = async (appointment, profile) => {
+export const sendBookingNotifications = async (appointment, profile, options = {}) => {
   const formattedDate = formatIndianDate(appointment.dateString);
   const timeFormatted = format12Hour(appointment.startTime);
+  const manageUrl =
+    options.manageUrl ||
+    (options.cancelToken
+      ? `/book/manage?code=${appointment.appointmentCode}&token=${options.cancelToken}`
+      : `/book/manage?code=${appointment.appointmentCode}`);
 
   // 1. Send to Customer (if email provided)
   if (appointment.customerEmail) {
@@ -83,7 +88,10 @@ export const sendBookingNotifications = async (appointment, profile) => {
           <p style="margin: 5px 0;"><strong>Service:</strong> ${appointment.appointmentTypeName || 'Consultation'}</p>
           <p style="margin: 5px 0;"><strong>Consultation Fee:</strong> ₹${appointment.fee}</p>
         </div>
-        <p style="color: #64748b; font-size: 14px;">If you have any questions or need to make changes, please contact the professional directly.</p>
+        <p style="margin: 20px 0;">
+          <a href="${manageUrl}" style="display: inline-block; background-color: #4338ca; color: white; padding: 10px 18px; text-decoration: none; border-radius: 6px; font-weight: bold;">Manage or Cancel Appointment</a>
+        </p>
+        <p style="color: #64748b; font-size: 13px;">Use the secure link above to manage or reschedule your appointment at any time without logging in.</p>
         <p style="color: #94a3b8; font-size: 12px; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 10px;">Powered by BookSaathi.in — India's simple appointment platform</p>
       </div>
     `;
@@ -92,7 +100,7 @@ export const sendBookingNotifications = async (appointment, profile) => {
       to: appointment.customerEmail,
       subject: customerSubject,
       html: customerHtml,
-      text: `Your appointment with ${profile.name} is confirmed for ${formattedDate} at ${timeFormatted}. Code: ${appointment.appointmentCode}`,
+      text: `Your appointment with ${profile.name} is confirmed for ${formattedDate} at ${timeFormatted}. Code: ${appointment.appointmentCode}. Manage your booking: ${manageUrl}`,
       type: 'BOOKING_CONFIRMED',
       role: 'CUSTOMER',
       appointmentId: appointment._id,

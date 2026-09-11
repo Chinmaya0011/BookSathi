@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CANONICAL_PROFESSIONS, normalizeProfession } from '../utils/professionHelpers.js';
 
 export const registerSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -6,19 +7,13 @@ export const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters long'),
   phone: z.string().optional().default(''),
   role: z.enum(['USER', 'PROFESSIONAL', 'ADMIN']).optional().default('USER'),
-  profession: z.enum([
-    'Doctor',
-    'CA',
-    'Lawyer',
-    'Consultant',
-    'Therapist',
-    'Tutor',
-    'Trainer',
-    'Nutritionist',
-    'Coach',
-    'Freelancer',
-    'Other',
-  ]).optional().default('Doctor'),
+  profession: z
+    .preprocess(
+      (val) => (typeof val === 'string' ? normalizeProfession(val) : val),
+      z.enum(CANONICAL_PROFESSIONS)
+    )
+    .optional()
+    .default('Doctor'),
   specialization: z.string().optional().default(''),
   city: z.string().optional().default(''),
   state: z.string().optional().default(''),

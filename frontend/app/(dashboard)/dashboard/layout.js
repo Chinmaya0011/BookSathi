@@ -13,18 +13,23 @@ import { cn } from '@/lib/utils';
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { user, loading } = useAuth();
   const router = useRouter();
 
   const isChatPage = pathname?.startsWith('/dashboard/messages');
 
   useEffect(() => {
-    if (!loading && !user) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !loading && !user) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user, loading, mounted, router]);
 
-  if (loading || !user) {
+  if (!mounted || loading || !user) {
     return (
       <div className="h-screen w-screen bg-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-2">

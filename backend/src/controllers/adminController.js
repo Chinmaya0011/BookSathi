@@ -3,6 +3,8 @@ import {
   getAllProfessionals,
   updateProfessionalAdmin,
   getAllAppointmentsAdmin,
+  getAppointmentDetailsAdmin,
+  updateAppointmentNotesAdmin,
   updateAppointmentStatusAdmin,
   getAllPaymentsAdmin,
   getAllUsersAdmin,
@@ -51,6 +53,29 @@ export const getAppointmentsList = async (req, res, next) => {
   try {
     const result = await getAllAppointmentsAdmin(req.query);
     return successResponse(res, 200, 'Global appointments retrieved', result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getAppointmentDetails = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || '';
+    const result = await getAppointmentDetailsAdmin(id, req.user, ipAddress);
+    return successResponse(res, 200, 'Appointment details with notes retrieved (audit logged)', result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateAppointmentNotes = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || '';
+    const result = await updateAppointmentNotesAdmin(id, req.user, notes, ipAddress);
+    return successResponse(res, 200, 'Appointment notes updated by admin (audit logged)', result);
   } catch (err) {
     next(err);
   }

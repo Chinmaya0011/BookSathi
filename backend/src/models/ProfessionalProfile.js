@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { normalizeProfession } from '../utils/professionHelpers.js';
 
 const professionalProfileSchema = new mongoose.Schema(
   {
@@ -142,6 +143,16 @@ const professionalProfileSchema = new mongoose.Schema(
       default: 'ACTIVE',
       index: true,
     },
+    plan: {
+      type: String,
+      enum: ['FREE', 'PRO'],
+      default: 'FREE',
+      index: true,
+    },
+    planExpiresAt: {
+      type: Date,
+      default: null,
+    },
     bookingSettings: {
       appointmentDuration: {
         type: Number,
@@ -198,5 +209,13 @@ const professionalProfileSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Auto-normalize compound/custom profession labels to canonical enum before validation
+professionalProfileSchema.pre('validate', function (next) {
+  if (this.profession) {
+    this.profession = normalizeProfession(this.profession);
+  }
+  next();
+});
 
 export const ProfessionalProfile = mongoose.model('ProfessionalProfile', professionalProfileSchema);

@@ -38,18 +38,23 @@ export default function AdminLayout({ children }) {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!loading) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !loading) {
       if (!user) {
         router.push('/login');
       } else if (user.role !== 'ADMIN') {
         router.push('/dashboard');
       }
     }
-  }, [user, loading, router]);
+  }, [user, loading, mounted, router]);
 
-  if (loading || !user || user.role !== 'ADMIN') {
+  if (!mounted || loading || !user || user.role !== 'ADMIN') {
     return (
       <div className="h-screen w-screen bg-slate-950 text-slate-300 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">

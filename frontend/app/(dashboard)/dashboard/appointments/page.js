@@ -328,7 +328,7 @@ export default function AppointmentsPage() {
 
         <div className="flex items-center gap-2 flex-wrap">
           <Button size="sm" onClick={() => setManualModalOpen(true)}>
-            <PlusCircle className="w-4 h-4 mr-1" /> New Walk-In
+            Add Walk-In
           </Button>
 
           <Button variant="outline" size="sm" onClick={exportToCSV}>

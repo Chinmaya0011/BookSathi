@@ -17,13 +17,13 @@ const PIE_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#8b5
 
 export default function DashboardServiceDistribution({ serviceDistribution, loading }) {
   return (
-    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-4 sm:p-6 flex flex-col justify-between min-w-0 w-full overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4 sm:p-5 flex flex-col justify-between min-w-0 w-full overflow-hidden">
       <div className="min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-7 h-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
-            <PieIcon className="w-4 h-4" />
+          <div className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+            <PieIcon className="w-3.5 h-3.5" />
           </div>
-          <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">Service Distribution</h3>
+          <h3 className="text-sm font-bold text-slate-900 truncate">Service Distribution</h3>
         </div>
         <p className="text-[11px] sm:text-xs text-slate-500 mb-3 truncate">
           Consultation volume share across services
@@ -45,7 +45,7 @@ export default function DashboardServiceDistribution({ serviceDistribution, load
                   cy="50%"
                   innerRadius={48}
                   outerRadius={68}
-                  paddingAngle={4}
+                  paddingAngle={3}
                 >
                   {serviceDistribution.map((entry, index) => (
                     <Cell
@@ -73,18 +73,18 @@ export default function DashboardServiceDistribution({ serviceDistribution, load
       </div>
 
       {/* Service Legend Bars */}
-      <div className="space-y-2.5 pt-3 border-t border-slate-100 mt-2">
+      <div className="space-y-2 pt-3 border-t border-slate-100 mt-2">
         {(serviceDistribution || []).slice(0, 4).map((item, idx) => (
           <div key={idx} className="space-y-1">
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2 truncate max-w-[170px]">
                 <span
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  className="w-2 h-2 rounded-full shrink-0"
                   style={{ backgroundColor: PIE_COLORS[idx % PIE_COLORS.length] }}
                 />
-                <span className="font-semibold text-slate-700 truncate">{item.name}</span>
+                <span className="font-medium text-slate-700 truncate">{item.name}</span>
               </div>
-              <span className="font-bold text-slate-900 shrink-0">
+              <span className="font-bold text-slate-900 shrink-0 text-[11px]">
                 {item.count} ({item.percentage}%)
               </span>
             </div>

@@ -2,12 +2,16 @@ import { Availability } from '../models/Availability.js';
 import { BlockedDate } from '../models/BlockedDate.js';
 import { Appointment } from '../models/Appointment.js';
 import {
+  fromIst,
+  toIstParts,
+  nowIst,
   timeToMinutes,
   minutesToTime,
   format12Hour,
   getDateString,
   getCurrentTimeString,
   doIntervalsOverlap,
+  APP_TZ,
 } from '../utils/dateHelpers.js';
 
 /**
@@ -19,10 +23,8 @@ export const getAvailableSlots = async (
   requestedDuration = null,
   requestedBuffer = null
 ) => {
-  const timezone = profile.timezone || 'Asia/Kolkata';
-  const todayString = getDateString(new Date(), timezone);
-  const currentTimeString = getCurrentTimeString(timezone);
-  const currentMinutes = timeToMinutes(currentTimeString);
+  const istNow = nowIst();
+  const todayString = istNow.dateString;
 
   // Parse target date and calculate day of week
   const [year, month, day] = targetDateString.split('-').map(Number);
@@ -107,11 +109,11 @@ export const getAvailableSlots = async (
     $or: [
       {
         status: {
-          $in: ['CONFIRMED', 'PENDING', 'ARRIVED', 'WAITING', 'IN_PROGRESS'],
+          $in: ['BOOKED', 'DONE', 'CONFIRMED', 'PENDING', 'COMPLETED', 'IN_PROGRESS'],
         },
       },
       {
-        status: 'HELD',
+        status: { $in: ['HOLD', 'HELD'] },
         holdExpiresAt: { $gt: now },
       },
     ],
@@ -119,8 +121,12 @@ export const getAvailableSlots = async (
 
   // Map booked time intervals in minutes, factoring in their scheduled duration + individual buffer
   const bookedIntervals = existingAppointments.map((appt) => {
-    const apptStart = timeToMinutes(appt.startTime);
-    const apptEnd = timeToMinutes(appt.endTime);
+    const apptStart = appt.startMinutes !== undefined && appt.startMinutes !== null
+      ? appt.startMinutes
+      : timeToMinutes(appt.startTime);
+    const apptEnd = appt.endMinutes !== undefined && appt.endMinutes !== null
+      ? appt.endMinutes
+      : timeToMinutes(appt.endTime);
     const apptBuffer = appt.buffer || 0;
     return {
       start: apptStart,
@@ -154,12 +160,15 @@ export const getAvailableSlots = async (
       const startTimeStr = minutesToTime(currentSlotStart);
       const endTimeStr = minutesToTime(currentSlotEnd);
 
-      // Check minimum notice if target date is today
+      const slotStartAt = fromIst(targetDateString, currentSlotStart);
+      const slotEndAt = fromIst(targetDateString, currentSlotEnd);
+      const nowMs = Date.now();
+      const minNoticeMs = minNoticeMinutes * 60 * 1000;
+
+      // Check minimum notice & past slot using exact UTC timestamp vs now
       let isPastNotice = false;
-      if (targetDateString === todayString) {
-        if (currentSlotStart < currentMinutes + minNoticeMinutes) {
-          isPastNotice = true;
-        }
+      if (slotStartAt.getTime() < nowMs + minNoticeMs) {
+        isPastNotice = true;
       }
 
       // Check collision with partial blocked time ranges
@@ -214,6 +223,10 @@ export const getAvailableSlots = async (
         time12: format12Hour(startTimeStr),
         endTime: endTimeStr,
         endTime12: format12Hour(endTimeStr),
+        startMinutes: currentSlotStart,
+        endMinutes: currentSlotEnd,
+        startAt: slotStartAt,
+        endAt: slotEndAt,
         duration,
         buffer,
         available: isAvailable,
@@ -228,7 +241,7 @@ export const getAvailableSlots = async (
 
   return {
     date: targetDateString,
-    timezone,
+    timezone: APP_TZ,
     duration,
     buffer,
     totalAvailable: candidateSlots.filter((s) => s.available).length,
@@ -240,8 +253,8 @@ export const getAvailableSlots = async (
  * Get monthly availability overview (days that have open slots / closed status)
  */
 export const getMonthlyAvailabilityOverview = async (profile, year, month) => {
-  const timezone = profile.timezone || 'Asia/Kolkata';
-  const todayString = getDateString(new Date(), timezone);
+  const istNow = nowIst();
+  const todayString = istNow.dateString;
   const daysInMonth = new Date(year, month, 0).getDate();
 
   const availability = await Availability.find({ professionalId: profile._id });

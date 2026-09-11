@@ -4,6 +4,8 @@ import {
   getProfessionalsList,
   updateProfessional,
   getAppointmentsList,
+  getAppointmentDetails,
+  updateAppointmentNotes,
   updateAppointmentStatus,
   getPaymentsList,
   getUsersList,
@@ -32,8 +34,10 @@ router.get('/overview', getOverview);
 router.get('/professionals', getProfessionalsList);
 router.patch('/professionals/:id', updateProfessional);
 
-// Global Appointments Control
+// Global Appointments Control & Clinical Notes with Audit Trail
 router.get('/appointments', getAppointmentsList);
+router.get('/appointments/:id', getAppointmentDetails);
+router.patch('/appointments/:id/notes', updateAppointmentNotes);
 router.patch('/appointments/:id/status', updateAppointmentStatus);
 
 // Global Financial Transactions

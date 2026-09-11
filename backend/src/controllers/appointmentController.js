@@ -8,6 +8,9 @@ import {
 import { Appointment } from '../models/Appointment.js';
 import { ProfessionalProfile } from '../models/ProfessionalProfile.js';
 import {
+  toProfessionalAppointment,
+} from '../serializers/appointmentSerializer.js';
+import {
   emitAppointmentConfirmed,
   emitAppointmentRejected,
   emitAppointmentCancelled,
@@ -27,7 +30,11 @@ export const getAppointments = async (req, res, next) => {
       });
     }
     const result = await getProfessionalAppointments(req.profile._id, req.query);
-    return successResponse(res, 200, 'Appointments retrieved', result);
+    const serializedAppointments = result.appointments?.map(toProfessionalAppointment) || [];
+    return successResponse(res, 200, 'Appointments retrieved', {
+      ...result,
+      appointments: serializedAppointments,
+    });
   } catch (err) {
     next(err);
   }
@@ -45,7 +52,7 @@ export const getAppointmentById = async (req, res, next) => {
       return errorResponse(res, 404, 'Appointment not found');
     }
 
-    return successResponse(res, 200, 'Appointment details', appointment);
+    return successResponse(res, 200, 'Appointment details', toProfessionalAppointment(appointment));
   } catch (err) {
     next(err);
   }
@@ -62,7 +69,7 @@ export const confirmAppointment = async (req, res, next) => {
       return errorResponse(res, 404, 'Appointment not found');
     }
 
-    appointment.status = 'CONFIRMED';
+    appointment.status = 'BOOKED';
     appointment.confirmedAt = new Date();
     await appointment.save();
 
@@ -86,13 +93,13 @@ export const rejectAppointment = async (req, res, next) => {
       return errorResponse(res, 404, 'Appointment not found');
     }
 
-    appointment.status = 'REJECTED';
+    appointment.status = 'CANCELLED';
     appointment.cancellationReason = reason;
     await appointment.save();
 
-    await emitAppointmentRejected(appointment, req.profile, reason);
+    await emitAppointmentCancelled(appointment, req.profile, 'PROFESSIONAL', reason);
 
-    return successResponse(res, 200, 'Appointment rejected', appointment);
+    return successResponse(res, 200, 'Appointment cancelled', appointment);
   } catch (err) {
     next(err);
   }
@@ -125,7 +132,7 @@ export const cancelAppointment = async (req, res, next) => {
 };
 
 /**
- * Professional Marks Appointment Completed
+ * Professional Marks Appointment Done / Completed
  */
 export const completeAppointment = async (req, res, next) => {
   try {
@@ -135,13 +142,13 @@ export const completeAppointment = async (req, res, next) => {
       return errorResponse(res, 404, 'Appointment not found');
     }
 
-    appointment.status = 'COMPLETED';
+    appointment.status = 'DONE';
     appointment.completedAt = new Date();
     await appointment.save();
 
     await emitAppointmentCompleted(appointment, req.profile);
 
-    return successResponse(res, 200, 'Appointment marked as completed', appointment);
+    return successResponse(res, 200, 'Appointment marked as done', appointment);
   } catch (err) {
     next(err);
   }
@@ -162,19 +169,24 @@ export const reschedule = async (req, res, next) => {
 };
 
 /**
- * General Status Transition (ARRIVED, WAITING, IN_PROGRESS, NO_SHOW)
+ * General Status Transition (BOOKED, DONE, CANCELLED)
  */
 export const changeStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status, cancelReason } = req.body;
+    let { status, cancelReason } = req.body;
+    
+    // Normalize status to 3 types
+    if (status === 'COMPLETED') status = 'DONE';
+    if (status === 'CONFIRMED') status = 'BOOKED';
+
     const updated = await updateAppointmentStatus(req.profile._id, id, { status, cancelReason });
     
-    if (status === 'CONFIRMED') {
+    if (status === 'BOOKED' || status === 'CONFIRMED') {
       await emitAppointmentConfirmed(updated, req.profile);
     } else if (status === 'CANCELLED') {
       await emitAppointmentCancelled(updated, req.profile, 'PROFESSIONAL', cancelReason);
-    } else if (status === 'COMPLETED') {
+    } else if (status === 'DONE' || status === 'COMPLETED') {
       await emitAppointmentCompleted(updated, req.profile);
     } else {
       await emitAppointmentStatusChanged(updated, req.profile, status);
@@ -190,8 +202,8 @@ export const saveNotes = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { notes } = req.body;
-    const updated = await updateAppointmentNotes(req.profile._id, id, notes);
-    return successResponse(res, 200, 'Private notes updated', updated);
+    const updated = await updateAppointmentNotes(req.profile._id, id, notes, 'PROFESSIONAL');
+    return successResponse(res, 200, 'Private notes updated', toProfessionalAppointment(updated));
   } catch (err) {
     next(err);
   }
@@ -201,7 +213,7 @@ export const createManual = async (req, res, next) => {
   try {
     const newBooking = await createManualBooking(req.profile._id, req.body);
     await emitAppointmentCreated(newBooking, req.profile);
-    return successResponse(res, 201, 'Walk-in booking created successfully', newBooking);
+    return successResponse(res, 201, 'Walk-in booking created successfully', toProfessionalAppointment(newBooking));
   } catch (err) {
     next(err);
   }

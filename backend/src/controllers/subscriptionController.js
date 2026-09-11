@@ -5,7 +5,7 @@ import { successResponse, errorResponse } from '../utils/response.js';
 export const getPlans = async (req, res, next) => {
   try {
     const plans = await subscriptionService.getPlans();
-    return successResponse(res, 200, 'Onboarding pricing plans retrieved', plans);
+    return successResponse(res, 200, 'Pricing plans retrieved', plans);
   } catch (err) {
     next(err);
   }
@@ -27,24 +27,20 @@ export const getMySubscription = async (req, res, next) => {
 
 export const selectPlan = async (req, res, next) => {
   try {
-    const { planKey, paymentMethod } = req.body;
-    if (!planKey) {
-      return errorResponse(res, 400, 'Plan key is required');
-    }
+    const { planKey = 'PRO', billingCycle = 'MONTHLY' } = req.body;
 
     const profile = await ProfessionalProfile.findOne({ userId: req.user._id });
     if (!profile) {
       return errorResponse(res, 404, 'Professional profile not found');
     }
 
-    const sub = await subscriptionService.selectPlan({
-      professionalId: profile._id,
+    const result = await subscriptionService.upgradePlan({
       userId: req.user._id,
       planKey,
-      paymentMethod,
+      billingCycle,
     });
 
-    return successResponse(res, 200, 'Plan activated successfully', sub);
+    return successResponse(res, 200, `Upgraded to ${planKey} successfully`, result);
   } catch (err) {
     next(err);
   }

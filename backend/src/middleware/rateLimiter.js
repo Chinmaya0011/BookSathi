@@ -13,10 +13,10 @@ export const apiLimiter = rateLimit({
   },
 });
 
-// Strict limiter for Auth & Registration endpoints (15 minutes, 10 requests)
+// Strict limiter for Auth & Registration endpoints (15 minutes, 20 requests)
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -65,10 +65,10 @@ export const slotLimiter = rateLimit({
   },
 });
 
-// Appointment Creation & Slot Hold (10 minutes, 5 attempts per IP / User)
+// Appointment Creation & Slot Hold (15 minutes, 15 attempts per IP / User)
 export const bookingLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000,
-  max: 5,
+  windowMs: 15 * 60 * 1000,
+  max: 15,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
@@ -78,7 +78,7 @@ export const bookingLimiter = rateLimit({
   message: {
     success: false,
     code: 'BOOKING_RATE_LIMIT_EXCEEDED',
-    message: 'Too many appointment booking attempts. Please wait 10 minutes before creating another booking.',
+    message: 'Too many appointment booking attempts. Please wait 15 minutes before creating another booking.',
   },
 });
 

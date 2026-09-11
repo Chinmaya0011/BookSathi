@@ -10,7 +10,7 @@ const timeRangeSchema = new mongoose.Schema(
     endTime: {
       type: String,
       required: true,
-      match: [/^([01]\d|2[0-3]):([0-5]\d)$/, 'Time must be in 24-hour format (HH:mm)'],
+      match: [/^([01]\d|2[0-3]):([0-5]\d)$|^24:00$/, 'Time must be in 24-hour format (HH:mm)'],
     },
   },
   { _id: false }

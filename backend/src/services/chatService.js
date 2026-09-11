@@ -538,13 +538,11 @@ export const chatService = {
         createdAt: message.createdAt,
       };
 
-      // Emit to recipient's personal user room
+      // Emit strictly to conversation room and to recipient's personal user room
+      io.to(`conversation:${conversation._id.toString()}`).emit('chat:receive_message', payload);
+      io.to(`conversation:${conversation._id.toString()}`).emit('chat:message', payload);
+      io.to(`user:${recipientId}`).emit('chat:receive_message', payload);
       io.to(`user:${recipientId}`).emit('chat:message', payload);
-
-      // If recipient is admin, also emit to admin channel
-      if (recipientParticipant.role === 'ADMIN') {
-        io.to('role:admin').emit('chat:message', payload);
-      }
     }
 
     // In-app notification for recipient

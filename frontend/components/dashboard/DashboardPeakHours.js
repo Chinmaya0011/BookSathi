@@ -16,15 +16,15 @@ import {
 
 export default function DashboardPeakHours({ hourlyDistribution }) {
   return (
-    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-4 sm:p-6">
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4 sm:p-5">
       <div className="flex items-center gap-2 mb-1">
-        <div className="w-7 h-7 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
-          <Clock className="w-4 h-4" />
+        <div className="w-6 h-6 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
+          <Clock className="w-3.5 h-3.5" />
         </div>
-        <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">Peak Slot Demand</h3>
+        <h3 className="text-sm font-bold text-slate-900 truncate">Peak Slot Demand</h3>
       </div>
-      <p className="text-[11px] sm:text-xs text-slate-500 mb-3 sm:mb-4">
-        Time distribution of client booking demand
+      <p className="text-[11px] sm:text-xs text-slate-500 mb-3">
+        Hourly booking distribution pattern
       </p>
 
       <div className="h-44 w-full">
@@ -37,7 +37,7 @@ export default function DashboardPeakHours({ hourlyDistribution }) {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis
                 dataKey="time"
-                tick={{ fontSize: 9, fill: '#64748b', fontWeight: 600 }}
+                tick={{ fontSize: 9, fill: '#64748b', fontWeight: 500 }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -47,7 +47,7 @@ export default function DashboardPeakHours({ hourlyDistribution }) {
                 tickLine={false}
               />
               <Tooltip />
-              <Bar dataKey="bookings" fill="#8b5cf6" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="bookings" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         ) : (

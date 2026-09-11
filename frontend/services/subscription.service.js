@@ -2,7 +2,7 @@ import api from './api';
 
 export const subscriptionService = {
   /**
-   * Fetch all master pricing plans for onboarding and upgrades
+   * Fetch Free and Pro pricing plans
    */
   async getPlans() {
     const res = await api.get('/subscriptions/plans');
@@ -10,7 +10,7 @@ export const subscriptionService = {
   },
 
   /**
-   * Fetch current doctor's active subscription status & feature entitlements
+   * Fetch current professional's active plan status
    */
   async getMySubscription() {
     const res = await api.get('/subscriptions/my-subscription');
@@ -18,10 +18,18 @@ export const subscriptionService = {
   },
 
   /**
-   * Select or upgrade plan during onboarding or settings
+   * Upgrade to Pro plan
    */
-  async selectPlan({ planKey, paymentMethod = 'FREE' }) {
-    const res = await api.post('/subscriptions/select-plan', { planKey, paymentMethod });
+  async upgradeToPro(billingCycle = 'MONTHLY') {
+    const res = await api.post('/subscriptions/select-plan', {
+      planKey: 'PRO',
+      billingCycle,
+    });
+    return res.data;
+  },
+
+  async selectPlan({ planKey = 'PRO', billingCycle = 'MONTHLY' }) {
+    const res = await api.post('/subscriptions/select-plan', { planKey, billingCycle });
     return res.data;
   },
 };

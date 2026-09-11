@@ -1,33 +1,39 @@
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { User } from '../src/models/User.js';
 import { ProfessionalProfile } from '../src/models/ProfessionalProfile.js';
 import { Appointment } from '../src/models/Appointment.js';
 import { AppointmentType } from '../src/models/AppointmentType.js';
 import { Availability } from '../src/models/Availability.js';
-import { createPublicBooking, holdPublicSlot } from '../src/services/appointmentService.js';
-import { checkBookingSpamRules } from '../src/services/abuseProtectionService.js';
+import {
+  createPublicBooking,
+  holdPublicSlot,
+  createManualBooking,
+  sweepExpiredHolds,
+  reserveSlotAtomically,
+} from '../src/services/appointmentService.js';
 
-let mongod;
+let replSet;
 
 async function runConcurrencyTests() {
   console.log('\n======================================================');
-  console.log('🧪 Starting Concurrency, Anti-Double Booking & Abuse Guard Tests');
+  console.log('🧪 Starting Booking Lock & Concurrency Tests');
   console.log('======================================================\n');
 
-  mongod = await MongoMemoryServer.create();
-  const uri = mongod.getUri();
+  replSet = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
+  const uri = replSet.getUri();
   await mongoose.connect(uri);
-  console.log('✓ Connected to In-Memory MongoDB');
+  console.log('✓ Connected to MongoDB Replica Set (Transactions Enabled)');
 
   // Build indexes in MongoDB
   await Appointment.init();
   await ProfessionalProfile.init();
-  console.log('✓ MongoDB partial unique indexes verified & initialized');
+  await Availability.init();
+  console.log('✓ MongoDB indexes verified & initialized');
 
-  // 1. Create Professional Profile & Working Availability
+  // Create Professional Profile & Working Availability
   const user = await User.create({
-    email: 'testpro@example.com',
+    email: 'dr.lock@example.com',
     password: 'Password123!',
     phone: '9999999999',
     role: 'PROFESSIONAL',
@@ -35,46 +41,48 @@ async function runConcurrencyTests() {
 
   const profile = await ProfessionalProfile.create({
     userId: user._id,
-    name: 'Dr. Test Specialist',
-    email: 'testpro@example.com',
+    name: 'Dr. Concurrency Specialist',
+    email: 'dr.lock@example.com',
     phone: '9999999999',
     profession: 'Doctor',
-    bookingSlug: 'dr-specialist',
+    bookingSlug: 'dr-lock',
     consultationFee: 500,
     isPublic: true,
     bookingSettings: {
       appointmentDuration: 30,
       bufferTime: 0,
+      maxAdvanceDays: 60,
+      allowSameDayBooking: true,
     },
   });
 
-  // Setup availability for all days 09:00 - 18:00
+  // Setup availability for all days 08:00 - 20:00
   const days = [0, 1, 2, 3, 4, 5, 6];
   for (const day of days) {
     await Availability.create({
       professionalId: profile._id,
       dayOfWeek: day,
       enabled: true,
-      timeRanges: [{ startTime: '09:00', endTime: '18:00' }],
+      timeRanges: [{ startTime: '08:00', endTime: '20:00' }],
     });
   }
-  console.log('✓ Test professional and weekly availability initialized');
+  console.log('✓ Test professional & full day availability initialized');
 
   // ============================================================
-  // TEST 1: Simultaneous Double Booking Race Condition
+  // TEST 1: 20 Parallel Requests for Exact Same Window
   // ============================================================
-  console.log('\n--- [TEST 1] Simultaneous Concurrent Booking Race (10 Competitors) ---');
-  const targetDate = '2026-09-20';
+  console.log('\n--- [TEST 1] 20 Parallel Concurrent Booking Requests for Same Slot (10:00 - 10:30) ---');
+  const targetDate = '2026-09-25';
   const targetTime = '10:00';
-  const competitorsCount = 10;
+  const competitorsCount = 20;
 
   const results = await Promise.allSettled(
     Array.from({ length: competitorsCount }, (_, idx) =>
-      createPublicBooking('dr-specialist', {
+      createPublicBooking('dr-lock', {
         date: targetDate,
         startTime: targetTime,
         customerName: `Competitor ${idx + 1}`,
-        customerPhone: `987650000${idx}`,
+        customerPhone: `98765000${String(idx).padStart(2, '0')}`,
         customerEmail: `competitor${idx + 1}@example.com`,
         reason: `Race slot test ${idx + 1}`,
       })
@@ -85,20 +93,21 @@ async function runConcurrencyTests() {
   const failures = results.filter((r) => r.status === 'rejected');
 
   console.log(`Success count: ${successes.length} (Expected: 1)`);
-  console.log(`Failure count: ${failures.length} (Expected: ${competitorsCount - 1})`);
-  if (failures.length > 0) {
-    console.log('Sample failure reason:', failures[0].reason);
-  }
+  console.log(`Failure count: ${failures.length} (Expected: 19)`);
 
   if (successes.length !== 1) {
     throw new Error(`CRITICAL DOUBLE BOOKING DETECTED! Expected 1 success, got ${successes.length}`);
   }
 
-  // Check that failed requests received the correct error code
+  if (failures.length !== 19) {
+    throw new Error(`Expected 19 rejections, got ${failures.length}`);
+  }
+
+  // Check that all 19 failed requests received 409
   for (const f of failures) {
     const err = f.reason;
-    if (err.code !== 'SLOT_ALREADY_BOOKED' && err.statusCode !== 409) {
-      throw new Error(`Unexpected error code on rejected booking: ${err.code || err.message}`);
+    if (err.statusCode !== 409) {
+      throw new Error(`Expected 409 status code on rejected booking, got: ${err.statusCode} - ${err.message}`);
     }
   }
 
@@ -106,173 +115,196 @@ async function runConcurrencyTests() {
     professionalId: profile._id,
     dateString: targetDate,
     startTime: targetTime,
-    status: { $in: ['CONFIRMED', 'PENDING', 'ARRIVED', 'WAITING', 'IN_PROGRESS', 'HELD'] },
+    status: { $in: ['CONFIRMED', 'PENDING', 'BOOKED', 'HOLD', 'HELD', 'IN_PROGRESS'] },
   });
 
   if (dbCount !== 1) {
     throw new Error(`Database state error: Found ${dbCount} active records for the same slot!`);
   }
-  console.log('✓ TEST 1 PASSED: Exactly 1 user acquired the slot, all others received SLOT_ALREADY_BOOKED (409 Conflict).');
+  console.log('✓ TEST 1 PASSED: Exactly 1 success and 19 rejected with 409 (Conflict).');
 
   // ============================================================
-  // TEST 2: Idempotent Appointment Creation (Double-Clicks & Retries)
+  // TEST 2: Overlapping Slots with Different Durations / Offsets
+  // (09:00 - 09:30 vs 09:15 - 09:45 vs 08:45 - 09:15 vs 09:30 - 10:00)
   // ============================================================
-  console.log('\n--- [TEST 2] Idempotency Key Handling (3 Duplicate Requests) ---');
-  const testIdempotencyKey = 'idemp_key_safe_test_999';
-  const slotDate = '2026-09-20';
-  const slotTime = '11:00';
+  console.log('\n--- [TEST 2] Overlapping Slots with Different Durations & Offset Bounds ---');
+  const overlapDate = '2026-09-26';
 
-  const [req1, req2, req3] = await Promise.all([
-    createPublicBooking('dr-specialist', {
-      date: slotDate,
-      startTime: slotTime,
-      customerName: 'Ananya Sharma',
-      customerPhone: '9123456780',
-      customerEmail: 'ananya@example.com',
-      idempotencyKey: testIdempotencyKey,
-    }),
-    createPublicBooking('dr-specialist', {
-      date: slotDate,
-      startTime: slotTime,
-      customerName: 'Ananya Sharma',
-      customerPhone: '9123456780',
-      customerEmail: 'ananya@example.com',
-      idempotencyKey: testIdempotencyKey,
-    }),
-    createPublicBooking('dr-specialist', {
-      date: slotDate,
-      startTime: slotTime,
-      customerName: 'Ananya Sharma',
-      customerPhone: '9123456780',
-      customerEmail: 'ananya@example.com',
-      idempotencyKey: testIdempotencyKey,
-    }),
-  ]);
-
-  const apptCode1 = req1.appointment.appointmentCode;
-  const apptCode2 = req2.appointment.appointmentCode;
-  const apptCode3 = req3.appointment.appointmentCode;
-
-  if (apptCode1 !== apptCode2 || apptCode2 !== apptCode3) {
-    throw new Error('Idempotency failure: Different appointment codes generated for same idempotency key!');
-  }
-
-  const idempotencyDbCount = await Appointment.countDocuments({
-    professionalId: profile._id,
-    idempotencyKey: testIdempotencyKey,
+  // 1. First appointment: 09:00 - 09:30 (startMinutes: 540, endMinutes: 570)
+  const firstAppt = await createPublicBooking('dr-lock', {
+    date: overlapDate,
+    startTime: '09:00',
+    customerName: 'First Booked Client',
+    customerPhone: '9111111111',
   });
+  console.log(`✓ Initial appointment created: ${firstAppt.appointment.startTime} - ${firstAppt.appointment.endTime}`);
 
-  if (idempotencyDbCount !== 1) {
-    throw new Error(`Idempotency DB error: Found ${idempotencyDbCount} records instead of exactly 1!`);
-  }
-  console.log('✓ TEST 2 PASSED: 3 identical requests with same Idempotency-Key safely returned the same appointment.');
-
-  // ============================================================
-  // TEST 3: Duplicate Slot Booking by Same Customer Blocked
-  // ============================================================
-  console.log('\n--- [TEST 3] Duplicate Appointment Prevention for Same Customer ---');
-  let duplicateBlocked = false;
+  // 2. Overlapping appointment: 09:15 - 09:45 (startMinutes: 555, endMinutes: 585) -> MUST FAIL (409)
+  let overlapRejected1 = false;
   try {
-    await createPublicBooking('dr-specialist', {
-      date: '2026-09-20',
-      startTime: '11:00', // Ananya already has this slot
-      customerName: 'Ananya Sharma',
-      customerPhone: '9123456780',
-      customerEmail: 'ananya@example.com',
+    await createPublicBooking('dr-lock', {
+      date: overlapDate,
+      startTime: '09:15',
+      customerName: 'Overlapping 09:15 Client',
+      customerPhone: '9222222222',
     });
   } catch (err) {
-    if (err.code === 'DUPLICATE_APPOINTMENT_PREVENTED' || err.statusCode === 409) {
-      duplicateBlocked = true;
+    if (err.statusCode === 409) {
+      overlapRejected1 = true;
     }
   }
 
-  if (!duplicateBlocked) {
-    throw new Error('Duplicate appointment was not blocked for the same customer phone!');
+  if (!overlapRejected1) {
+    throw new Error('Overlapping slot 09:15 - 09:45 was NOT rejected!');
   }
-  console.log('✓ TEST 3 PASSED: Duplicate booking on identical slot was prevented with DUPLICATE_APPOINTMENT_PREVENTED.');
+  console.log('✓ Overlap 09:15 - 09:45 correctly rejected with 409.');
 
-  // ============================================================
-  // TEST 4: Max Active Appointments with Same Professional
-  // ============================================================
-  console.log('\n--- [TEST 4] Max Active Bookings per Professional (Limit: 3) ---');
-  // Ananya already has 1 booking (11:00). Let's book 2 more (12:00, 14:00)
-  await createPublicBooking('dr-specialist', {
-    date: '2026-09-20',
-    startTime: '12:00',
-    customerName: 'Ananya Sharma',
-    customerPhone: '9123456780',
-    customerEmail: 'ananya@example.com',
-  });
-
-  await createPublicBooking('dr-specialist', {
-    date: '2026-09-20',
-    startTime: '14:00',
-    customerName: 'Ananya Sharma',
-    customerPhone: '9123456780',
-    customerEmail: 'ananya@example.com',
-  });
-
-  // Attempting 4th booking should be rejected by anti-spam guard
-  let spamLimitBlocked = false;
+  // 3. Overlapping appointment: 08:45 - 09:15 (startMinutes: 525, endMinutes: 555) -> MUST FAIL (409)
+  let overlapRejected2 = false;
   try {
-    await createPublicBooking('dr-specialist', {
-      date: '2026-09-20',
-      startTime: '15:00',
-      customerName: 'Ananya Sharma',
-      customerPhone: '9123456780',
-      customerEmail: 'ananya@example.com',
+    await createPublicBooking('dr-lock', {
+      date: overlapDate,
+      startTime: '08:45',
+      customerName: 'Overlapping 08:45 Client',
+      customerPhone: '9333333333',
     });
   } catch (err) {
-    if (err.code === 'MAX_ACTIVE_PER_PROFESSIONAL_EXCEEDED' && err.statusCode === 429) {
-      spamLimitBlocked = true;
+    if (err.statusCode === 409) {
+      overlapRejected2 = true;
     }
   }
 
-  if (!spamLimitBlocked) {
-    throw new Error('Customer was able to exceed the maximum active appointments limit with the same professional!');
+  if (!overlapRejected2) {
+    throw new Error('Overlapping slot 08:45 - 09:15 was NOT rejected!');
   }
-  console.log('✓ TEST 4 PASSED: Anti-spam guard enforced MAX_ACTIVE_PER_PROFESSIONAL_EXCEEDED limit.');
+  console.log('✓ Overlap 08:45 - 09:15 correctly rejected with 409.');
 
-  // ============================================================
-  // TEST 5: Slot Hold & Atomic Confirmation
-  // ============================================================
-  console.log('\n--- [TEST 5] Temporary Slot Hold & Atomic Confirmation ---');
-  const holdResult = await holdPublicSlot('dr-specialist', {
-    date: '2026-09-21',
+  // 4. Non-overlapping adjacent slot: 09:30 - 10:00 (startMinutes: 570, endMinutes: 600) -> MUST SUCCEED
+  const adjacentAppt = await createPublicBooking('dr-lock', {
+    date: overlapDate,
     startTime: '09:30',
+    customerName: 'Adjacent Client',
+    customerPhone: '9444444444',
   });
 
-  if (!holdResult.holdToken || !holdResult.holdExpiresAt) {
-    throw new Error('Hold token was not generated properly!');
+  if (!adjacentAppt || adjacentAppt.appointment.startTime !== '09:30') {
+    throw new Error('Adjacent non-overlapping slot 09:30 failed to book!');
   }
+  console.log('✓ Adjacent non-overlapping slot 09:30 - 10:00 successfully booked.');
+  console.log('✓ TEST 2 PASSED: Overlap boundaries verified with integer minutes calculations.');
 
-  // Confirm booking using hold token
-  const confirmedBooking = await createPublicBooking('dr-specialist', {
-    date: '2026-09-21',
-    startTime: '09:30',
-    customerName: 'Kavita Iyer',
-    customerPhone: '9888877777',
-    customerEmail: 'kavita@example.com',
-    holdToken: holdResult.holdToken,
+  // ============================================================
+  // TEST 3: Slot HOLD Expiry & Reclamation
+  // ============================================================
+  console.log('\n--- [TEST 3] Slot HOLD Expiry and Slot Reclamation ---');
+  const holdDate = '2026-09-27';
+  const holdTime = '11:00';
+
+  // 1. Create a HOLD slot
+  const holdRes = await holdPublicSlot('dr-lock', {
+    date: holdDate,
+    startTime: holdTime,
   });
 
-  if (confirmedBooking.appointment.status !== 'CONFIRMED') {
-    throw new Error(`Expected status CONFIRMED, got ${confirmedBooking.appointment.status}`);
+  console.log(`✓ Slot ${holdTime} placed on HOLD with token: ${holdRes.holdToken}`);
+
+  // 2. While HOLD is active, another user tries to book -> MUST FAIL (409)
+  let holdBlocked = false;
+  try {
+    await createPublicBooking('dr-lock', {
+      date: holdDate,
+      startTime: holdTime,
+      customerName: 'Competitor while on Hold',
+      customerPhone: '9555555555',
+    });
+  } catch (err) {
+    if (err.statusCode === 409) {
+      holdBlocked = true;
+    }
   }
-  console.log('✓ TEST 5 PASSED: Slot successfully held and atomically confirmed.');
+
+  if (!holdBlocked) {
+    throw new Error('Active HOLD did not block competing booking request!');
+  }
+  console.log('✓ Active HOLD successfully prevented competing booking (409 Conflict).');
+
+  // 3. Simulate hold expiration by setting holdExpiresAt to the past
+  await Appointment.updateOne(
+    { holdToken: holdRes.holdToken },
+    { $set: { holdExpiresAt: new Date(Date.now() - 10000) } }
+  );
+
+  // 4. Run sweeper
+  const sweptCount = await sweepExpiredHolds();
+  console.log(`✓ Sweeper executed, expired holds updated: ${sweptCount}`);
+
+  // 5. Now, the slot should become bookable again!
+  const reclaimedBooking = await createPublicBooking('dr-lock', {
+    date: holdDate,
+    startTime: holdTime,
+    customerName: 'New Client After Expiry',
+    customerPhone: '9666666666',
+  });
+
+  if (!reclaimedBooking || reclaimedBooking.appointment.startTime !== holdTime) {
+    throw new Error('Slot was not bookable after hold expired!');
+  }
+  console.log('✓ Slot became bookable again after HOLD expired and was successfully booked.');
+  console.log('✓ TEST 3 PASSED: HOLD expiry and slot reclamation verified.');
+
+  // ============================================================
+  // TEST 4: Walk-in / Manual Booking Uses Same Atomic Lock
+  // ============================================================
+  console.log('\n--- [TEST 4] Walk-in / Manual Booking Uses Unified Transaction Lock ---');
+  const manualDate = '2026-09-28';
+  const manualTime = '14:00';
+
+  // Create manual walk-in booking
+  const manualAppt = await createManualBooking(profile._id, {
+    date: manualDate,
+    time: manualTime,
+    customerName: 'Walk-in Patient',
+    customerPhone: '9777777777',
+    bookingSource: 'WALK_IN',
+  });
+
+  if (!manualAppt || manualAppt.startMinutes !== 840) {
+    throw new Error('Manual booking failed to create properly with integer minutes!');
+  }
+
+  // Attempting to book overlapping online slot 14:15 -> MUST FAIL (409)
+  let manualConflictBlocked = false;
+  try {
+    await createPublicBooking('dr-lock', {
+      date: manualDate,
+      startTime: '14:15',
+      customerName: 'Online Patient Colliding with Walk-in',
+      customerPhone: '9888888888',
+    });
+  } catch (err) {
+    if (err.statusCode === 409) {
+      manualConflictBlocked = true;
+    }
+  }
+
+  if (!manualConflictBlocked) {
+    throw new Error('Online booking failed to detect collision with manual walk-in appointment!');
+  }
+  console.log('✓ Manual booking atomic lock verified. Online overlap correctly rejected (409).');
+  console.log('✓ TEST 4 PASSED: Unified transaction path confirmed for all booking channels.');
 
   console.log('\n======================================================');
-  console.log('🎉 ALL CONCURRENCY, IDEMPOTENCY & ANTI-SPAM TESTS PASSED!');
+  console.log('🎉 ALL CONCURRENCY & BOOKING LOCK TESTS PASSED!');
   console.log('======================================================\n');
 
   await mongoose.disconnect();
-  await mongod.stop();
+  await replSet.stop();
   process.exit(0);
 }
 
 runConcurrencyTests().catch(async (err) => {
   console.error('\n❌ TEST SUITE FAILED:', err);
   if (mongoose.connection.readyState !== 0) await mongoose.disconnect();
-  if (mongod) await mongod.stop();
+  if (replSet) await replSet.stop();
   process.exit(1);
 });

@@ -1,9 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  Sparkles,
   CheckCircle2,
   Circle,
   ArrowRight,
@@ -11,7 +10,10 @@ import {
   Clock,
   User,
   Camera,
-  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  X,
 } from 'lucide-react';
 import { useSetupStatusStore } from '@/stores/useSetupStatusStore';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +22,8 @@ import { cn } from '@/lib/utils';
 export default function ProfileCompletionCard() {
   const { setupStatus, loading } = useSetupStatusStore();
   const { profile } = useAuth();
+  const [collapsed, setCollapsed] = useState(true);
+  const [dismissed, setDismissed] = useState(false);
 
   const completionData = useMemo(() => {
     if (!setupStatus && !profile) return null;
@@ -35,17 +39,17 @@ export default function ProfileCompletionCard() {
     const steps = [
       {
         id: 'services',
-        title: 'Services & Tariffs',
-        desc: 'Add consultation types, fee & duration',
+        title: 'Services & Fees',
+        desc: 'Add consultation types and pricing',
         path: '/dashboard/services',
         icon: Briefcase,
         isCompleted: hasServices,
-        actionLabel: 'Add Services',
+        actionLabel: 'Add Service',
       },
       {
         id: 'availability',
-        title: 'Weekly Shifts',
-        desc: 'Configure consultation working hours',
+        title: 'Working Hours',
+        desc: 'Set your weekly calendar availability',
         path: '/dashboard/availability',
         icon: Clock,
         isCompleted: hasAvailability,
@@ -53,8 +57,8 @@ export default function ProfileCompletionCard() {
       },
       {
         id: 'profile',
-        title: 'Practice Bio & City',
-        desc: 'Add specialization, firm & address',
+        title: 'Practice Details',
+        desc: 'Add specialization, address & city',
         path: '/dashboard/profile',
         icon: User,
         isCompleted: hasProfileDetails,
@@ -62,12 +66,12 @@ export default function ProfileCompletionCard() {
       },
       {
         id: 'photo',
-        title: 'Profile Picture',
-        desc: 'Upload photo for booking slips & QR',
+        title: 'Profile Photo',
+        desc: 'Upload photo for your public page',
         path: '/dashboard/profile',
         icon: Camera,
         isCompleted: hasPhoto,
-        actionLabel: 'Upload Photo',
+        actionLabel: 'Upload',
       },
     ];
 
@@ -79,120 +83,101 @@ export default function ProfileCompletionCard() {
     return { steps, completedCount, totalCount, percentage, isComplete };
   }, [setupStatus, profile]);
 
-  if (loading || !completionData || completionData.isComplete) {
+  if (dismissed || loading || !completionData || completionData.isComplete) {
     return null;
   }
 
   const { steps, completedCount, totalCount, percentage } = completionData;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500/10 via-amber-50/70 to-indigo-50/60 border-2 border-amber-300/90 p-4 sm:p-6 shadow-sm transition-all animate-in fade-in slide-in-from-top-2 duration-300">
-      {/* Decorative Glow */}
-      <div className="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-amber-400/20 blur-2xl pointer-events-none" />
-
-      <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-amber-200/70 pb-4">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-600 text-white flex items-center justify-center font-bold shadow-md shadow-amber-500/30 shrink-0 mt-0.5">
-            <Sparkles className="w-5 h-5 animate-pulse" />
+    <div className="bg-white rounded-2xl border border-indigo-100 p-4 shadow-2xs font-sans transition-all duration-200">
+      {/* Header Bar */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <Sparkles className="w-3.5 h-3.5" />
           </div>
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
-                Complete Your Practice Setup
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+                Setup Checklist ({completedCount}/{totalCount} Completed)
               </h3>
-              <span className="text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-2xs">
-                {percentage}% Done ({completedCount}/{totalCount} Steps)
+              <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-indigo-50 text-indigo-700">
+                {percentage}% Ready
               </span>
             </div>
-            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-              Complete these steps so clients can book appointments online on your public page (<span className="font-mono text-indigo-700 font-semibold break-all">/book/{profile?.bookingSlug || 'your-slug'}</span>).
-            </p>
           </div>
         </div>
 
-        {/* Progress Bar Container */}
-        <div className="w-full lg:w-48 shrink-0 space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] font-bold">
-            <span className="text-slate-600">Profile Readiness</span>
-            <span className="text-amber-900 font-mono">{percentage}%</span>
-          </div>
-          <div className="w-full bg-slate-200/90 h-2.5 rounded-full overflow-hidden p-0.5 border border-amber-300/80">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setCollapsed(!collapsed)}
+            className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 px-2 py-1 rounded-lg hover:bg-indigo-50 flex items-center gap-1 transition-colors cursor-pointer"
+          >
+            <span>{collapsed ? 'View Steps' : 'Hide'}</span>
+            {collapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDismissed(true)}
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            title="Dismiss checklist"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Expanded Step List */}
+      {!collapsed && (
+        <div className="mt-3 pt-3 border-t border-slate-100 space-y-2 animate-in fade-in-50 duration-150">
+          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-amber-500 to-indigo-600 transition-all duration-700 ease-out"
+              className="bg-indigo-600 h-full rounded-full transition-all duration-500"
               style={{ width: `${percentage}%` }}
             />
           </div>
-        </div>
-      </div>
 
-      {/* Interactive Step Cards Grid */}
-      <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4">
-        {steps.map((step) => {
-          const Icon = step.icon;
-          return (
-            <div
-              key={step.id}
-              className={cn(
-                'p-3.5 rounded-2xl border transition-all flex flex-col justify-between active:scale-98',
-                step.isCompleted
-                  ? 'bg-white/90 border-emerald-200/90 shadow-2xs'
-                  : 'bg-white border-amber-300/90 shadow-xs hover:border-indigo-400 hover:shadow-md'
-              )}
-            >
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div
-                    className={cn(
-                      'w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs',
-                      step.isCompleted
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-amber-100 text-amber-800'
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+            {steps.map((step) => {
+              const Icon = step.icon;
+              return (
+                <div
+                  key={step.id}
+                  className={cn(
+                    'p-3 rounded-xl border text-xs flex items-center justify-between gap-2 transition-colors',
+                    step.isCompleted
+                      ? 'bg-emerald-50/40 border-emerald-100 text-slate-700'
+                      : 'bg-slate-50 border-slate-200 text-slate-800'
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    {step.isCompleted ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    ) : (
+                      <Icon className="w-4 h-4 text-indigo-600 shrink-0" />
                     )}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
+                    <div className="min-w-0">
+                      <p className="font-bold truncate text-[11px]">{step.title}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{step.desc}</p>
+                    </div>
                   </div>
-                  {step.isCompleted ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Done
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                      <Circle className="w-2.5 h-2.5 text-amber-600 fill-amber-600" /> Pending
-                    </span>
+
+                  {!step.isCompleted && (
+                    <Link
+                      href={step.path}
+                      className="px-2 py-1 rounded-md bg-indigo-600 text-white font-bold text-[10px] hover:bg-indigo-700 shrink-0"
+                    >
+                      {step.actionLabel}
+                    </Link>
                   )}
                 </div>
-
-                <h4 className="text-xs font-bold text-slate-900 leading-snug truncate">
-                  {step.title}
-                </h4>
-                <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
-                  {step.desc}
-                </p>
-              </div>
-
-              <div className="pt-3 mt-2 border-t border-slate-100">
-                {step.isCompleted ? (
-                  <Link
-                    href={step.path}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-indigo-600 transition-colors"
-                  >
-                    <span>Edit details</span>
-                    <ChevronRight className="w-3 h-3" />
-                  </Link>
-                ) : (
-                  <Link
-                    href={step.path}
-                    className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-indigo-600 active:scale-95 text-white text-xs font-bold transition-all shadow-2xs group cursor-pointer"
-                  >
-                    <span>{step.actionLabel}</span>
-                    <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform text-amber-300" />
-                  </Link>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

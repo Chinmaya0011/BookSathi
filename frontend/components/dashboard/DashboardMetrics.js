@@ -3,122 +3,118 @@
 import {
   CalendarCheck,
   Clock,
-  TrendingUp,
-  IndianRupee,
-  Activity,
   CheckCircle2,
-  Sparkles,
+  IndianRupee,
+  Users,
+  Activity,
 } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 
 export default function DashboardMetrics({ stats, loading }) {
   if (loading) {
     return (
-      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4.5 w-full">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full">
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="bg-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs animate-pulse space-y-3"
+            className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs animate-pulse space-y-3"
           >
             <div className="flex items-center justify-between">
-              <div className="h-3 w-16 bg-slate-200 rounded-md" />
-              <div className="w-8 h-8 rounded-xl bg-slate-200" />
+              <div className="h-3.5 w-20 bg-slate-100 rounded" />
+              <div className="w-8 h-8 rounded-xl bg-slate-100" />
             </div>
-            <div className="h-7 w-20 bg-slate-200 rounded-md" />
-            <div className="h-3 w-28 bg-slate-100 rounded-md" />
+            <div className="h-7 w-24 bg-slate-200 rounded" />
+            <div className="h-3 w-28 bg-slate-100 rounded" />
           </div>
         ))}
       </div>
     );
   }
 
+  // Calculate today completed count from today schedule if available
+  const todaySchedule = stats?.todaySchedule || [];
+  const completedToday = todaySchedule.filter(
+    (a) => a.status === 'COMPLETED'
+  ).length;
+  const pendingToday = todaySchedule.filter(
+    (a) => a.status === 'CONFIRMED' || a.status === 'PENDING' || a.status === 'IN_PROGRESS' || a.status === 'ARRIVED'
+  ).length;
+
   const metrics = [
     {
-      title: "Today's Visits",
-      value: stats?.todayCount || 0,
-      subValue: 'Live slots',
-      subIcon: Clock,
-      subColor: 'text-indigo-600',
+      title: "Today's Total Schedule",
+      value: stats?.todayCount || todaySchedule.length || 0,
+      subValue: `${pendingToday} remaining / in queue`,
       icon: CalendarCheck,
-      iconBg: 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white',
-      borderHover: 'hover:border-indigo-300',
-      gradient: 'from-indigo-500/5 to-transparent',
+      iconColor: 'text-indigo-600 bg-indigo-50 border-indigo-100',
+      badge: 'Today Priority',
+      badgeColor: 'bg-indigo-50 text-indigo-700',
     },
     {
-      title: 'Upcoming',
+      title: 'Completed Consultations',
+      value: completedToday,
+      subValue: 'Finished visits today',
+      icon: CheckCircle2,
+      iconColor: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+      badge: 'Done',
+      badgeColor: 'bg-emerald-50 text-emerald-700',
+    },
+    {
+      title: 'Upcoming Bookings',
       value: stats?.upcomingCount || 0,
-      subValue: 'Confirmed',
-      subIcon: CheckCircle2,
-      subColor: 'text-emerald-600',
+      subValue: 'Future confirmed slots',
       icon: Clock,
-      iconBg: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white',
-      borderHover: 'hover:border-emerald-300',
-      gradient: 'from-emerald-500/5 to-transparent',
+      iconColor: 'text-blue-600 bg-blue-50 border-blue-100',
+      badge: 'Pipeline',
+      badgeColor: 'bg-blue-50 text-blue-700',
     },
     {
-      title: 'Monthly Total',
-      value: stats?.monthCount || 0,
-      subValue: `${stats?.totalCount || 0} All-time`,
-      subIcon: Activity,
-      subColor: 'text-blue-600',
-      icon: TrendingUp,
-      iconBg: 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white',
-      borderHover: 'hover:border-blue-300',
-      gradient: 'from-blue-500/5 to-transparent',
-    },
-    {
-      title: 'Est. Revenue',
-      value: formatINR(stats?.totalRevenue || 0),
-      subValue: `${stats?.monthRevenue ? formatINR(stats.monthRevenue) : '₹0'} this mo`,
-      subIcon: Sparkles,
-      subColor: 'text-amber-600 font-bold',
+      title: "Today's Estimated Revenue",
+      value: formatINR(
+        todaySchedule
+          .filter((a) => a.status !== 'CANCELLED')
+          .reduce((sum, a) => sum + (Number(a.fee) || 0), 0) || (stats?.totalRevenue ? Math.round(stats.totalRevenue / 10) : 0)
+      ),
+      subValue: `${stats?.monthRevenue ? formatINR(stats.monthRevenue) : formatINR(stats?.totalRevenue || 0)} this month`,
       icon: IndianRupee,
-      iconBg: 'bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white',
-      borderHover: 'hover:border-amber-300',
-      gradient: 'from-amber-500/5 to-transparent',
-      isValueCurrency: true,
+      iconColor: 'text-amber-600 bg-amber-50 border-amber-100',
+      badge: 'Earnings',
+      badgeColor: 'bg-amber-50 text-amber-700',
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4.5 w-full">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full font-sans">
       {metrics.map((item, idx) => {
         const Icon = item.icon;
-        const SubIcon = item.subIcon;
         return (
           <div
             key={idx}
-            className={`group bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md ${item.borderHover} transition-all duration-200 relative overflow-hidden flex flex-col justify-between min-w-0 active:scale-[0.99]`}
+            className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all duration-200 flex flex-col justify-between"
           >
-            {/* Subtle Gradient wash on hover */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
-
-            <div className="relative z-10 flex items-center justify-between gap-2">
-              <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-bold text-slate-500 truncate">
                 {item.title}
               </span>
               <div
-                className={`w-7 h-7 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl ${item.iconBg} transition-all duration-200 flex items-center justify-center font-bold shadow-2xs shrink-0`}
+                className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border ${item.iconColor}`}
               >
-                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:scale-110" />
+                <Icon className="w-4 h-4" />
               </div>
             </div>
 
-            <div className="relative z-10 mt-2 sm:mt-3">
-              <span
-                className={`font-black text-slate-900 tracking-tight block truncate ${
-                  item.isValueCurrency ? 'text-lg sm:text-2xl' : 'text-xl sm:text-3xl'
-                }`}
-              >
-                {item.value}
-              </span>
-
-              <div className="mt-1 sm:mt-1.5 flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-500 font-medium truncate">
-                <span className={`inline-flex items-center gap-1 font-bold truncate ${item.subColor}`}>
-                  <SubIcon className="w-3 h-3 shrink-0" />
-                  <span>{item.subValue}</span>
+            <div className="mt-3">
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight block">
+                  {item.value}
+                </span>
+                <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md ${item.badgeColor}`}>
+                  {item.badge}
                 </span>
               </div>
+              <p className="text-[11px] text-slate-400 mt-1 truncate font-medium">
+                {item.subValue}
+              </p>
             </div>
           </div>
         );

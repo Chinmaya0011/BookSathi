@@ -1,6 +1,22 @@
 'use client';
 
-import { Check, RefreshCw, Sun, Sunset, Moon, Clock, CalendarDays, Sparkles, Building2 } from 'lucide-react';
+import { useState } from 'react';
+import {
+  Check,
+  RefreshCw,
+  Sun,
+  Sunset,
+  Moon,
+  Clock,
+  CalendarDays,
+  Sparkles,
+  Building2,
+  Video,
+  PhoneCall,
+  Calendar as CalendarIcon,
+  ChevronRight,
+  ChevronLeft,
+} from 'lucide-react';
 import { formatINR, formatDisplayDate, cn } from '@/lib/utils';
 
 function SlotButton({ slot, onSelect }) {
@@ -10,12 +26,12 @@ function SlotButton({ slot, onSelect }) {
   if (!isAvailable) {
     return (
       <div
-        className="py-2.5 px-2 rounded-xl border border-slate-200/80 bg-slate-100/80 text-slate-400 text-xs font-semibold text-center select-none cursor-not-allowed flex flex-col items-center justify-center min-h-[58px] transition-all opacity-75 shadow-2xs"
+        className="py-2.5 px-2 rounded-2xl border border-slate-200/60 bg-slate-100/60 text-slate-400 text-xs font-semibold text-center select-none cursor-not-allowed flex flex-col items-center justify-center min-h-[58px] opacity-60 shadow-2xs"
         title={`${slot.time12} is ${label}`}
         aria-disabled="true"
       >
         <span className="line-through text-slate-400 font-medium text-xs">{slot.time12}</span>
-        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1 px-2 py-0.5 bg-slate-200/80 rounded-md">
+        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1 px-1.5 py-0.5 bg-slate-200/70 rounded">
           {label}
         </span>
       </div>
@@ -26,11 +42,11 @@ function SlotButton({ slot, onSelect }) {
     <button
       type="button"
       onClick={() => onSelect(slot.time)}
-      className="py-2.5 px-2 rounded-xl border border-emerald-300/80 bg-emerald-50/80 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-emerald-950 text-xs font-bold transition-all text-center group active:scale-95 shadow-xs cursor-pointer flex flex-col items-center justify-center min-h-[58px]"
+      className="py-2.5 px-2 rounded-2xl border border-emerald-300/80 bg-gradient-to-b from-emerald-50/90 to-emerald-100/40 hover:from-emerald-600 hover:to-teal-600 hover:text-white hover:border-emerald-600 hover:shadow-lg hover:shadow-emerald-600/20 text-emerald-950 text-xs font-bold transition-all text-center group active:scale-95 shadow-xs cursor-pointer flex flex-col items-center justify-center min-h-[58px]"
     >
       <span className="group-hover:text-white font-extrabold text-xs tracking-tight">{slot.time12}</span>
       <span className="text-[10px] font-semibold text-emerald-700 group-hover:text-emerald-100 mt-1 flex items-center gap-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 group-hover:bg-emerald-200 inline-block animate-pulse"></span>
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 group-hover:bg-emerald-200 inline-block animate-pulse" />
         Available
       </span>
     </button>
@@ -48,6 +64,8 @@ export default function BookingSlotPicker({
   groupedSlots,
   onSlotSelect,
 }) {
+  const [showFullCalendar, setShowFullCalendar] = useState(false);
+
   const totalSlotsCount =
     (groupedSlots?.morning?.length || 0) +
     (groupedSlots?.afternoon?.length || 0) +
@@ -58,60 +76,116 @@ export default function BookingSlotPicker({
     (groupedSlots?.afternoon?.filter((s) => s.available)?.length || 0) +
     (groupedSlots?.evening?.filter((s) => s.available)?.length || 0);
 
+  // Generate 7 upcoming days for the quick horizontal pill strip
+  const today = new Date();
+  const next7Days = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(today.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0];
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const dayNum = d.getDate();
+    const monthName = d.toLocaleDateString('en-US', { month: 'short' });
+    const isToday = i === 0;
+    const isTomorrow = i === 1;
+
+    return {
+      dateStr,
+      dayName,
+      dayNum,
+      monthName,
+      label: isToday ? 'Today' : isTomorrow ? 'Tomorrow' : dayName,
+    };
+  });
+
   return (
-    <div className="p-5 sm:p-8 space-y-7 animate-in fade-in duration-200">
+    <div className="p-5 sm:p-7 space-y-7 animate-in fade-in duration-200">
       {/* 1. Consultation Service Selection */}
       {appointmentTypes?.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 inline-flex items-center justify-center text-[10px] font-black">1</span>
+            <label className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <span className="w-5 h-5 rounded-lg bg-indigo-600 text-white inline-flex items-center justify-center text-[10px] font-black shadow-xs shadow-indigo-600/30">
+                1
+              </span>
               <span>Select Consultation Service</span>
             </label>
             <span className="text-[11px] text-slate-500 font-medium">
-              {appointmentTypes.length} service{appointmentTypes.length > 1 ? 's' : ''} offered
+              {appointmentTypes.length} option{appointmentTypes.length > 1 ? 's' : ''}
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {appointmentTypes.map((t) => {
               const isSelected = selectedType?._id === t._id;
+              const isVideo = t.type === 'VIDEO' || t.mode === 'ONLINE';
+              const isPhone = t.type === 'PHONE' || t.mode === 'PHONE';
+
               return (
                 <button
                   key={t._id}
                   type="button"
                   onClick={() => onTypeSelect(t)}
                   className={cn(
-                    'p-4 rounded-2xl border text-left transition-all flex items-start justify-between relative group cursor-pointer shadow-2xs',
+                    'p-4 rounded-2xl border text-left transition-all duration-200 flex items-start justify-between relative group cursor-pointer shadow-xs',
                     isSelected
-                      ? 'bg-indigo-50/90 border-indigo-600 ring-2 ring-indigo-600/25 shadow-sm'
-                      : 'bg-white border-slate-200 hover:border-indigo-300 hover:bg-slate-50/70'
+                      ? 'bg-gradient-to-br from-indigo-50/90 via-violet-50/50 to-white border-indigo-600 ring-2 ring-indigo-600/30 shadow-md shadow-indigo-500/10'
+                      : 'bg-white border-slate-200/90 hover:border-indigo-300 hover:bg-slate-50/80'
                   )}
                 >
                   <div className="min-w-0 pr-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">{t.name}</h4>
                       {t.isDefault && (
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800">
+                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800">
                           Popular
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
-                      <Clock className="w-3 natural text-indigo-400 shrink-0" />
-                      <span>{t.duration} mins • 1-on-1 Consultation</span>
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="text-xs sm:text-sm font-black text-indigo-700 block">
-                      {formatINR(t.fee)}
-                    </span>
-                    {isSelected && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-indigo-600 bg-indigo-100/80 px-1.5 py-0.5 rounded-full mt-1">
-                        <Check className="w-3 h-3 stroke-[3]" />
-                        <span>Selected</span>
+                    <div className="flex items-center gap-2 mt-1.5 text-[11px] text-slate-500">
+                      <span className="flex items-center gap-1 font-medium">
+                        <Clock className="w-3 h-3 text-indigo-500" />
+                        <span>{t.duration || 30} mins</span>
                       </span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1 font-medium">
+                        {isVideo ? (
+                          <>
+                            <Video className="w-3 h-3 text-indigo-500" />
+                            <span>Video Consultation</span>
+                          </>
+                        ) : isPhone ? (
+                          <>
+                            <PhoneCall className="w-3 h-3 text-indigo-500" />
+                            <span>Phone Call</span>
+                          </>
+                        ) : (
+                          <>
+                            <Building2 className="w-3 h-3 text-indigo-500" />
+                            <span>In-Clinic Visit</span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+
+                    {t.description && (
+                      <p className="text-[11px] text-slate-500 mt-2 line-clamp-2 leading-relaxed">
+                        {t.description}
+                      </p>
                     )}
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <div className="text-sm sm:text-base font-black text-slate-900">
+                      {formatINR(t.fee || 500)}
+                    </div>
+                    <div
+                      className={cn(
+                        'w-5 h-5 rounded-full flex items-center justify-center mt-2 ml-auto transition-all',
+                        isSelected ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-transparent'
+                      )}
+                    >
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    </div>
                   </div>
                 </button>
               );
@@ -120,148 +194,174 @@ export default function BookingSlotPicker({
         </div>
       )}
 
-      {/* 2. Date Strip Carousel */}
+      {/* 2. Date Selection (Horizontal Quick Strip + Monthly Switcher) */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 inline-flex items-center justify-center text-[10px] font-black">2</span>
-            <span>Select Date</span>
-          </label>
-          <span className="text-xs text-indigo-700 font-bold bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100/80 flex items-center gap-1">
-            <CalendarDays className="w-3.5 h-3.5 text-indigo-600" />
-            <span>{formatDisplayDate(selectedDate)}</span>
-          </span>
-        </div>
-
-        <div className="flex gap-2.5 overflow-x-auto pb-2 no-scrollbar">
-          {availableDays.map((d) => {
-            const isSelected = selectedDate === d.dateStr;
-            return (
-              <button
-                key={d.dateStr}
-                type="button"
-                onClick={() => onDateSelect(d.dateStr)}
-                className={cn(
-                  'flex flex-col items-center justify-center min-w-[66px] py-3 px-2 rounded-2xl border text-center transition-all shrink-0 cursor-pointer shadow-2xs',
-                  isSelected
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/30 scale-[1.02]'
-                    : 'bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
-                )}
-              >
-                <span className={cn(
-                  'text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full mb-0.5',
-                  isSelected ? 'bg-indigo-500 text-indigo-50' : d.isToday ? 'bg-emerald-100 text-emerald-800' : 'text-slate-400'
-                )}>
-                  {d.isToday ? 'Today' : d.isTomorrow ? 'Tmrw' : d.dayName}
-                </span>
-                <span className="text-base font-black leading-tight mt-0.5">{d.dayNum}</span>
-                <span className="text-[10px] font-semibold opacity-85 mt-0.5">{d.monthName}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 3. Time Slots */}
-      <div className="space-y-3.5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-slate-100">
-          <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 inline-flex items-center justify-center text-[10px] font-black">3</span>
-            <span>Select Consultation Slot (IST)</span>
+          <label className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+            <span className="w-5 h-5 rounded-lg bg-indigo-600 text-white inline-flex items-center justify-center text-[10px] font-black shadow-xs shadow-indigo-600/30">
+              2
+            </span>
+            <span>Choose Date</span>
           </label>
 
-          {/* Color-Coded Legend */}
-          <div className="flex items-center gap-3 text-[11px]">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block ring-2 ring-emerald-200"></span>
-              <span className="text-emerald-950 font-bold">Available (Green)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block ring-2 ring-slate-200"></span>
-              <span className="text-slate-500 font-medium">Booked / Past (Grey)</span>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowFullCalendar(!showFullCalendar)}
+            className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors cursor-pointer"
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            <span>{showFullCalendar ? 'Quick 7 Days' : 'Pick Any Date'}</span>
+          </button>
         </div>
 
-        {totalSlotsCount > 0 && availableSlotsCount === 0 && !loadingSlots && (
-          <div className="p-3 bg-amber-50 border border-amber-200/90 rounded-2xl text-xs text-amber-900 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>All consultation slots for this date have either concluded or been booked. Please pick an upcoming date from the calendar strip.</span>
-          </div>
-        )}
+        {/* Quick 7-Day Horizontal Strip */}
+        {!showFullCalendar ? (
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 overflow-x-auto pb-1">
+            {next7Days.map((day) => {
+              const isSelected = selectedDate === day.dateStr;
 
-        {loadingSlots ? (
-          <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-400">
-            <RefreshCw className="w-6 h-6 animate-spin text-indigo-600" />
-            <span className="text-xs font-medium">Checking live slot availability...</span>
-          </div>
-        ) : totalSlotsCount > 0 ? (
-          <div className="space-y-4">
-            {/* Morning */}
-            {groupedSlots.morning?.length > 0 && (
-              <div className="space-y-2 p-3.5 rounded-2xl bg-amber-50/40 border border-amber-100/80">
-                <div className="flex items-center justify-between text-xs font-bold text-amber-800">
-                  <div className="flex items-center gap-1.5">
-                    <Sun className="w-4 h-4 text-amber-600" />
-                    <span>Morning Shifts (Before 12:00 PM)</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-amber-700/80">
-                    {groupedSlots.morning.filter(s => s.available).length} open
+              return (
+                <button
+                  key={day.dateStr}
+                  type="button"
+                  onClick={() => onDateSelect(day.dateStr)}
+                  className={cn(
+                    'p-2.5 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-center relative cursor-pointer active:scale-95 shadow-2xs',
+                    isSelected
+                      ? 'bg-slate-950 text-white border-slate-900 shadow-md ring-2 ring-indigo-500/40'
+                      : 'bg-white border-slate-200/90 text-slate-700 hover:border-indigo-300 hover:bg-slate-50'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'text-[10px] font-bold uppercase tracking-wider',
+                      isSelected ? 'text-indigo-400' : 'text-slate-400'
+                    )}
+                  >
+                    {day.label}
                   </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                  {groupedSlots.morning.map((s) => (
-                    <SlotButton key={s.time} slot={s} onSelect={onSlotSelect} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Afternoon */}
-            {groupedSlots.afternoon?.length > 0 && (
-              <div className="space-y-2 p-3.5 rounded-2xl bg-orange-50/40 border border-orange-100/80">
-                <div className="flex items-center justify-between text-xs font-bold text-orange-800">
-                  <div className="flex items-center gap-1.5">
-                    <Sunset className="w-4 h-4 text-orange-600" />
-                    <span>Afternoon Shifts (12:00 PM - 05:00 PM)</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-orange-700/80">
-                    {groupedSlots.afternoon.filter(s => s.available).length} open
+                  <span
+                    className={cn(
+                      'text-base sm:text-lg font-black my-0.5',
+                      isSelected ? 'text-white' : 'text-slate-900'
+                    )}
+                  >
+                    {day.dayNum}
                   </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                  {groupedSlots.afternoon.map((s) => (
-                    <SlotButton key={s.time} slot={s} onSelect={onSlotSelect} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Evening */}
-            {groupedSlots.evening?.length > 0 && (
-              <div className="space-y-2 p-3.5 rounded-2xl bg-indigo-50/40 border border-indigo-100/80">
-                <div className="flex items-center justify-between text-xs font-bold text-indigo-800">
-                  <div className="flex items-center gap-1.5">
-                    <Moon className="w-4 h-4 text-indigo-600" />
-                    <span>Evening Shifts (05:00 PM Onwards)</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-indigo-700/80">
-                    {groupedSlots.evening.filter(s => s.available).length} open
+                  <span
+                    className={cn(
+                      'text-[10px] font-medium',
+                      isSelected ? 'text-slate-300' : 'text-slate-500'
+                    )}
+                  >
+                    {day.monthName}
                   </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                  {groupedSlots.evening.map((s) => (
-                    <SlotButton key={s.time} slot={s} onSelect={onSlotSelect} />
-                  ))}
-                </div>
-              </div>
-            )}
+                </button>
+              );
+            })}
           </div>
         ) : (
-          <div className="p-8 rounded-2xl bg-slate-50 border border-slate-200/90 text-center">
-            <Clock className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-            <p className="text-xs font-bold text-slate-700">No consultation shifts configured for this date</p>
-            <p className="text-[11px] text-slate-400 mt-1">Please select another date from the calendar strip above.</p>
+          /* Full Native Date Picker Dropdown */
+          <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex items-center gap-3">
+            <CalendarIcon className="w-5 h-5 text-indigo-600 shrink-0" />
+            <div className="flex-1">
+              <label className="block text-[10px] font-bold text-slate-500 uppercase">Select Target Date</label>
+              <input
+                type="date"
+                value={selectedDate || ''}
+                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => onDateSelect(e.target.value)}
+                className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 3. Time Slots Grid */}
+      <div className="space-y-4 pt-2">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <label className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+            <span className="w-5 h-5 rounded-lg bg-indigo-600 text-white inline-flex items-center justify-center text-[10px] font-black shadow-xs shadow-indigo-600/30">
+              3
+            </span>
+            <span>Available Time Slots</span>
+          </label>
+
+          {selectedDate && (
+            <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+              <span>{formatDisplayDate(selectedDate)}</span>
+              {availableSlotsCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                  {availableSlotsCount} Open
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {loadingSlots ? (
+          <div className="p-10 flex flex-col items-center justify-center gap-2 text-slate-400">
+            <RefreshCw className="w-6 h-6 animate-spin text-indigo-600" />
+            <p className="text-xs font-semibold">Calculating real-time slot availability...</p>
+          </div>
+        ) : totalSlotsCount === 0 ? (
+          <div className="p-8 rounded-2xl bg-amber-500/10 border border-amber-300/60 text-center space-y-2">
+            <Sun className="w-8 h-8 text-amber-600 mx-auto stroke-[1.5]" />
+            <h4 className="text-xs sm:text-sm font-bold text-amber-950">No Consultation Slots on this Date</h4>
+            <p className="text-[11px] text-amber-900/80 max-w-xs mx-auto">
+              The practitioner has no active schedule or is on leave for {formatDisplayDate(selectedDate)}. Please choose another date above.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {/* Morning Slots */}
+            {groupedSlots?.morning?.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                  <Sun className="w-4 h-4 text-amber-500" />
+                  <span>Morning Slots</span>
+                  <span className="text-[10px] text-slate-400 font-medium">({groupedSlots.morning.length})</span>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                  {groupedSlots.morning.map((slot) => (
+                    <SlotButton key={slot.time} slot={slot} onSelect={onSlotSelect} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Afternoon Slots */}
+            {groupedSlots?.afternoon?.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                  <Sunset className="w-4 h-4 text-orange-500" />
+                  <span>Afternoon Slots</span>
+                  <span className="text-[10px] text-slate-400 font-medium">({groupedSlots.afternoon.length})</span>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                  {groupedSlots.afternoon.map((slot) => (
+                    <SlotButton key={slot.time} slot={slot} onSelect={onSlotSelect} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Evening Slots */}
+            {groupedSlots?.evening?.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                  <Moon className="w-4 h-4 text-indigo-500" />
+                  <span>Evening Slots</span>
+                  <span className="text-[10px] text-slate-400 font-medium">({groupedSlots.evening.length})</span>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                  {groupedSlots.evening.map((slot) => (
+                    <SlotButton key={slot.time} slot={slot} onSelect={onSlotSelect} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

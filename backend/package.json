@@ -8,8 +8,13 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "seed": "node src/seeds/seed.js",
+    "test:time": "node tests/timeHandling.test.js",
+    "test:notes": "node tests/notesSecurity.test.js",
+    "test:security": "node tests/publicBookingSecurity.test.js",
     "test:concurrency": "node tests/concurrency.test.js",
     "test:payments": "node tests/payment.test.js",
+    "test:socket": "node tests/socketIsolation.test.js",
+    "test:auth": "node tests/authHardening.test.js",
     "test:comprehensive": "node tests/comprehensive.test.js"
   },
   "dependencies": {

@@ -10,7 +10,14 @@ import {
   createPublicBooking,
   holdPublicSlot,
   releasePublicSlotHold,
+  lookupAppointmentsByPhone,
+  getRebookingDetails,
+  getBookingChallengeService,
+  cancelPublicBookingService,
+  requestPublicRescheduleService,
 } from '../services/appointmentService.js';
+import { toPublicAppointment } from '../serializers/appointmentSerializer.js';
+import { otpService } from '../services/otpService.js';
 import { createIcsCalendarEvent } from '../services/icsService.js';
 import { successResponse, errorResponse } from '../utils/response.js';
 
@@ -261,7 +268,10 @@ export const bookPublicAppointment = async (req, res, next) => {
       clientIp: req.ip || req.headers['x-forwarded-for'] || '',
     };
     const result = await createPublicBooking(slug, bookingData);
-    return successResponse(res, 201, 'Appointment confirmed successfully', result);
+    return successResponse(res, 201, 'Appointment confirmed successfully', {
+      ...result,
+      appointment: toPublicAppointment(result.appointment),
+    });
   } catch (err) {
     next(err);
   }
@@ -299,3 +309,184 @@ export const downloadIcsCalendar = async (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * Zero-Login Customer Booking Lookup by Phone Number
+ */
+export const lookupAppointments = async (req, res, next) => {
+  try {
+    const { phone } = req.query;
+    if (!phone) {
+      return errorResponse(res, 400, 'Please provide a 10-digit phone number');
+    }
+    const rawAppointments = await lookupAppointmentsByPhone(phone);
+    const appointments = rawAppointments.map(toPublicAppointment);
+    return successResponse(res, 200, 'Appointments retrieved', { appointments });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * 1-Tap "Book Again" Helper: Get Re-booking details for customer
+ */
+export const rebookAppointment = async (req, res, next) => {
+  try {
+    const { phone } = req.query;
+    if (!phone) {
+      return errorResponse(res, 400, 'Please provide a 10-digit phone number');
+    }
+    const details = await getRebookingDetails(phone);
+    return successResponse(res, 200, 'Rebooking details retrieved', details);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Public Booking Challenge: GET /api/public/booking/:code/challenge
+ */
+export const getBookingChallenge = async (req, res, next) => {
+  try {
+    const { code } = req.params;
+    const cancelToken =
+      req.query.token ||
+      req.query.cancelToken ||
+      req.headers['x-cancel-token'] ||
+      req.body?.token;
+    const manageSessionToken =
+      req.headers['x-manage-session-token'] ||
+      req.headers.authorization ||
+      req.query.sessionToken ||
+      req.body?.manageSessionToken;
+
+    const result = await getBookingChallengeService({
+      appointmentCode: code,
+      cancelToken,
+      manageSessionToken,
+      user: req.user,
+    });
+
+    return successResponse(res, 200, 'Booking challenge info retrieved', result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Send OTP to customer phone: POST /api/public/booking/:code/otp
+ */
+export const sendBookingOtp = async (req, res, next) => {
+  try {
+    const { code } = req.params;
+    const appointment = await Appointment.findOne({ appointmentCode: code });
+    if (!appointment) {
+      return errorResponse(res, 404, 'Appointment not found with the provided code');
+    }
+
+    const result = await otpService.sendBookingOtp({
+      appointmentCode: code,
+      customerPhone: appointment.customerPhone,
+    });
+
+    return successResponse(res, 200, result.message, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Verify OTP: POST /api/public/booking/:code/verify-otp
+ */
+export const verifyBookingOtp = async (req, res, next) => {
+  try {
+    const { code } = req.params;
+    const { otp } = req.body;
+
+    if (!otp) {
+      return errorResponse(res, 400, 'Verification code (OTP) is required.');
+    }
+
+    const result = await otpService.verifyBookingOtp({
+      appointmentCode: code,
+      otp,
+    });
+
+    return successResponse(res, 200, 'OTP verified successfully', result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Public Cancel: POST /api/public/booking/:code/cancel
+ */
+export const cancelPublicBooking = async (req, res, next) => {
+  try {
+    const { code } = req.params;
+    const cancelToken =
+      req.body.token ||
+      req.body.cancelToken ||
+      req.query.token ||
+      req.headers['x-cancel-token'];
+    const otp = req.body.otp;
+    const manageSessionToken =
+      req.headers['x-manage-session-token'] ||
+      req.headers.authorization ||
+      req.body.manageSessionToken;
+    const { reason } = req.body;
+
+    const result = await cancelPublicBookingService({
+      appointmentCode: code,
+      cancelToken,
+      otp,
+      manageSessionToken,
+      reason,
+      clientIp: req.ip || req.headers['x-forwarded-for'] || '',
+      user: req.user,
+    });
+
+    return successResponse(res, 200, result.message, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Public Reschedule Request: POST /api/public/booking/:code/reschedule-request
+ */
+export const requestPublicReschedule = async (req, res, next) => {
+  try {
+    const { code } = req.params;
+    const cancelToken =
+      req.body.token ||
+      req.body.cancelToken ||
+      req.query.token ||
+      req.headers['x-cancel-token'];
+    const otp = req.body.otp;
+    const manageSessionToken =
+      req.headers['x-manage-session-token'] ||
+      req.headers.authorization ||
+      req.body.manageSessionToken;
+    const newDate = req.body.newDate || req.body.requestedDate;
+    const newTime = req.body.newTime || req.body.requestedTime;
+    const { reason } = req.body;
+
+    const result = await requestPublicRescheduleService({
+      appointmentCode: code,
+      cancelToken,
+      otp,
+      manageSessionToken,
+      newDate,
+      newTime,
+      reason,
+      clientIp: req.ip || req.headers['x-forwarded-for'] || '',
+      user: req.user,
+    });
+
+    return successResponse(res, 200, result.message, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
