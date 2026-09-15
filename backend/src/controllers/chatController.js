@@ -1,5 +1,6 @@
 import { chatService } from '../services/chatService.js';
 import { aiChatService } from '../services/aiChatService.js';
+import { consumeAiQuery, checkAiUsage } from '../services/aiRateLimitService.js';
 import { successResponse, errorResponse } from '../utils/response.js';
 
 export const chatController = {
@@ -88,18 +89,69 @@ export const chatController = {
   },
 
   /**
-   * Process query for role-tailored AI assistant bot
+   * Get current user's daily AI message usage and remaining quota
+   */
+  getAiUsage: async (req, res, next) => {
+    try {
+      const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      const usage = await checkAiUsage({
+        user: req.user || null,
+        profile: req.profile || null,
+        ip,
+      });
+
+      return successResponse(res, 200, 'AI usage retrieved successfully', usage);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Process query for role-tailored AI assistant bot with live DB, Gemini context, and daily quota enforcement
    */
   queryAiBot: async (req, res, next) => {
     try {
-      const { message, context } = req.body;
+      const { message, text, query, context, history } = req.body;
+      const userMessage = (message || text || query || '').trim();
       const role = req.user ? req.user.role : 'GUEST';
+      const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
+      if (!userMessage) {
+        return errorResponse(res, 400, 'Message text is required');
+      }
+
+      // 1. Enforce Role & Plan Daily Rate Limit (User: 10/day, Pro Free: 5/day, Pro Paid: 25/day, Admin: Unlimited)
+      const usageCheck = await consumeAiQuery({
+        user: req.user || null,
+        profile: req.profile || null,
+        ip,
+      });
+
+      if (!usageCheck.isAllowed) {
+        return successResponse(res, 200, 'Daily AI limit reached', {
+          reply: usageCheck.reason,
+          limitReached: true,
+          usage: usageCheck,
+          quickPrompts: [],
+          quickActions:
+            usageCheck.plan === 'FREE' && usageCheck.role === 'PROFESSIONAL'
+              ? [{ label: '⭐ Upgrade to Pro (25 queries/day)', href: '/dashboard/subscription' }]
+              : [],
+        });
+      }
+
+      // 2. Process AI Query with DB Context & Gemini Flash
       const response = await aiChatService.processQuery({
         role,
-        message,
-        context,
+        user: req.user || null,
+        profile: req.profile || null,
+        message: userMessage,
+        context: context || {},
+        history: history || context?.history || [],
       });
+
+      // 3. Attach real-time remaining quota metadata to response
+      response.usage = usageCheck;
 
       return successResponse(res, 200, 'AI response generated', response);
     } catch (error) {
@@ -107,3 +159,4 @@ export const chatController = {
     }
   },
 };
+

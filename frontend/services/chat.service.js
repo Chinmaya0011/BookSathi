@@ -50,10 +50,19 @@ export const chatService = {
   },
 
   /**
-   * Query role-tailored AI assistant bot
+   * Get current user daily AI message quota and usage
    */
-  queryAiBot: async (message, context = {}) => {
-    const response = await api.post('/chat/ai-query', { message, context });
+  getAiUsage: async () => {
+    const response = await api.get('/chat/ai-usage');
+    return response.data;
+  },
+
+  /**
+   * Query role-tailored AI assistant bot with live DB context and history
+   */
+  queryAiBot: async (message, options = {}) => {
+    const payload = typeof options === 'object' ? { message, ...options } : { message };
+    const response = await api.post('/chat/ai-query', payload);
     return response.data;
   },
 };

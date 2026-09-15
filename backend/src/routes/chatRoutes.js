@@ -4,17 +4,13 @@ import { authenticate } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
-// Public / Optional-auth AI Bot endpoint (handles guests and authenticated users)
-router.post('/ai-query', async (req, res, next) => {
-  // Try authenticating if header present, else proceed as GUEST
-  try {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      return authenticate(req, res, () => chatController.queryAiBot(req, res, next));
-    }
-  } catch (e) {}
-  return chatController.queryAiBot(req, res, next);
-});
+import { optionalAuth } from '../middleware/authMiddleware.js';
+
+// Public / Optional-auth AI Bot endpoints (handles guests and authenticated users via Bearer token or cookie)
+router.get('/ai-usage', optionalAuth, chatController.getAiUsage);
+router.post('/ai-query', optionalAuth, chatController.queryAiBot);
+router.post('/ai', optionalAuth, chatController.queryAiBot);
+router.post('/chat', optionalAuth, chatController.queryAiBot);
 
 // Protected Endpoints (Strict RBAC required for Human Live Chat)
 router.use(authenticate);

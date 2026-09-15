@@ -1,133 +1,183 @@
+import { retrieveDatabaseDataForQuery } from './aiDataRetriever.js';
+import { generateAiResponse } from './geminiService.js';
+
 export const aiChatService = {
   /**
-   * Generate intelligent AI bot response tailored directly by user role
+   * Generate intelligent AI bot response tailored directly by user role and live DB context
    */
-  processQuery: async ({ role = 'GUEST', message, context = {} }) => {
+  processQuery: async ({
+    role = 'GUEST',
+    user = null,
+    profile = null,
+    message = '',
+    context = {},
+    history = [],
+  }) => {
     const text = (message || '').trim();
-    const lower = text.toLowerCase();
-
-    // 1. CUSTOMER / USER AI BOT
-    if (role === 'USER') {
-      if (lower.includes('reschedule') || lower.includes('change time') || lower.includes('postpone')) {
-        return {
-          reply: 'To reschedule your consultation: Go to the "Appointments" tab in your dashboard, locate the appointment under "Upcoming", and click "Request Reschedule" to pick a new date and time slot.',
-          quickActions: [
-            { label: 'View My Appointments', href: '/dashboard/appointments' },
-            { label: 'Find Professionals', href: '/dashboard/find' },
-          ],
-        };
-      }
-
-      if (lower.includes('cancel') || lower.includes('refund') || lower.includes('money')) {
-        return {
-          reply: 'You can cancel any booking up to 2 hours before the scheduled time directly from your Appointments dashboard. Refunds for prepaid consultations are initiated immediately and credited to your original payment method in 3-5 business days.',
-          quickActions: [
-            { label: 'My Appointments', href: '/dashboard/appointments' },
-            { label: 'Contact Support', action: 'open_support_chat' },
-          ],
-        };
-      }
-
-      if (lower.includes('doctor') || lower.includes('ca') || lower.includes('lawyer') || lower.includes('find') || lower.includes('book')) {
-        return {
-          reply: 'You can discover verified Doctors, Chartered Accountants, Legal Advisors, and Consultants in your city under the "Find Professionals" directory with instant calendar availability.',
-          quickActions: [
-            { label: 'Explore Directory', href: '/dashboard/find' },
-          ],
-        };
-      }
-
-      if (lower.includes('contact') || lower.includes('talk to doctor') || lower.includes('chat with pro')) {
-        return {
-          reply: 'You can chat directly with any doctor or professional you have booked with using the "Live Conversations" tab above, or chat with BookSaathi Admin Support anytime!',
-          quickActions: [
-            { label: 'Switch to Live Chat', action: 'switch_live_tab' },
-          ],
-        };
-      }
-
+    if (!text) {
       return {
-        reply: `Hello! I'm your BookSaathi Patient & Client AI Guide. I can help you schedule consultations, find certified specialists in India, understand cancellation terms, or navigate your appointments. What would you like assistance with?`,
-        quickPrompts: ['📅 How to reschedule?', '🩺 Find a Doctor or CA', '💳 Refund & Cancellation policy'],
+        reply: 'Please ask a question or select one of the suggested topics below.',
+        quickPrompts: getRoleQuickPrompts(role),
       };
     }
 
-    // 2. PROFESSIONAL AI BOT
-    if (role === 'PROFESSIONAL') {
-      if (lower.includes('slot') || lower.includes('availability') || lower.includes('working hours') || lower.includes('schedule')) {
+    try {
+      // 1. Fetch minimal relevant database data matching user role and question intent
+      const dbRetrieval = await retrieveDatabaseDataForQuery({
+        user,
+        profile,
+        role,
+        message: text,
+      });
+
+      // 2. Handle unauthorized query attempts securely
+      if (dbRetrieval.isUnauthorized) {
         return {
-          reply: 'You can configure your weekly working days, morning/evening slots, break times, and consultation durations from the "Availability" section in your sidebar.',
-          quickActions: [
-            { label: 'Configure Availability', href: '/dashboard/availability' },
-            { label: 'Block Dates / Leaves', href: '/dashboard/blocked-dates' },
-          ],
+          reply: 'I’m sorry, but you don’t have permission to access that information.',
+          quickPrompts: getRoleQuickPrompts(role),
         };
       }
 
-      if (lower.includes('qr') || lower.includes('standee') || lower.includes('reception') || lower.includes('kit')) {
-        return {
-          reply: 'You can download your customized Clinic/Office QR Standee Banner from your dashboard or order a physical acrylic desk kit with doorstep shipping across India!',
-          quickActions: [
-            { label: 'Download QR Banner', href: '/dashboard/qr-banner' },
-          ],
-        };
-      }
+      // 3. Send relevant database data and conversation context to Gemini
+      const conversationHistory = history || context?.history || [];
 
-      if (lower.includes('plan') || lower.includes('subscription') || lower.includes('upgrade') || lower.includes('pricing')) {
-        return {
-          reply: 'BookSaathi offers Starter (Free), Professional (₹999/mo), and Business Growth plans with 0% platform commission on direct UPI client bookings.',
-          quickActions: [
-            { label: 'Manage Subscription', href: '/dashboard/subscription' },
-          ],
-        };
-      }
+      const markdownReply = await generateAiResponse({
+        userMessage: text,
+        databaseContext: dbRetrieval.contextText,
+        conversationHistory,
+        userRole: role,
+      });
 
-      if (lower.includes('chat') || lower.includes('client message') || lower.includes('patient')) {
-        return {
-          reply: 'You can message clients who have booked an appointment with you via the "Live Conversations" tab, or reach out directly to the BookSaathi Admin Support Desk.',
-          quickActions: [
-            { label: 'Switch to Live Chat', action: 'switch_live_tab' },
-          ],
-        };
-      }
+      // 4. Attach relevant dynamic quick prompts based on role and query
+      const quickPrompts = getDynamicPrompts(role, text);
+      const quickActions = getDynamicActions(role, text);
 
       return {
-        reply: `Namaste Doctor/Consultant! I am your Practice AI Assistant. I can help you set up slot schedules, manage client appointments, order reception QR standees, or optimize your public booking link. How can I assist your practice today?`,
-        quickPrompts: ['⏰ Set weekly availability', '🪧 Order Reception QR Standee', '💎 Subscription plans & limits'],
+        reply: markdownReply,
+        quickPrompts,
+        quickActions,
+        databaseUsed: dbRetrieval.hasData,
       };
-    }
-
-    // 3. ADMIN AI BOT
-    if (role === 'ADMIN') {
-      if (lower.includes('stat') || lower.includes('metric') || lower.includes('count') || lower.includes('revenue')) {
-        return {
-          reply: 'You can inspect real-time system metrics, active subscriptions, standee kit shipments, and gross booking volume directly from the Command Center.',
-          quickActions: [
-            { label: 'Command Center', href: '/admin' },
-            { label: 'Financial Ledger', href: '/admin/payments' },
-          ],
-        };
-      }
-
-      if (lower.includes('grievance') || lower.includes('dispute') || lower.includes('support')) {
-        return {
-          reply: 'Platform disputes and grievances can be prioritized, assigned, and resolved with audit trails in the Support & Grievance console.',
-          quickActions: [
-            { label: 'Support & Grievances', href: '/admin/grievances' },
-          ],
-        };
-      }
-
+    } catch (error) {
+      console.error('Error processing AI Chat Query:', error);
       return {
-        reply: `Admin AI Assistant online. I can assist with platform health monitoring, professional verification workflows, grievance triage, or audit log inspections.`,
-        quickPrompts: ['📊 Command center metrics', '🛡️ Review pending verifications', '⚖️ Grievance resolution flow'],
+        reply: `I ran into an unexpected issue while processing your request. Please try again or navigate using your dashboard sidebar.`,
+        quickPrompts: getRoleQuickPrompts(role),
       };
     }
-
-    // 4. GUEST / PUBLIC VISITOR AI BOT
-    return {
-      reply: 'Welcome to BookSaathi! We empower Indian doctors, CAs, lawyers, and consultants with instant online appointment scheduling. How can I assist you today?',
-      quickPrompts: ['🔍 How does booking work?', '💼 I want to register as a Professional', '🔐 Is my data secure?'],
-    };
   },
 };
+
+/**
+ * Return default quick prompts per role
+ */
+function getRoleQuickPrompts(role) {
+  if (role === 'USER') {
+    return [
+      '📅 What appointments do I have tomorrow?',
+      '🩺 Who is my next appointment with?',
+      '📊 How many appointments do I have this month?',
+      '💳 Refund & Cancellation policy',
+    ];
+  }
+  if (role === 'PROFESSIONAL') {
+    return [
+      '📋 How many bookings do I have today?',
+      '📅 Show my upcoming appointments',
+      '⏰ What is my weekly availability?',
+      '📈 How many appointments completed this week?',
+    ];
+  }
+  if (role === 'ADMIN') {
+    return [
+      '📊 Give me a summary of platform activity',
+      '👥 How many users are registered?',
+      '📅 How many bookings were created this month?',
+      '🛡️ Review pending grievances',
+    ];
+  }
+  return [
+    '🔍 How does booking work?',
+    '💼 How do I register as a Professional?',
+    '🩺 Find a Doctor or CA',
+  ];
+}
+
+/**
+ * Generate contextual follow-up prompts
+ */
+function getDynamicPrompts(role, message) {
+  const lower = message.toLowerCase();
+
+  if (role === 'USER') {
+    if (lower.includes('appointment') || lower.includes('booking')) {
+      return [
+        'Who is my next doctor?',
+        'How many appointments this month?',
+        'Show my cancelled bookings',
+      ];
+    }
+    return [
+      'What appointments do I have tomorrow?',
+      'How do I reschedule?',
+      'Explore Doctors in Bhubaneswar',
+    ];
+  }
+
+  if (role === 'PROFESSIONAL') {
+    if (lower.includes('today') || lower.includes('booking')) {
+      return [
+        'Show upcoming consultations',
+        'How many completed this week?',
+        'Check my weekly working hours',
+      ];
+    }
+    return [
+      'How many bookings today?',
+      'What are my service tariffs?',
+      'Order Reception QR Standee',
+    ];
+  }
+
+  if (role === 'ADMIN') {
+    return [
+      'Platform activity overview',
+      'Total registered users',
+      'Monthly bookings count',
+    ];
+  }
+
+  return [
+    'How does booking work?',
+    'Register as a Doctor or CA',
+    'Is my consultation data secure?',
+  ];
+}
+
+/**
+ * Optional navigation action buttons
+ */
+function getDynamicActions(role, message) {
+  const lower = message.toLowerCase();
+  const actions = [];
+
+  if (role === 'USER') {
+    if (lower.includes('appointment') || lower.includes('booking') || lower.includes('reschedule')) {
+      actions.push({ label: 'View Appointments', href: '/dashboard/appointments' });
+    }
+    if (lower.includes('doctor') || lower.includes('find') || lower.includes('ca')) {
+      actions.push({ label: 'Find Professionals', href: '/dashboard/find' });
+    }
+  } else if (role === 'PROFESSIONAL') {
+    if (lower.includes('slot') || lower.includes('availability') || lower.includes('timing')) {
+      actions.push({ label: 'Configure Availability', href: '/dashboard/availability' });
+    }
+    if (lower.includes('service') || lower.includes('price') || lower.includes('tariff')) {
+      actions.push({ label: 'Manage Services', href: '/dashboard/services' });
+    }
+  } else if (role === 'ADMIN') {
+    actions.push({ label: 'Command Center', href: '/admin' });
+  }
+
+  return actions;
+}

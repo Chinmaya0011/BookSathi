@@ -20,6 +20,7 @@ const router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/chat', chatRoutes);
+router.use('/ai', chatRoutes);
 router.use('/user/appointments', userAppointmentRoutes);
 router.use('/user-appointments', userAppointmentRoutes);
 router.use('/notifications', notificationRoutes);
