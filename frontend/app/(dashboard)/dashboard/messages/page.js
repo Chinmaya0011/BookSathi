@@ -420,9 +420,9 @@ export default function MessagesPage() {
                     {contacts?.bookedProfessionals?.length === 0 ? (
                       <div className="p-4 bg-white rounded-2xl border border-slate-200 text-center">
                         <p className="text-xs text-slate-700 font-bold">No Specialists Booked</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">Book an appointment to chat with verified Doctors & CAs.</p>
-                        <Link href="/dashboard/find" className="inline-block mt-2 text-xs font-bold text-indigo-600 hover:text-indigo-700">
-                          Find Specialists →
+                        <p className="text-[11px] text-slate-400 mt-0.5">Book an on-visit appointment with your practitioner to chat.</p>
+                        <Link href="/dashboard/appointments" className="inline-block mt-2 text-xs font-bold text-indigo-600 hover:text-indigo-700">
+                          View My Appointments →
                         </Link>
                       </div>
                     ) : (
@@ -494,7 +494,7 @@ export default function MessagesPage() {
                     {contacts?.clients?.length === 0 ? (
                       <div className="p-4 bg-white rounded-2xl border border-slate-200 text-center">
                         <p className="text-xs text-slate-700 font-bold">No Client Messages Yet</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">When patients book consultations, their chat threads will appear here.</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">When customers book consultations, their chat threads will appear here.</p>
                       </div>
                     ) : (
                       <div className="space-y-1.5">

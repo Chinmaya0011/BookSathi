@@ -221,7 +221,7 @@ export default function UserCustomerSettings({ user }) {
                 <span>Notification Preferences</span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Choose how you receive appointment confirmations, doctor status alerts, and reminders.
+                Choose how you receive appointment confirmations, professional status alerts, and reminders.
               </p>
             </div>
 
@@ -291,7 +291,7 @@ export default function UserCustomerSettings({ user }) {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-slate-900">Real-Time Queue Notifications</h4>
-                    <p className="text-[11px] text-slate-500">Alerts when doctor starts consultation or is running late</p>
+                    <p className="text-[11px] text-slate-500">Alerts when professional starts consultation or is running late</p>
                   </div>
                 </div>
                 <input

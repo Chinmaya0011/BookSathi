@@ -8,6 +8,7 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "seed": "node src/seeds/seed.js",
+    "db:clear": "node src/seeds/clearDb.js",
     "test:time": "node tests/timeHandling.test.js",
     "test:notes": "node tests/notesSecurity.test.js",
     "test:security": "node tests/publicBookingSecurity.test.js",

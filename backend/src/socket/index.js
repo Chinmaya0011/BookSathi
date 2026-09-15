@@ -78,6 +78,7 @@ export const initSocket = (httpServer) => {
     if (socket.profile) {
       const proId = socket.profile._id.toString();
       socket.join(`professional:${proId}`);
+      socket.join(`prof_${proId}`);
     }
 
     // 3. Join admin channels if ADMIN
@@ -86,6 +87,19 @@ export const initSocket = (httpServer) => {
       socket.join(`admin:${userId}`);
       socket.join('role:admin');
     }
+
+    // Queue real-time subscription
+    socket.on('join:queue', ({ professionalId, dateString }) => {
+      if (professionalId && dateString) {
+        socket.join(`queue_${professionalId}_${dateString}`);
+      }
+    });
+
+    socket.on('leave:queue', ({ professionalId, dateString }) => {
+      if (professionalId && dateString) {
+        socket.leave(`queue_${professionalId}_${dateString}`);
+      }
+    });
 
     // Secure guest / public booking room join with valid cancelToken or manageSessionToken
     socket.on('join:booking', async (data = {}, callback) => {

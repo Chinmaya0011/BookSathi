@@ -4,12 +4,12 @@ echo Starting BookSaathi (Indian Professional Booking Platform)
 echo ========================================================
 echo.
 echo [1/2] Launching Backend REST API (port 5000)...
-start "BookSaathi Backend API" cmd /k "cd /d %~dp0backend && npm run dev"
+start "BookSaathi Backend API" cmd /k "cd /d %~dp0backend && node --watch src/server.js"
 
-timeout /t 3 /nobreak >nul
+timeout /t 2 /nobreak >nul
 
 echo [2/2] Launching Frontend Web App (port 3000)...
-start "BookSaathi Frontend Web" cmd /k "cd /d %~dp0frontend && npm run dev"
+start "BookSaathi Frontend Web" cmd /k "cd /d %~dp0frontend && node node_modules\next\dist\bin\next dev -p 3000"
 
 echo.
 echo ========================================================

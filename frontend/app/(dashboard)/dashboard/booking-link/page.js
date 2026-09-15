@@ -375,7 +375,7 @@ export default function UnifiedBookingLinkAndPlanPage() {
 
           <div className="pt-4 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-500">
             <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Patients can book with this link on any mobile browser with 0% convenience fees.</span>
+            <span>Customers can book with this link on any mobile browser with 0% convenience fees.</span>
           </div>
         </div>
 

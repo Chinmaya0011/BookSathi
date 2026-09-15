@@ -1,86 +1,61 @@
 'use client';
 
-import Link from 'next/link';
-import { ArrowRight, Sparkles, CalendarCheck, ShieldCheck } from 'lucide-react';
 import Navbar from '@/components/landing/Navbar';
+import HeroSection from '@/components/landing/HeroSection';
+import TrustBar from '@/components/landing/TrustBar';
+import ProductDashboard from '@/components/landing/ProductDashboard';
+import HowItWorks from '@/components/landing/HowItWorks';
+import CustomerExperience from '@/components/landing/CustomerExperience';
+import ProfessionalCategories from '@/components/landing/ProfessionalCategories';
+import BookingLinkPreview from '@/components/landing/BookingLinkPreview';
+import FeatureBento from '@/components/landing/FeatureBento';
+import PricingSection from '@/components/landing/PricingSection';
+import FaqSection from '@/components/landing/FaqSection';
+import FinalCta from '@/components/landing/FinalCta';
 import Footer from '@/components/landing/Footer';
-import LandingHero from '@/components/landing/LandingHero';
-import LandingDirectory from '@/components/landing/LandingDirectory';
-import LandingFeatures from '@/components/landing/LandingFeatures';
-import LandingPricing from '@/components/landing/LandingPricing';
-import LandingFaq from '@/components/landing/LandingFaq';
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white text-slate-900 selection:bg-indigo-600 selection:text-white flex flex-col no-scrollbar">
-      {/* 1. Header Navigation */}
+      {/* 1. Minimal Sticky Navbar */}
       <Navbar />
 
-      {/* 2. Hero Section with Live Booking Preview & Zero-Login Phone Lookup */}
-      <LandingHero />
+      <main className="flex-1">
+        {/* 2. SaaS Hero Section with Interactive Slot Picker & Booking Confirmation Preview */}
+        <HeroSection />
 
-      {/* 3. Verified Professionals Directory (Real Data from Database) */}
-      <LandingDirectory />
+        {/* 3. Compact 4-Metric Trust / Value Strip */}
+        <TrustBar />
 
-      {/* 4. Core Features & 3-Step Simple Loop */}
-      <LandingFeatures />
+        {/* 4. Product-First Today Dashboard Centerpiece with Feature Cards */}
+        <ProductDashboard />
 
-      {/* 5. Simple Transparent 2-Tier Pricing (Free ₹0 & Pro ₹199/mo) */}
-      <LandingPricing />
+        {/* 5. 3-Step Simple Flow (Share -> Book -> Manage) */}
+        <HowItWorks />
 
-      {/* 6. Practical FAQs */}
-      <LandingFaq />
+        {/* 6. Zero-Login Customer Experience with Mobile Phone Pass */}
+        <CustomerExperience />
 
-      {/* 7. Bottom Pre-Footer CTA Banner */}
-      <section className="py-16 sm:py-20 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-white relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none opacity-20">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-indigo-500 rounded-full blur-3xl" />
-        </div>
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold border border-indigo-500/30">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Ready in Under 2 Minutes</span>
-          </div>
+        {/* 7. Built for Real Indian Professionals (Doctors, CAs, Lawyers, Tutors, Consultants) */}
+        <ProfessionalCategories />
 
-          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-            Start Accepting Client Appointments Today
-          </h2>
+        {/* 8. Branded Booking Page Preview with Multi-Channel Share Strip */}
+        <BookingLinkPreview />
 
-          <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Get your personal shareable booking link. Collect 100% of your consultation fees directly with 0% platform commission.
-          </p>
+        {/* 9. Feature Bento Grid */}
+        <FeatureBento />
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <Link
-              href="/register"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm shadow-xl shadow-indigo-600/30 transition-all"
-            >
-              <span>Create Your Free Booking Page</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+        {/* 10. Clean 2-Tier Pricing (Free & Pro) with Billing Interval Toggle */}
+        <PricingSection />
 
-            <Link
-              href="/lookup"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 hover:text-white border border-slate-700 font-bold text-sm transition-all"
-            >
-              <span>Find My Existing Booking</span>
-            </Link>
-          </div>
+        {/* 11. 10-Question Accordion FAQ */}
+        <FaqSection />
 
-          <div className="pt-4 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>0% Platform Commission</span>
-            </span>
-            <span>•</span>
-            <span>No Credit Card Required</span>
-            <span>•</span>
-            <span>Instant Custom Booking Link</span>
-          </div>
-        </div>
-      </section>
+        {/* 12. High-Conversion Final CTA */}
+        <FinalCta />
+      </main>
 
-      {/* 8. Footer */}
+      {/* 13. Professional SaaS Footer */}
       <Footer />
     </div>
   );

@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
@@ -8,18 +6,22 @@ import {
   Search,
   Phone,
   MessageCircle,
-  Plus,
   Clock,
   CheckCircle2,
   XCircle,
   Sparkles,
-  Video,
-  MapPin,
-  IndianRupee,
   Check,
+  User,
+  Play,
+  RotateCcw,
+  X,
+  CreditCard,
+  AlertCircle,
+  Ticket,
+  Megaphone,
+  UserX,
 } from 'lucide-react';
-import { format12Hour, formatINR, formatRelativeTime, cn } from '@/lib/utils';
-import { getProfessionalPublicUrl } from '@/lib/urlHelpers';
+import { format12Hour, formatINR, formatDisplayDate, cn } from '@/lib/utils';
 
 export default function DashboardTodaySchedule({
   todaySchedule = [],
@@ -28,277 +30,366 @@ export default function DashboardTodaySchedule({
   onOpenManualModal,
   onQuickStatusUpdate,
   updatingStatusId,
+  onCallNextQueue,
+  callingNext,
+  currentServingToken,
 }) {
   const [scheduleFilter, setScheduleFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const isQueueMode = profile?.bookingType === 'QUEUE';
 
-  // Normalize statuses for clean filtering
+  // Normalize statuses for accurate filtering and display
   const normalizedSchedule = useMemo(() => {
     return (todaySchedule || []).map((appt) => {
-      let status = appt.status;
+      const rawStatus = (appt.status || '').toUpperCase();
       let displayStatus = 'BOOKED';
-      if (status === 'COMPLETED') {
+
+      if (rawStatus === 'DONE' || rawStatus === 'COMPLETED') {
         displayStatus = 'DONE';
-      } else if (status === 'CANCELLED' || status === 'REJECTED') {
+      } else if (rawStatus === 'CANCELLED' || rawStatus === 'REJECTED') {
         displayStatus = 'CANCELLED';
-      } else if (status === 'IN_PROGRESS' || status === 'ARRIVED') {
+      } else if (rawStatus === 'NO_SHOW') {
+        displayStatus = 'NO_SHOW';
+      } else if (rawStatus === 'IN_PROGRESS') {
         displayStatus = 'IN_PROGRESS';
+      } else if (rawStatus === 'CALLED') {
+        displayStatus = 'CALLED';
+      } else if (rawStatus === 'WAITING' || rawStatus === 'ARRIVED') {
+        displayStatus = 'WAITING';
+      } else {
+        displayStatus = 'BOOKED';
       }
-      return { ...appt, normalizedStatus: displayStatus };
+
+      return {
+        ...appt,
+        normalizedStatus: displayStatus,
+        isDone: displayStatus === 'DONE',
+        isCancelled: displayStatus === 'CANCELLED' || displayStatus === 'NO_SHOW',
+        isNoShow: displayStatus === 'NO_SHOW',
+        isActive: displayStatus !== 'DONE' && displayStatus !== 'CANCELLED' && displayStatus !== 'NO_SHOW',
+      };
     });
   }, [todaySchedule]);
 
   const todayActiveCount = useMemo(() => {
-    return normalizedSchedule.filter(
-      (a) => a.normalizedStatus !== 'CANCELLED'
-    ).length;
+    return normalizedSchedule.filter((a) => !a.isCancelled).length;
+  }, [normalizedSchedule]);
+
+  const waitingQueueTokens = useMemo(() => {
+    return normalizedSchedule.filter((a) => a.normalizedStatus === 'WAITING' || a.normalizedStatus === 'BOOKED');
   }, [normalizedSchedule]);
 
   const filterCounts = useMemo(() => {
     return {
       ALL: todayActiveCount,
-      BOOKED: normalizedSchedule.filter((a) => a.normalizedStatus === 'BOOKED' || a.normalizedStatus === 'IN_PROGRESS').length,
-      DONE: normalizedSchedule.filter((a) => a.normalizedStatus === 'DONE').length,
-      CANCELLED: normalizedSchedule.filter((a) => a.normalizedStatus === 'CANCELLED').length,
+      QUEUE: normalizedSchedule.filter((a) => a.isActive).length,
+      DONE: normalizedSchedule.filter((a) => a.isDone).length,
+      CANCELLED: normalizedSchedule.filter((a) => a.isCancelled).length,
     };
   }, [normalizedSchedule, todayActiveCount]);
-
-  // Earliest upcoming appointment today
-  const nextAppointment = useMemo(() => {
-    return normalizedSchedule.find(
-      (a) => a.normalizedStatus === 'BOOKED' || a.normalizedStatus === 'IN_PROGRESS'
-    );
-  }, [normalizedSchedule]);
 
   const filteredSchedule = useMemo(() => {
     return normalizedSchedule.filter((appt) => {
       let matchesFilter = true;
-      if (scheduleFilter === 'BOOKED') {
-        matchesFilter = appt.normalizedStatus === 'BOOKED' || appt.normalizedStatus === 'IN_PROGRESS';
+      if (scheduleFilter === 'QUEUE') {
+        matchesFilter = appt.isActive;
       } else if (scheduleFilter === 'DONE') {
-        matchesFilter = appt.normalizedStatus === 'DONE';
+        matchesFilter = appt.isDone;
       } else if (scheduleFilter === 'CANCELLED') {
-        matchesFilter = appt.normalizedStatus === 'CANCELLED';
+        matchesFilter = appt.isCancelled;
       }
 
+      const query = searchQuery.trim().toLowerCase();
       const matchesSearch =
-        !searchQuery ||
-        appt.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        appt.customerPhone?.includes(searchQuery) ||
-        appt.appointmentCode?.toLowerCase().includes(searchQuery.toLowerCase());
+        !query ||
+        appt.customerName?.toLowerCase().includes(query) ||
+        appt.customerPhone?.includes(query) ||
+        appt.appointmentCode?.toLowerCase().includes(query) ||
+        appt.appointmentTypeName?.toLowerCase().includes(query) ||
+        (appt.queueNumber && String(appt.queueNumber).includes(query));
 
       return matchesFilter && matchesSearch;
     });
   }, [normalizedSchedule, scheduleFilter, searchQuery]);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between overflow-hidden font-sans">
-      <div>
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between overflow-hidden font-sans h-full min-h-[360px]">
+      <div className="flex flex-col flex-1 h-full">
         {/* Header Bar */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 space-y-3.5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-3.5 sm:p-4 border-b border-slate-100 space-y-3 shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white flex items-center justify-center shrink-0 shadow-xs">
-                <CalendarCheck className="w-5 h-5" />
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                {isQueueMode ? <Ticket className="w-4 h-4" /> : <CalendarCheck className="w-4 h-4" />}
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                    Today&apos;s Live Appointments
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
+                    {isQueueMode ? "Today's Live Queue" : "Today's Appointments"}
                   </h2>
-                  <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100">
-                    {todayActiveCount} Total
+                  <span className="px-2 py-0.2 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-100 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
+                    {isQueueMode ? `${filterCounts.QUEUE} in queue` : `${filterCounts.QUEUE} scheduled`}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500">
-                  Real-time patient queue and consultation manager
-                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              {/* Call Next Token Button (Queue Mode) */}
+              {isQueueMode && onCallNextQueue && (
+                <button
+                  type="button"
+                  onClick={onCallNextQueue}
+                  disabled={callingNext || waitingQueueTokens.length === 0}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+                >
+                  <Megaphone className="w-3.5 h-3.5" />
+                  <span>{callingNext ? 'Calling...' : 'Call Next Token'}</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={onOpenManualModal}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-2xs"
               >
-                <span>Walk-In</span>
+                <span>{isQueueMode ? '+ Issue Token' : '+ Walk-In'}</span>
               </button>
               <Link
                 href="/dashboard/appointments"
-                className="text-xs font-bold text-slate-600 hover:text-slate-900 inline-flex items-center gap-1 px-3 py-2 rounded-xl hover:bg-slate-100 transition-colors"
+                className="text-xs font-bold text-slate-600 hover:text-slate-900 inline-flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
               >
-                <span>Full List</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <span>All</span>
+                <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
           </div>
 
-          {/* Next Up Spotlight Banner */}
-          {nextAppointment && (
-            <div className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-50 via-slate-50 to-indigo-50/50 border border-indigo-100/80 flex items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse shrink-0" />
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-                  Next Patient:
-                </span>
-                <span className="text-slate-900 font-black truncate text-sm">
-                  {nextAppointment.customerName}
-                </span>
-                <span className="text-slate-400">•</span>
-                <span className="font-bold text-indigo-700 bg-white px-2 py-0.5 rounded-md border border-indigo-100">
-                  {format12Hour(nextAppointment.startTime)}
-                </span>
-              </div>
-              {nextAppointment.customerPhone && (
-                <a
-                  href={`https://wa.me/91${nextAppointment.customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                    `Hello ${nextAppointment.customerName}, Dr./Pro ${profile?.name || ''} here regarding your appointment today at ${format12Hour(nextAppointment.startTime)}.`
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1 shrink-0 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200"
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">WhatsApp</span>
-                </a>
-              )}
-            </div>
-          )}
-
           {/* Filter Tabs & Search Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
-            <div className="flex items-center gap-1 p-1 bg-slate-100/80 rounded-xl text-xs overflow-x-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-0.5">
+            <div className="flex items-center gap-1 p-0.5 bg-slate-100/80 rounded-xl text-xs overflow-x-auto no-scrollbar">
               {[
-                { id: 'ALL', label: `All (${filterCounts.ALL})` },
-                { id: 'BOOKED', label: `Queue (${filterCounts.BOOKED})` },
-                { id: 'DONE', label: `Done (${filterCounts.DONE})` },
-                { id: 'CANCELLED', label: `Cancelled (${filterCounts.CANCELLED})` },
+                { id: 'ALL', label: 'All', count: filterCounts.ALL },
+                { id: 'QUEUE', label: 'Waiting', count: filterCounts.QUEUE },
+                { id: 'DONE', label: 'Done', count: filterCounts.DONE },
+                { id: 'CANCELLED', label: 'Cancelled', count: filterCounts.CANCELLED },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setScheduleFilter(tab.id)}
                   className={cn(
-                    'px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer whitespace-nowrap',
+                    'px-2.5 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer whitespace-nowrap flex items-center gap-1',
                     scheduleFilter === tab.id
-                      ? 'bg-white text-slate-900 shadow-2xs'
+                      ? 'bg-white text-indigo-700 shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900'
                   )}
                 >
-                  {tab.label}
+                  <span>{tab.label}</span>
+                  <span
+                    className={cn(
+                      'text-[10px] px-1.5 py-0.1 rounded-full font-bold',
+                      scheduleFilter === tab.id
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'bg-slate-200/70 text-slate-500'
+                    )}
+                  >
+                    {tab.count}
+                  </span>
                 </button>
               ))}
             </div>
 
             {/* Search Input */}
             <div className="relative w-full sm:w-56">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search patient name / phone..."
-                className="w-full pl-8.5 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
+                placeholder="Search patient, phone..."
+                className="w-full pl-8 pr-7 py-1 text-xs rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium placeholder:text-slate-400"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
             </div>
           </div>
         </div>
 
         {/* Schedule List */}
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-slate-100 flex-1 flex flex-col min-h-[220px] max-h-[520px] overflow-y-auto">
           {loading ? (
-            <div className="p-12 text-center text-slate-400">
-              <div className="w-7 h-7 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-              <p className="text-xs font-semibold text-slate-500">Loading today&apos;s appointments...</p>
+            <div className="flex-1 flex flex-col items-center justify-center p-10 text-center text-slate-400 space-y-2">
+              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-1.5" />
+              <p className="text-xs font-semibold text-slate-500">Loading today&apos;s schedule...</p>
             </div>
           ) : filteredSchedule.length === 0 ? (
-            <div className="p-12 text-center space-y-2">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center mx-auto">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-12 text-center space-y-2.5 my-auto">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center mx-auto shadow-2xs">
                 <CalendarCheck className="w-6 h-6" />
               </div>
-              <p className="text-sm font-bold text-slate-800">No appointments in this view</p>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                Share your public booking link on WhatsApp or click &quot;Walk-In&quot; to schedule a patient directly into today&apos;s queue.
-              </p>
+              <div>
+                <p className="text-xs sm:text-sm font-bold text-slate-800">No appointments in this view</p>
+                <p className="text-[11px] text-slate-400 max-w-xs mx-auto mt-0.5 leading-relaxed">
+                  {searchQuery
+                    ? `No records matched "${searchQuery}".`
+                    : scheduleFilter === 'DONE'
+                    ? 'No appointments completed yet today.'
+                    : isQueueMode
+                    ? 'Click "+ Issue Token" to add a customer directly to today\'s queue.'
+                    : 'Click "+ Walk-In" to add a customer directly to today\'s schedule.'}
+                </p>
+              </div>
             </div>
           ) : (
             filteredSchedule.map((appt) => {
               const isUpdating = updatingStatusId === appt._id;
+              const initials = appt.customerName
+                ? appt.customerName
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .substring(0, 2)
+                    .toUpperCase()
+                : 'PT';
+
               return (
                 <div
                   key={appt._id}
-                  className="p-4 hover:bg-slate-50/80 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3.5"
+                  className={cn(
+                    'p-3 sm:p-3.5 transition-colors duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5',
+                    appt.isDone
+                      ? 'bg-emerald-50/15 hover:bg-emerald-50/25'
+                      : appt.isCancelled
+                      ? 'bg-slate-50/40 opacity-70'
+                      : 'hover:bg-slate-50/70 bg-white'
+                  )}
                 >
-                  {/* Left: Time Block + Patient Information */}
-                  <div className="flex items-start gap-3.5 min-w-0">
-                    <div className="px-3 py-2 rounded-xl bg-slate-100/90 border border-slate-200/80 text-center shrink-0 min-w-[70px]">
-                      <span className="text-xs font-black text-slate-900 block leading-tight">
-                        {format12Hour(appt.startTime)}
-                      </span>
-                      <span className="text-[10px] text-slate-500 font-bold block leading-tight mt-0.5">
-                        {appt.duration || 30}m
-                      </span>
-                    </div>
+                  {/* Left: Time Block / Queue Token Badge + Patient Information */}
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    {/* Time / Queue Token Chip */}
+                    {isQueueMode || appt.queueNumber ? (
+                      <div className="px-2.5 py-1.5 rounded-xl bg-violet-600 text-white border border-violet-700 text-center shrink-0 min-w-[64px] shadow-xs">
+                        <span className="text-xs font-black font-mono block leading-tight">
+                          #{appt.queueNumber || '—'}
+                        </span>
+                        <span className="text-[9px] text-violet-200 uppercase font-bold block leading-tight">
+                          Token
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="px-2.5 py-1.5 rounded-xl bg-slate-100/80 border border-slate-200/70 text-center shrink-0 min-w-[64px]">
+                        <span className="text-xs font-black text-slate-900 block leading-tight">
+                          {format12Hour(appt.startTime)}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-bold block leading-tight">
+                          {appt.duration || 30}m
+                        </span>
+                      </div>
+                    )}
 
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-bold text-slate-900 truncate">
+                    {/* Patient Details */}
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* Avatar Initials */}
+                        <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[9px] flex items-center justify-center shrink-0">
+                          {initials}
+                        </div>
+
+                        <span className="text-xs sm:text-sm font-bold text-slate-900 truncate">
                           {appt.customerName}
                         </span>
 
                         {/* Status Chip */}
                         <span
                           className={cn(
-                            'text-[10px] font-bold px-2 py-0.5 rounded-md border',
-                            appt.normalizedStatus === 'DONE'
+                            'text-[9px] font-bold px-1.5 py-0.2 rounded-md border inline-flex items-center gap-1',
+                            appt.isDone
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : appt.normalizedStatus === 'CANCELLED'
+                              : appt.isCancelled
                               ? 'bg-rose-50 text-rose-700 border-rose-200'
+                              : appt.normalizedStatus === 'CALLED'
+                              ? 'bg-emerald-500 text-white border-emerald-600 shadow-2xs animate-pulse'
                               : appt.normalizedStatus === 'IN_PROGRESS'
                               ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : appt.normalizedStatus === 'WAITING'
+                              ? 'bg-sky-50 text-sky-700 border-sky-200'
                               : 'bg-indigo-50 text-indigo-700 border-indigo-200'
                           )}
                         >
-                          {appt.normalizedStatus === 'DONE'
-                            ? 'Completed'
-                            : appt.normalizedStatus === 'CANCELLED'
-                            ? 'Cancelled'
-                            : appt.normalizedStatus === 'IN_PROGRESS'
-                            ? 'In Progress'
-                            : 'Confirmed'}
+                          {appt.isDone ? (
+                            <>
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                              <span>Done</span>
+                            </>
+                          ) : appt.normalizedStatus === 'CALLED' ? (
+                            <>
+                              <Megaphone className="w-2.5 h-2.5" />
+                              <span>Called</span>
+                            </>
+                          ) : appt.isCancelled ? (
+                            <span>{appt.normalizedStatus === 'NO_SHOW' ? 'No Show' : 'Cancelled'}</span>
+                          ) : appt.normalizedStatus === 'IN_PROGRESS' ? (
+                            <>
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                              <span>In Progress</span>
+                            </>
+                          ) : appt.normalizedStatus === 'WAITING' ? (
+                            <>
+                              <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                              <span>Waiting</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                              <span>Confirmed</span>
+                            </>
+                          )}
                         </span>
 
                         {/* Payment Status Badge */}
                         {appt.paymentStatus === 'PAID' ? (
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="text-[9px] font-bold px-1 py-0.1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                             ₹ Paid
                           </span>
                         ) : (
-                          <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
-                            Pay at Clinic
-                          </span>
-                        )}
-
-                        {appt.appointmentCode && (
-                          <span className="text-[10px] font-mono font-semibold text-slate-400">
-                            #{appt.appointmentCode}
+                          <span className="text-[9px] font-medium px-1 py-0.1 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                            Pay on Arrival
                           </span>
                         )}
                       </div>
 
-                      <div className="text-xs text-slate-500 flex items-center gap-2.5 flex-wrap">
-                        <span className="font-semibold text-slate-700">
-                          {appt.appointmentTypeName || 'General Consultation'}
+                      {/* Service and Patient Details Bar */}
+                      <div className="text-[11px] text-slate-500 flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-slate-700 truncate max-w-[140px]">
+                          {appt.appointmentTypeName || 'Consultation'}
                         </span>
-                        <span>•</span>
+                        <span className="text-slate-300">•</span>
                         <span className="font-medium text-slate-600">
                           {formatINR(appt.fee || 500)}
                         </span>
+                        {appt.customerPhone && (
+                          <>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-slate-400 font-mono text-[10px]">
+                              {appt.customerPhone}
+                            </span>
+                          </>
+                        )}
                         {appt.reason && (
                           <>
                             <span className="text-slate-300">•</span>
-                            <span className="text-slate-400 truncate max-w-xs">{appt.reason}</span>
+                            <span className="text-slate-400 italic truncate max-w-[120px]">
+                              {appt.reason}
+                            </span>
                           </>
                         )}
                       </div>
@@ -306,47 +397,107 @@ export default function DashboardTodaySchedule({
                   </div>
 
                   {/* Right: Quick Action Controls */}
-                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                  <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                    {/* Patient Communication Icons */}
                     {appt.customerPhone && (
-                      <div className="flex items-center gap-1 mr-1">
+                      <div className="flex items-center gap-1 mr-0.5">
                         <a
                           href={`tel:${appt.customerPhone}`}
-                          className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
                           title={`Call ${appt.customerPhone}`}
                         >
-                          <Phone className="w-3.5 h-3.5" />
+                          <Phone className="w-3 h-3" />
                         </a>
                         <a
                           href={`https://wa.me/91${appt.customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                            `Hello ${appt.customerName}, Dr./Pro ${profile?.name || ''} here regarding your appointment today at ${format12Hour(appt.startTime)}.`
+                            isQueueMode || appt.queueNumber
+                              ? `Hello ${appt.customerName}, Dr./Pro ${profile?.name || ''} here regarding your Queue Token #${appt.queueNumber || ''} today.`
+                              : `Hello ${appt.customerName}, Dr./Pro ${profile?.name || ''} here regarding your appointment today at ${format12Hour(appt.startTime)}.`
                           )}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors"
-                          title="WhatsApp patient"
+                          className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors"
+                          title="WhatsApp customer"
                         >
-                          <MessageCircle className="w-3.5 h-3.5" />
+                          <MessageCircle className="w-3 h-3" />
                         </a>
                       </div>
                     )}
 
-                    {appt.normalizedStatus !== 'DONE' && appt.normalizedStatus !== 'CANCELLED' && (
-                      <div className="flex items-center gap-1.5">
+                    {/* Operational Status Action Buttons */}
+                    {appt.isDone ? (
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-xs flex items-center gap-1 border border-emerald-200">
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span>Done</span>
+                      </span>
+                    ) : appt.isCancelled ? (
+                      <span className="px-2 py-0.5 text-[11px] text-rose-500 font-medium">
+                        {appt.normalizedStatus === 'NO_SHOW' ? 'No Show' : 'Cancelled'}
+                      </span>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        {/* Call Button in Queue Mode */}
+                        {isQueueMode && appt.normalizedStatus === 'WAITING' && (
+                          <button
+                            type="button"
+                            onClick={() => onQuickStatusUpdate(appt._id, 'CALLED')}
+                            disabled={isUpdating}
+                            className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs transition-colors cursor-pointer border border-emerald-200 inline-flex items-center gap-1"
+                            title="Call Token"
+                          >
+                            <Megaphone className="w-2.5 h-2.5 text-emerald-700" />
+                            <span>Call</span>
+                          </button>
+                        )}
+
+                        {/* Start Consultation button if not in progress */}
+                        {appt.normalizedStatus !== 'IN_PROGRESS' && (
+                          <button
+                            type="button"
+                            onClick={() => onQuickStatusUpdate(appt._id, 'IN_PROGRESS')}
+                            disabled={isUpdating}
+                            className="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition-colors cursor-pointer border border-indigo-200 inline-flex items-center gap-1"
+                            title="Start consultation"
+                          >
+                            <Play className="w-2.5 h-2.5 fill-indigo-700 text-indigo-700" />
+                            <span>Start</span>
+                          </button>
+                        )}
+
+                        {/* Primary One-Click "Mark Done" Button */}
                         <button
                           type="button"
-                          onClick={() => onQuickStatusUpdate(appt._id, 'COMPLETED')}
+                          onClick={() => onQuickStatusUpdate(appt._id, 'DONE')}
                           disabled={isUpdating}
-                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer shadow-2xs"
+                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center gap-1"
+                          title="Complete consultation"
                         >
-                          {isUpdating ? '...' : 'Mark Done'}
+                          <Check className="w-3 h-3" />
+                          <span>{isUpdating ? '...' : 'Done'}</span>
                         </button>
+
+                        {/* No Show Button (in Queue Mode) */}
+                        {isQueueMode && (
+                          <button
+                            type="button"
+                            onClick={() => onQuickStatusUpdate(appt._id, 'NO_SHOW')}
+                            disabled={isUpdating}
+                            className="px-2 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-bold transition-colors cursor-pointer border border-slate-200"
+                            title="Mark No Show"
+                          >
+                            No Show
+                          </button>
+                        )}
+
+                        {/* Cancel Button */}
                         <button
                           type="button"
                           onClick={() => onQuickStatusUpdate(appt._id, 'CANCELLED')}
                           disabled={isUpdating}
-                          className="px-2.5 py-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 font-semibold text-xs transition-colors cursor-pointer"
+                          className="p-1 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                          title="Cancel appointment"
                         >
-                          Cancel
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     )}

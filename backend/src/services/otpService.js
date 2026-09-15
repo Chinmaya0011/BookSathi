@@ -1,9 +1,13 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import { sendBookingOtpEmail } from './emailService.js';
 
 // In-memory state for active OTPs and rate limits
 const otpStore = new Map();
 // Structure: appointmentCode -> { otp, expiresAt, attempts, phone, createdAt }
+
+const emailOtpStore = new Map();
+// Structure: cleanEmail -> { otp, expiresAt, attempts, createdAt }
 
 const cancelAttemptsStore = new Map();
 // Structure: phoneKey -> [timestamps of cancel attempts]
@@ -85,8 +89,9 @@ export const otpService = {
 
     if (entry.attempts >= 5) {
       otpStore.delete(appointmentCode);
-      const err = new Error('Too many invalid attempts. Please request a new OTP.');
+      const err = new Error('Maximum 5 failed attempts reached. This OTP is now locked. Please request a new OTP.');
       err.statusCode = 429;
+      err.code = 'MAX_OTP_ATTEMPTS_EXCEEDED';
       err.isOperational = true;
       throw err;
     }
@@ -94,6 +99,14 @@ export const otpService = {
     if (entry.otp !== String(otp).trim()) {
       entry.attempts += 1;
       const remaining = 5 - entry.attempts;
+      if (remaining <= 0) {
+        otpStore.delete(appointmentCode);
+        const err = new Error('Maximum 5 failed attempts reached. This OTP is now locked. Please request a new OTP.');
+        err.statusCode = 429;
+        err.code = 'MAX_OTP_ATTEMPTS_EXCEEDED';
+        err.isOperational = true;
+        throw err;
+      }
       const err = new Error(`Invalid verification code. ${remaining} attempt(s) remaining.`);
       err.statusCode = 401;
       err.isOperational = true;
@@ -180,10 +193,142 @@ export const otpService = {
   },
 
   /**
+   * Send 6-digit OTP to customerEmail before completing booking
+   */
+  async sendBookingEmailOtp({ email, customerName, practitionerName }) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      const err = new Error('A valid email address is required to receive verification code.');
+      err.statusCode = 400;
+      err.isOperational = true;
+      throw err;
+    }
+
+    const now = Date.now();
+    const existing = emailOtpStore.get(cleanEmail);
+
+    if (existing && existing.createdAt && now - existing.createdAt < 20000) {
+      const err = new Error('Please wait 20 seconds before requesting another verification code.');
+      err.statusCode = 429;
+      err.isOperational = true;
+      throw err;
+    }
+
+    // Generate 6-digit OTP
+    const otp =
+      process.env.NODE_ENV === 'test' && process.env.TEST_FIXED_OTP
+        ? process.env.TEST_FIXED_OTP
+        : String(Math.floor(100000 + Math.random() * 900000));
+
+    const expiresAt = now + 5 * 60 * 1000; // 5 minutes validity
+
+    emailOtpStore.set(cleanEmail, {
+      otp,
+      expiresAt,
+      attempts: 0,
+      createdAt: now,
+    });
+
+    console.log(`\n================== [BOOKING EMAIL OTP DISPATCHED] ==================`);
+    console.log(`To Email: ${cleanEmail}`);
+    console.log(`Customer: ${customerName || 'Guest Patient'}`);
+    console.log(`Practitioner: ${practitionerName || 'Practitioner'}`);
+    console.log(`6-Digit OTP: ${otp}`);
+    console.log(`====================================================================\n`);
+
+    // Send email via Nodemailer
+    const emailSent = await sendBookingOtpEmail({
+      to: cleanEmail,
+      customerName,
+      otp,
+      practitionerName,
+    });
+
+    return {
+      success: true,
+      message: emailSent
+        ? `Verification code sent to ${cleanEmail}`
+        : `Verification code generated for ${cleanEmail}`,
+      emailDelivered: emailSent,
+      expiresInSeconds: 300,
+      ...(process.env.NODE_ENV === 'test' ? { testOtp: otp } : {}),
+    };
+  },
+
+  /**
+   * Verify the 6-digit email OTP
+   */
+  async verifyBookingEmailOtp({ email, otp }) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const entry = emailOtpStore.get(cleanEmail);
+
+    if (!entry) {
+      const err = new Error('No active verification code found for this email. Please click Send OTP.');
+      err.statusCode = 400;
+      err.isOperational = true;
+      throw err;
+    }
+
+    if (Date.now() > entry.expiresAt) {
+      emailOtpStore.delete(cleanEmail);
+      const err = new Error('Verification code has expired. Please request a new code.');
+      err.statusCode = 400;
+      err.isOperational = true;
+      throw err;
+    }
+
+    if (entry.attempts >= 5) {
+      emailOtpStore.delete(cleanEmail);
+      const err = new Error('Maximum 5 failed attempts reached. This OTP is now locked. Please request a new verification code.');
+      err.statusCode = 429;
+      err.code = 'MAX_OTP_ATTEMPTS_EXCEEDED';
+      err.isOperational = true;
+      throw err;
+    }
+
+    if (entry.otp !== String(otp).trim()) {
+      entry.attempts += 1;
+      const remaining = 5 - entry.attempts;
+      if (remaining <= 0) {
+        emailOtpStore.delete(cleanEmail);
+        const err = new Error('Maximum 5 failed attempts reached. This OTP is now locked. Please request a new verification code.');
+        err.statusCode = 429;
+        err.code = 'MAX_OTP_ATTEMPTS_EXCEEDED';
+        err.isOperational = true;
+        throw err;
+      }
+      const err = new Error(`Invalid verification code. ${remaining} attempt(s) remaining.`);
+      err.statusCode = 401;
+      err.isOperational = true;
+      throw err;
+    }
+
+    // Verified successfully! Remove used OTP
+    emailOtpStore.delete(cleanEmail);
+
+    // Create a 15-minute booking verified token
+    const otpVerificationToken = jwt.sign(
+      {
+        email: cleanEmail,
+        type: 'EMAIL_BOOKING_VERIFIED',
+      },
+      JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    return {
+      success: true,
+      message: 'Email verified successfully',
+      otpVerificationToken,
+    };
+  },
+
+  /**
    * Clear test stores
    */
   _clearForTests() {
     otpStore.clear();
+    emailOtpStore.clear();
     cancelAttemptsStore.clear();
   },
 };

@@ -16,7 +16,7 @@ import {
 
 export default function DashboardPeakHours({ hourlyDistribution }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4 sm:p-5">
+    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 sm:p-5 font-sans">
       <div className="flex items-center gap-2 mb-1">
         <div className="w-6 h-6 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
           <Clock className="w-3.5 h-3.5" />

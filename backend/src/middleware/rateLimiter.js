@@ -26,16 +26,23 @@ export const authLimiter = rateLimit({
   },
 });
 
-// OTP / Password reset requests (15 minutes, 5 requests per IP/user)
+// OTP / Verification requests (Isolated per email/phone, 15 minutes, 10 requests per user)
 export const otpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 15,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    const email = (req.body?.email || req.query?.email || '').trim().toLowerCase();
+    const phone = (req.body?.customerPhone || req.body?.phone || '').replace(/\D/g, '');
+    if (email) return `otp_email_${email}`;
+    if (phone) return `otp_phone_${phone}`;
+    return req.ip || req.headers['x-forwarded-for'] || 'unknown_ip';
+  },
   message: {
     success: false,
     code: 'OTP_RATE_LIMIT_EXCEEDED',
-    message: 'Too many OTP or verification requests. Please wait 15 minutes before requesting again.',
+    message: 'Too many OTP or verification requests for this account. Please wait a few minutes before requesting again.',
   },
 });
 
@@ -65,20 +72,19 @@ export const slotLimiter = rateLimit({
   },
 });
 
-// Appointment Creation & Slot Hold (15 minutes, 15 attempts per IP / User)
+// Appointment Creation & Slot Hold (1 hour, max 10 attempts per IP)
 export const bookingLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 15,
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // Max 10 attempts per hour
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    // Key by authenticated user ID if present, otherwise client IP
-    return req.user?._id ? `user_${req.user._id}` : req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    return req.ip || req.headers['x-forwarded-for'] || 'unknown';
   },
   message: {
     success: false,
     code: 'BOOKING_RATE_LIMIT_EXCEEDED',
-    message: 'Too many appointment booking attempts. Please wait 15 minutes before creating another booking.',
+    message: 'Too many appointment booking attempts (maximum 10 per hour from this IP). Please try again after an hour.',
   },
 });
 

@@ -54,8 +54,8 @@ export default function MobileBottomNav({ onOpenManualModal }) {
         exact: true,
       },
       {
-        label: 'Find',
-        href: '/dashboard/find',
+        label: 'Lookup',
+        href: '/lookup',
         icon: Search,
       },
       {
@@ -165,9 +165,9 @@ export default function MobileBottomNav({ onOpenManualModal }) {
       action: () => setCreateSheetOpen(false),
     },
     {
-      id: 'patient',
-      title: 'Add Patient Record',
-      subtitle: 'Register client profile & medical notes',
+      id: 'customer',
+      title: 'Add Customer Record',
+      subtitle: 'Register client profile & notes',
       icon: UserPlus,
       iconColor: 'bg-emerald-600 text-white shadow-emerald-600/30',
       href: '/dashboard/appointments?tab=patients',
@@ -189,7 +189,7 @@ export default function MobileBottomNav({ onOpenManualModal }) {
     {
       title: 'PRACTICE',
       items: [
-        { label: 'Patients Directory', href: '/dashboard/appointments?tab=patients', icon: Users, desc: 'Client medical profiles' },
+        { label: 'Customers Directory', href: '/dashboard/appointments?tab=patients', icon: Users, desc: 'Client profiles & history' },
         { label: 'Payments & Revenue', href: '/dashboard/payments', icon: CreditCard, desc: 'Earnings & settlements' },
         { label: 'Direct Messages', href: '/dashboard/messages', icon: MessageSquare, desc: 'Client inquiries' },
       ],

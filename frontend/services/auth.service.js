@@ -34,8 +34,19 @@ export const authService = {
     return res.data;
   },
 
+  async verifyResetToken(token) {
+    const res = await api.get(`/auth/verify-reset-token?token=${encodeURIComponent(token)}`);
+    return res.data;
+  },
+
   async resetPassword(token, password) {
     const res = await api.post('/auth/reset-password', { token, password });
+    if (res.data?.data?.token) {
+      localStorage.setItem('bs_token', res.data.data.token);
+      if (res.data.data.user) {
+        localStorage.setItem('bs_user', JSON.stringify(res.data.data.user));
+      }
+    }
     return res.data;
   },
 

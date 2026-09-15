@@ -44,14 +44,14 @@ export default function FloatingChatWidget() {
 
   // Role-tailored initial prompts & welcome message
   const initialRoleData = useMemo(() => {
-    let welcomeText = 'Namaste! Welcome to BookSaathi. How can I assist you with doctor discovery, appointments, or consultation bookings today?';
-    let initialPrompts = ['🔍 How does booking work?', '💼 Register as a Professional', '🔐 Is patient data secure?'];
+    let welcomeText = 'Namaste! Welcome to BookSaathi. How can I assist you with professional discovery, appointments, or consultation bookings today?';
+    let initialPrompts = ['🔍 How does booking work?', '💼 Register as a Professional', '🔐 Is customer data secure?'];
 
     if (role === 'USER') {
-      welcomeText = `Namaste ${user.name || 'there'}! 🙏 I am your Patient & Client AI Assistant. How can I assist you with scheduling, doctor discovery, or appointment management today?`;
-      initialPrompts = ['📅 How do I reschedule?', '🩺 Find a Doctor or CA', '💳 Cancellation & Refund terms', '🧾 Where are my invoices?'];
+      welcomeText = `Namaste ${user.name || 'there'}! 🙏 I am your Customer & Client AI Assistant. How can I assist you with on-visit passes, rescheduling, or appointment management today?`;
+      initialPrompts = ['📅 How do I reschedule?', '📱 How do I get my digital pass?', '💳 Payment & refund terms', '🧾 Where are my invoices?'];
     } else if (role === 'PROFESSIONAL') {
-      welcomeText = `Namaste Doctor/Consultant! 🙏 I am your Practice AI Assistant. How can I help you optimize your schedule, QR standee kit, tariffs, or booking link?`;
+      welcomeText = `Namaste Professional/Consultant! 🙏 I am your Practice AI Assistant. How can I help you optimize your schedule, QR standee kit, tariffs, or booking link?`;
       initialPrompts = ['⏰ Set weekly shifts', '🪧 Reception QR Standee order', '💎 Pro subscription features', '📝 Add consultation walk-in'];
     } else if (role === 'ADMIN') {
       welcomeText = `Admin AI Assistant online. I am ready to help summarize platform metrics, user verifications, or dispute resolutions.`;
@@ -224,7 +224,7 @@ export default function FloatingChatWidget() {
                     ? 'Admin Operations Assistant'
                     : role === 'PROFESSIONAL'
                     ? 'Practice & Consultation Assistant'
-                    : 'Patient & Discovery Assistant'}
+                    : 'Customer & Discovery Assistant'}
                 </p>
               </div>
             </div>

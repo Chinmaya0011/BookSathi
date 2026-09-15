@@ -1,12 +1,46 @@
 import { ProfessionalProfile } from '../models/ProfessionalProfile.js';
 import { Availability } from '../models/Availability.js';
 import { AppointmentType } from '../models/AppointmentType.js';
+import { Appointment } from '../models/Appointment.js';
 import { getDashboardStats } from '../services/appointmentService.js';
+import { getDateString } from '../utils/dateHelpers.js';
 import { successResponse, errorResponse } from '../utils/response.js';
+
+export const checkModeSwitch = async (req, res, next) => {
+  try {
+    const profile = await ProfessionalProfile.findOne({ userId: req.user._id });
+    if (!profile) {
+      return errorResponse(res, 404, 'Professional not found');
+    }
+
+    const { targetMode } = req.query;
+    const currentMode = profile.bookingType || 'TIME_SLOT';
+    const timezone = profile.timezone || 'Asia/Kolkata';
+    const todayString = getDateString(new Date(), timezone);
+
+    const activeFutureBookings = await Appointment.find({
+      professionalId: profile._id,
+      dateString: { $gte: todayString },
+      status: { $in: ['BOOKED', 'CONFIRMED', 'PENDING', 'WAITING', 'CALLED', 'IN_PROGRESS'] },
+    })
+      .select('appointmentCode bookingType customerName dateString startTime queueNumber status')
+      .lean();
+
+    return successResponse(res, 200, 'Mode switch pre-check', {
+      currentMode,
+      targetMode: targetMode || (currentMode === 'TIME_SLOT' ? 'QUEUE' : 'TIME_SLOT'),
+      hasFutureBookings: activeFutureBookings.length > 0,
+      futureBookingsCount: activeFutureBookings.length,
+      bookingsSample: activeFutureBookings.slice(0, 5),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 export const getProfile = async (req, res, next) => {
   try {
-    const profile = await ProfessionalProfile.findOne({ userId: req.user._id });
+    const profile = await ProfessionalProfile.findOne({ userId: req.user._id }).lean();
     if (!profile) {
       return errorResponse(res, 404, 'Professional profile not found');
     }
@@ -22,7 +56,7 @@ export const updateProfile = async (req, res, next) => {
       { userId: req.user._id },
       { $set: req.body },
       { new: true, runValidators: true }
-    );
+    ).lean();
     return successResponse(res, 200, 'Profile updated successfully', profile);
   } catch (err) {
     next(err);
@@ -31,7 +65,11 @@ export const updateProfile = async (req, res, next) => {
 
 export const getStats = async (req, res, next) => {
   try {
-    const profile = req.profile || (await ProfessionalProfile.findOne({ userId: req.user._id }));
+    const profile =
+      req.profile ||
+      (await ProfessionalProfile.findOne({ userId: req.user._id })
+        .select('_id timezone bookingSettings')
+        .lean());
     if (!profile) {
       return successResponse(res, 200, 'Dashboard stats retrieved', {
         todayAppointments: 0,
@@ -52,7 +90,11 @@ export const getStats = async (req, res, next) => {
 
 export const getSetupStatus = async (req, res, next) => {
   try {
-    const profile = req.profile || (await ProfessionalProfile.findOne({ userId: req.user._id }));
+    const profile =
+      req.profile ||
+      (await ProfessionalProfile.findOne({ userId: req.user._id })
+        .select('_id specialization address businessName city isPublic')
+        .lean());
     if (!profile) {
       return successResponse(res, 200, 'Setup status retrieved', {
         isSetupComplete: false,
@@ -73,20 +115,25 @@ export const getSetupStatus = async (req, res, next) => {
       });
     }
 
-    const [availability, appointmentTypes] = await Promise.all([
-      Availability.find({ professionalId: profile._id }),
-      AppointmentType.find({ professionalId: profile._id }),
+    // High-performance early-stop lookups
+    const [hasAvailabilityDoc, hasServicesDoc] = await Promise.all([
+      Availability.findOne({
+        professionalId: profile._id,
+        enabled: true,
+        'timeRanges.0': { $exists: true },
+      })
+        .select('_id')
+        .lean(),
+      AppointmentType.findOne({
+        professionalId: profile._id,
+        enabled: true,
+      })
+        .select('_id')
+        .lean(),
     ]);
 
-    // Check Weekly Availability: at least one day enabled with valid time ranges
-    const hasAvailability = availability.some(
-      (day) => day.enabled && Array.isArray(day.timeRanges) && day.timeRanges.length > 0
-    );
-
-    // Check Services & Pricing: at least one enabled appointment type
-    const hasServices = appointmentTypes.some((type) => type.enabled);
-
-    // Check Basic Profile: Has specialization and address or business name
+    const hasAvailability = Boolean(hasAvailabilityDoc);
+    const hasServices = Boolean(hasServicesDoc);
     const hasProfileDetails = Boolean(
       profile.specialization &&
       (profile.address || profile.businessName || profile.city)

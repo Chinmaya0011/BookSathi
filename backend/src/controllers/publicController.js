@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import { ProfessionalProfile } from '../models/ProfessionalProfile.js';
 import { AppointmentType } from '../models/AppointmentType.js';
 import { Appointment } from '../models/Appointment.js';
+import { Availability } from '../models/Availability.js';
+import { BlockedDate } from '../models/BlockedDate.js';
 import {
   getAvailableSlots,
   getMonthlyAvailabilityOverview,
@@ -15,6 +17,8 @@ import {
   getBookingChallengeService,
   cancelPublicBookingService,
   requestPublicRescheduleService,
+  getPublicQueueStatusService,
+  joinPublicQueueService,
 } from '../services/appointmentService.js';
 import { toPublicAppointment } from '../serializers/appointmentSerializer.js';
 import { otpService } from '../services/otpService.js';
@@ -101,12 +105,24 @@ export const getPublicProfile = async (req, res, next) => {
       return errorResponse(res, 404, 'Professional not found or profile is private');
     }
 
-    const appointmentTypes = await AppointmentType.find({
-      professionalId: profile._id,
-      enabled: true,
-    }).select('name description duration bufferTime fee consultationType onlineAvailable offlineAvailable enabled isDefault');
+    const [appointmentTypes, weeklyAvailability] = await Promise.all([
+      AppointmentType.find({
+        professionalId: profile._id,
+        enabled: true,
+      }).select('name description duration bufferTime fee consultationType onlineAvailable offlineAvailable enabled isDefault'),
+      Availability.find({
+        professionalId: profile._id,
+      }).select('dayOfWeek enabled timeRanges').lean(),
+    ]);
 
     // Only expose safe public fields
+    let liveQueueStatus = null;
+    if (profile.bookingType === 'QUEUE') {
+      try {
+        liveQueueStatus = await getPublicQueueStatusService({ slug: profile.bookingSlug });
+      } catch (e) {}
+    }
+
     const publicData = {
       _id: profile._id,
       name: profile.name,
@@ -121,6 +137,16 @@ export const getPublicProfile = async (req, res, next) => {
       consultationFee: profile.consultationFee,
       isVerified: profile.isVerified,
       bookingSlug: profile.bookingSlug,
+      bookingType: profile.bookingType || 'TIME_SLOT',
+      queueSettings: profile.queueSettings || {
+        dailyLimit: 50,
+        queueStartTime: '09:00',
+        queueEndTime: '18:00',
+        estimatedServiceTimeMinutes: 15,
+        allowOnlineQueue: true,
+      },
+      liveQueueStatus,
+      weeklyAvailability: weeklyAvailability || [],
       languages: profile.languages,
       experienceYears: profile.yearsOfExperience || profile.experienceYears,
       appointmentTypes,
@@ -251,7 +277,48 @@ export const releaseHoldPublic = async (req, res, next) => {
 };
 
 /**
- * Book Appointment Publicly
+ * Get Live Public Queue Status
+ */
+export const getPublicQueueStatus = async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+    const { date } = req.query;
+    const result = await getPublicQueueStatusService({ slug, dateString: date });
+    return successResponse(res, 200, 'Queue status retrieved', result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Join Public Queue
+ */
+export const joinPublicQueue = async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+    const idempotencyKey =
+      req.headers['idempotency-key'] ||
+      req.headers['x-idempotency-key'] ||
+      req.body.idempotencyKey;
+
+    const bookingData = {
+      ...req.body,
+      userId: req.user?._id || req.body.userId,
+      idempotencyKey: idempotencyKey ? String(idempotencyKey) : undefined,
+      clientIp: req.ip || req.headers['x-forwarded-for'] || '',
+    };
+    const result = await joinPublicQueueService(slug, bookingData);
+    return successResponse(res, 201, 'Joined queue successfully', {
+      ...result,
+      appointment: toPublicAppointment(result.appointment),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Book Appointment Publicly (routes to Queue or Time Slot automatically)
  */
 export const bookPublicAppointment = async (req, res, next) => {
   try {
@@ -267,6 +334,22 @@ export const bookPublicAppointment = async (req, res, next) => {
       idempotencyKey: idempotencyKey ? String(idempotencyKey) : undefined,
       clientIp: req.ip || req.headers['x-forwarded-for'] || '',
     };
+
+    const safeSlug = (slug || '').trim().toLowerCase();
+    let query = { bookingSlug: safeSlug, isPublic: { $ne: false } };
+    if (mongoose.Types.ObjectId.isValid(safeSlug)) {
+      query = { $or: [{ bookingSlug: safeSlug }, { _id: safeSlug }], isPublic: { $ne: false } };
+    }
+    const profile = await ProfessionalProfile.findOne(query).select('bookingType').lean();
+
+    if (profile?.bookingType === 'QUEUE' || req.body.bookingType === 'QUEUE') {
+      const result = await joinPublicQueueService(slug, bookingData);
+      return successResponse(res, 201, 'Queue token booked successfully', {
+        ...result,
+        appointment: toPublicAppointment(result.appointment),
+      });
+    }
+
     const result = await createPublicBooking(slug, bookingData);
     return successResponse(res, 201, 'Appointment confirmed successfully', {
       ...result,
@@ -482,6 +565,60 @@ export const requestPublicReschedule = async (req, res, next) => {
       reason,
       clientIp: req.ip || req.headers['x-forwarded-for'] || '',
       user: req.user,
+    });
+
+    return successResponse(res, 200, result.message, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Send Booking Email OTP: POST /api/public/:slug/send-email-otp
+ */
+export const sendPublicEmailOtp = async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+    const { email, customerName } = req.body;
+
+    if (!email) {
+      return errorResponse(res, 400, 'A valid email address is required to receive OTP.');
+    }
+
+    const safeSlug = (slug || '').trim().toLowerCase();
+    const profile = await ProfessionalProfile.findOne({
+      bookingSlug: safeSlug,
+      isPublic: { $ne: false },
+    }).select('name profession').lean();
+
+    const practitionerName = profile?.name || 'Practitioner';
+
+    const result = await otpService.sendBookingEmailOtp({
+      email,
+      customerName,
+      practitionerName,
+    });
+
+    return successResponse(res, 200, result.message, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Verify Booking Email OTP: POST /api/public/:slug/verify-email-otp
+ */
+export const verifyPublicEmailOtp = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return errorResponse(res, 400, 'Both email and 6-digit OTP are required.');
+    }
+
+    const result = await otpService.verifyBookingEmailOtp({
+      email,
+      otp,
     });
 
     return successResponse(res, 200, result.message, result);

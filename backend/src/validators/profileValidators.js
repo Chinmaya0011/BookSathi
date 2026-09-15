@@ -26,6 +26,18 @@ export const updateProfileSchema = z.object({
   onlineConsultation: z.boolean().optional(),
   offlineConsultation: z.boolean().optional(),
   isPublic: z.boolean().optional(),
+  bookingType: z.enum(['TIME_SLOT', 'QUEUE']).optional(),
+  queueSettings: z
+    .object({
+      dailyLimit: z.number().min(1).max(500).optional(),
+      queueStartTime: z.string().optional(),
+      queueEndTime: z.string().optional(),
+      lastBookingTime: z.string().optional(),
+      estimatedServiceTimeMinutes: z.number().min(1).max(180).optional(),
+      allowOnlineQueue: z.boolean().optional(),
+      currentCallingNumber: z.number().min(0).optional(),
+    })
+    .optional(),
   bookingSettings: z.object({
     appointmentDuration: z.number().min(5, 'Duration must be at least 5 minutes').max(360).optional(),
     bufferTime: z.number().min(0, 'Buffer time cannot be negative').max(120).optional(),

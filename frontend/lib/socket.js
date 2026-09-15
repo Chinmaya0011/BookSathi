@@ -108,3 +108,17 @@ export const leaveAppointmentRoom = (appointmentId) => {
     s.emit('leave:appointment', appointmentId);
   }
 };
+
+export const joinQueueRoom = (professionalId, dateString) => {
+  const s = connectSocket();
+  if (s && professionalId && dateString) {
+    s.emit('join:queue', { professionalId, dateString });
+  }
+};
+
+export const leaveQueueRoom = (professionalId, dateString) => {
+  const s = getSocket();
+  if (s && professionalId && dateString) {
+    s.emit('leave:queue', { professionalId, dateString });
+  }
+};

@@ -51,12 +51,12 @@ export default function DashboardLayout({ children }) {
         {!isChatPage && <SetupReminderBanner />}
         
         {isChatPage ? (
-          <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden p-0 sm:p-3 md:p-4 pb-[76px] md:pb-4">
+          <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden p-0 sm:p-2 md:p-3 pb-[72px] md:pb-3">
             {children}
           </main>
         ) : (
-          <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 pb-40 sm:pb-36 md:pb-8 overscroll-y-contain">
-            <div className="max-w-7xl mx-auto w-full pb-8">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-5 lg:px-6 py-3 sm:py-4 pb-24 md:pb-6 overscroll-y-contain">
+            <div className="max-w-[1440px] mx-auto w-full">
               {children}
             </div>
           </main>

@@ -164,7 +164,7 @@ export default function QrLivePreview({ profile, selectedDesign = 'classic-indig
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Heavy 8mm laser-cut cast acrylic display with solid weighted base for doctor desks, billing counters, and reception.
+              Heavy 8mm laser-cut cast acrylic display with solid weighted base for consultation desks, counters, and reception.
             </p>
           </div>
         </div>
@@ -208,26 +208,26 @@ export default function QrLivePreview({ profile, selectedDesign = 'classic-indig
               <div className="w-full flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-wider">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                  <span className="tracking-wide">Doctor Desk Booking</span>
+                  <span className="tracking-wide">Direct Desk Booking</span>
                 </div>
                 <span className={cn('px-2 py-0.5 rounded-full text-[9px] font-extrabold border shadow-2xs', currentTheme.headerTag)}>
                   Official Desk
                 </span>
               </div>
 
-              {/* Doctor Details */}
+              {/* Professional Details */}
               <div className="mt-3 mb-2 flex flex-col items-center">
                 {showPhoto && (
                   <div className="relative mb-2">
                     {profile?.profileImage ? (
                       <img
                         src={profile.profileImage}
-                        alt={profile?.name || 'Doctor'}
+                        alt={profile?.name || 'Professional'}
                         className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-md bg-slate-900"
                       />
                     ) : (
                       <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center text-white text-xl font-black border-2 border-white shadow-md">
-                        {profile?.name ? profile.name.charAt(0).toUpperCase() : 'Dr'}
+                        {profile?.name ? profile.name.charAt(0).toUpperCase() : 'P'}
                       </div>
                     )}
                     <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm border-2 border-white">
@@ -237,11 +237,11 @@ export default function QrLivePreview({ profile, selectedDesign = 'classic-indig
                 )}
 
                 <h4 className={cn('text-base font-black truncate max-w-[250px] tracking-tight leading-tight', currentTheme.doctorNameColor)}>
-                  {profile?.name || 'Dr. Rajesh Sharma'}
+                  {profile?.name || 'Professional Name'}
                 </h4>
                 
                 <p className={cn('text-xs font-semibold truncate max-w-[250px] mt-0.5', currentTheme.specialtyColor)}>
-                  {profile?.specialization || profile?.profession || 'Senior Specialist Consultant'}
+                  {profile?.specialization || profile?.profession || 'Consultant'}
                 </p>
 
                 {showFee && (

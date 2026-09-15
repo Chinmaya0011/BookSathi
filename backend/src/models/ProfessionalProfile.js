@@ -153,6 +153,46 @@ const professionalProfileSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    bookingType: {
+      type: String,
+      enum: ['TIME_SLOT', 'QUEUE'],
+      default: 'TIME_SLOT',
+      index: true,
+    },
+    queueSettings: {
+      dailyLimit: {
+        type: Number,
+        default: 50,
+        min: 1,
+        max: 500,
+      },
+      queueStartTime: {
+        type: String,
+        default: '09:00',
+      },
+      queueEndTime: {
+        type: String,
+        default: '18:00',
+      },
+      lastBookingTime: {
+        type: String,
+        default: '17:00',
+      },
+      estimatedServiceTimeMinutes: {
+        type: Number,
+        default: 15,
+        min: 1,
+        max: 180,
+      },
+      allowOnlineQueue: {
+        type: Boolean,
+        default: true,
+      },
+      currentCallingNumber: {
+        type: Number,
+        default: 0,
+      },
+    },
     bookingSettings: {
       appointmentDuration: {
         type: Number,

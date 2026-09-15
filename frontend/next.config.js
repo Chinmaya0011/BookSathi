@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  transpilePackages: ['lucide-react', 'framer-motion', 'recharts', 'animejs'],
   images: {
     domains: ['images.unsplash.com', 'ui-avatars.com', 'api.dicebear.com'],
   },

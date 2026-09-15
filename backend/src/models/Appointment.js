@@ -49,6 +49,21 @@ const appointmentSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    bookingType: {
+      type: String,
+      enum: ['TIME_SLOT', 'QUEUE'],
+      default: 'TIME_SLOT',
+      index: true,
+    },
+    queueNumber: {
+      type: Number,
+      min: 1,
+      index: true,
+    },
+    estimatedWaitMinutes: {
+      type: Number,
+      default: 0,
+    },
     appointmentDate: {
       type: Date,
       required: true,
@@ -60,34 +75,30 @@ const appointmentSchema = new mongoose.Schema(
     },
     startTime: {
       type: String, // HH:mm
-      required: true,
+      default: '09:00',
     },
     endTime: {
       type: String, // HH:mm
-      required: true,
+      default: '09:30',
     },
     startMinutes: {
       type: Number, // 0 - 1439
-      required: true,
       min: 0,
       max: 1439,
       index: true,
     },
     endMinutes: {
       type: Number, // 1 - 1440
-      required: true,
       min: 1,
       max: 1440,
       index: true,
     },
     startAt: {
       type: Date, // UTC Date
-      required: true,
       index: true,
     },
     endAt: {
       type: Date, // UTC Date
-      required: true,
       index: true,
     },
     duration: {
@@ -131,6 +142,8 @@ const appointmentSchema = new mongoose.Schema(
         'CANCELLED',
         'CONFIRMED',
         'PENDING',
+        'WAITING',
+        'CALLED',
         'IN_PROGRESS',
         'COMPLETED',
         'REJECTED',
@@ -299,14 +312,41 @@ appointmentSchema.index({ professionalId: 1, idempotencyKey: 1 }, { sparse: true
 // TTL index for automatic expiration of temporary holds
 appointmentSchema.index({ holdExpiresAt: 1 }, { expireAfterSeconds: 0, sparse: true });
 
-// Last-resort guard for exact start collision
+// Guard for exact start collision for TIME_SLOT bookings
 appointmentSchema.index(
   { professionalId: 1, dateString: 1, startMinutes: 1 },
   {
     unique: true,
     partialFilterExpression: {
+      bookingType: 'TIME_SLOT',
       status: {
         $in: ['HOLD', 'HELD', 'PENDING', 'CONFIRMED', 'IN_PROGRESS', 'BOOKED'],
+      },
+    },
+  }
+);
+
+// Guard for duplicate queue numbers for QUEUE bookings on the same day
+appointmentSchema.index(
+  { professionalId: 1, dateString: 1, queueNumber: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      bookingType: 'QUEUE',
+      queueNumber: { $exists: true },
+      status: {
+        $in: [
+          'HOLD',
+          'HELD',
+          'PENDING',
+          'CONFIRMED',
+          'WAITING',
+          'CALLED',
+          'IN_PROGRESS',
+          'BOOKED',
+          'DONE',
+          'COMPLETED',
+        ],
       },
     },
   }

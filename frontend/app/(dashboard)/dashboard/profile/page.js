@@ -208,16 +208,29 @@ export default function ProfilePage() {
           </p>
         </div>
 
-        {profile?.bookingSlug && (
-          <Link
-            href={`/book/${profile.bookingSlug}`}
-            target="_blank"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all self-start sm:self-auto"
-          >
-            <span>Preview Booking Page</span>
-            <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-          </Link>
-        )}
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          {profile?.bookingSlug && (
+            <>
+              <Link
+                href={`/profile/${profile.bookingSlug}`}
+                target="_blank"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold transition-all"
+              >
+                <span>View Public Profile</span>
+                <ExternalLink className="w-3.5 h-3.5 text-indigo-500" />
+              </Link>
+
+              <Link
+                href={`/book/${profile.bookingSlug}`}
+                target="_blank"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all"
+              >
+                <span>Booking Page</span>
+                <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+              </Link>
+            </>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSave} className="space-y-4">
@@ -309,15 +322,15 @@ export default function ProfilePage() {
         {/* 1. Identity & Credentials Card */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4 sm:p-5 space-y-3.5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Doctor Credentials
+            Professional Identity & Credentials
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <Input
-              label="Doctor Name"
+              label="Full Name / Display Name"
               name="name"
               required
-              placeholder="e.g. Dr. Rajesh Kumar"
+              placeholder="e.g. Adv. Priya Patel, Dr. Rajesh Sharma, CA Amit Verma"
               value={formData.name}
               onChange={handleChange}
             />
@@ -345,7 +358,7 @@ export default function ProfilePage() {
             <Input
               label="Specialization / Department"
               name="specialization"
-              placeholder="e.g. Cardiologist, General Physician"
+              placeholder="e.g. Corporate Law, Tax Advisory, Cardiology, Yoga Therapy"
               value={formData.specialization}
               onChange={handleChange}
             />
@@ -380,17 +393,17 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 2. Clinic Location Card */}
+        {/* 2. Clinic / Office Location Card */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4 sm:p-5 space-y-3.5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Clinic / Hospital Location
+            Office / Practice / Chamber Location
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <Input
-              label="Clinic / Chamber Name"
+              label="Firm / Office / Practice Name"
               name="businessName"
-              placeholder="e.g. Apex Health Clinic"
+              placeholder="e.g. Apex Law Chambers, Zenith Tax Consultancy, City Practice"
               value={formData.businessName}
               onChange={handleChange}
             />
@@ -441,7 +454,7 @@ export default function ProfilePage() {
             />
             <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
               <MapPin className="w-3 h-3 text-indigo-600 shrink-0" />
-              <span>Adds GPS &quot;Navigate to Clinic&quot; on patient booking slips.</span>
+              <span>Adds GPS &quot;Navigate to Workplace/Clinic&quot; on customer booking slips.</span>
             </p>
           </div>
         </div>

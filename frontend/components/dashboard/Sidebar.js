@@ -43,10 +43,10 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
   const role = user?.role || 'USER';
 
   useEffect(() => {
-    if (user && role === 'PROFESSIONAL') {
+    if (role === 'PROFESSIONAL') {
       fetchMyOrder();
     }
-  }, [user, role, fetchMyOrder]);
+  }, [role, fetchMyOrder]);
 
   // Load / save collapsed state and auto-collapse on tablet
   useEffect(() => {
@@ -79,9 +79,9 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
         title: 'Main',
         items: [
           { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-          { label: 'Find Professionals', href: '/dashboard/find', icon: Search },
           { label: 'Appointments', href: '/dashboard/appointments', icon: Calendar },
-          { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },
+          { label: 'Payments & Slips', href: '/dashboard/payments', icon: CreditCard },
+          { label: 'Lookup Booking', href: '/lookup', icon: Search },
         ],
       },
       {
@@ -130,7 +130,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
           { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, exact: true },
           { label: 'Appointments', href: '/dashboard/appointments', icon: Calendar },
           { label: 'Queue', href: '/dashboard/appointments?tab=queue', icon: ListOrdered },
-          { label: 'Patients', href: '/dashboard/appointments?tab=patients', icon: Users },
+          { label: 'Customers', href: '/dashboard/appointments?tab=patients', icon: Users },
           { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },
         ],
       },
@@ -168,7 +168,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
   const displayName = user?.name || profile?.name || user?.email?.split('@')[0] || 'User';
   const displayRole =
     role === 'USER'
-      ? 'Client'
+      ? 'Customer'
       : role === 'ADMIN'
       ? 'Admin'
       : profile?.profession || 'Professional';
@@ -211,7 +211,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
                     Book<span className="text-indigo-400">Saathi</span>
                   </span>
                   <span className="text-[10px] font-semibold text-slate-400 bg-slate-800/80 border border-slate-700/60 px-1.5 py-0.5 rounded">
-                    {role === 'ADMIN' ? 'Admin' : role === 'USER' ? 'Patient' : 'Pro'}
+                    {role === 'ADMIN' ? 'Admin' : role === 'USER' ? 'Customer' : 'Pro'}
                   </span>
                 </div>
               </Link>

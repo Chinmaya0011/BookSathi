@@ -65,6 +65,16 @@ export const publicService = {
     return res.data;
   },
 
+  async getQueueStatus(slug, date) {
+    const res = await api.get(`/public/${slug}/queue-status`, { params: { date } });
+    return res.data;
+  },
+
+  async joinQueue(slug, data) {
+    const res = await api.post(`/public/${slug}/queue/join`, data);
+    return res.data;
+  },
+
   // Alias for backward compatibility
   async createAppointment(slug, data) {
     return this.bookAppointment(slug, data);
@@ -73,6 +83,17 @@ export const publicService = {
   // Zero-login customer booking lookup by phone number
   async lookupByPhone(phone) {
     const res = await api.get('/public/lookup', { params: { phone } });
+    return res.data;
+  },
+
+  // Email OTP pre-booking verification methods
+  async sendEmailOtp(slug, { email, customerName }) {
+    const res = await api.post(`/public/${slug}/send-email-otp`, { email, customerName });
+    return res.data;
+  },
+
+  async verifyEmailOtp(slug, { email, otp }) {
+    const res = await api.post(`/public/${slug}/verify-email-otp`, { email, otp });
     return res.data;
   },
 

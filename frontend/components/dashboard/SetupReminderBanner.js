@@ -13,20 +13,14 @@ export default function SetupReminderBanner() {
   const { setupStatus, loading, fetchSetupStatus } = useSetupStatusStore();
   const pathname = usePathname();
 
-  // Re-fetch setup status whenever pathname changes or window regains focus (Only for Professionals)
+  const userRole = user?.role;
+
+  // Fetch setup status on mount for Professionals (deduplicated by store cache)
   useEffect(() => {
-    if (user && user.role === 'PROFESSIONAL') {
+    if (userRole === 'PROFESSIONAL') {
       fetchSetupStatus();
     }
-  }, [user, pathname, fetchSetupStatus]);
-
-  useEffect(() => {
-    const onFocus = () => {
-      if (user && user.role === 'PROFESSIONAL') fetchSetupStatus();
-    };
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, [user, fetchSetupStatus]);
+  }, [userRole, fetchSetupStatus]);
 
   // If not a professional, loading, no user, or setup is complete, do not show banner
   if (!user || user.role !== 'PROFESSIONAL' || loading || !setupStatus || setupStatus.isSetupComplete) {

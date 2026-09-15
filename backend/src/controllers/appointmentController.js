@@ -4,6 +4,7 @@ import {
   updateAppointmentNotes,
   createManualBooking,
   rescheduleAppointment,
+  callNextQueueNumberService,
 } from '../services/appointmentService.js';
 import { Appointment } from '../models/Appointment.js';
 import { ProfessionalProfile } from '../models/ProfessionalProfile.js';
@@ -20,6 +21,24 @@ import {
   emitAppointmentStatusChanged,
 } from '../socket/socketEmitter.js';
 import { successResponse, errorResponse } from '../utils/response.js';
+
+/**
+ * Call Next Queue Token / Update Serving Token
+ */
+export const callNextQueue = async (req, res, next) => {
+  try {
+    const { targetQueueNumber, date, status = 'CALLED' } = req.body;
+    const result = await callNextQueueNumberService({
+      professionalId: req.profile._id,
+      dateString: date,
+      targetQueueNumber,
+      status,
+    });
+    return successResponse(res, 200, `Called queue token #${result.currentServingNumber}`, result);
+  } catch (err) {
+    next(err);
+  }
+};
 
 export const getAppointments = async (req, res, next) => {
   try {

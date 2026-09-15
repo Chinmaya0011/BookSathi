@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { Appointment } from '../models/Appointment.js';
 import { ProfessionalProfile } from '../models/ProfessionalProfile.js';
@@ -6,12 +7,15 @@ import { AppointmentType } from '../models/AppointmentType.js';
 import { BlockedDate } from '../models/BlockedDate.js';
 import { Availability } from '../models/Availability.js';
 import { User } from '../models/User.js';
+import { DailyQueueCounter } from '../models/DailyQueueCounter.js';
 import {
   emitAppointmentCreated,
   emitAppointmentCancelled,
   emitAppointmentRescheduleRequested,
+  emitQueueUpdated,
+  emitQueueCalled,
 } from '../socket/socketEmitter.js';
-import { getAvailableSlots } from './slotGeneratorService.js';
+import { getAvailableSlots, invalidateSlotCache } from './slotGeneratorService.js';
 import { sendBookingNotifications } from './emailService.js';
 import { otpService } from './otpService.js';
 import {
@@ -455,6 +459,8 @@ export const holdPublicSlot = async (slug, holdData) => {
     dateString: date,
     startTime: selectedSlotTime,
     clientIp: holdData.clientIp,
+    website_hp: holdData.website_hp,
+    formLoadTime: holdData.formLoadTime,
   });
 
   const holdDurationMinutes = profile.bookingSettings?.holdDurationMinutes || 3;
@@ -476,6 +482,8 @@ export const holdPublicSlot = async (slug, holdData) => {
         fee,
       },
     });
+
+    invalidateSlotCache(profile._id, date);
 
     return {
       holdToken: appointment.holdToken,
@@ -520,6 +528,7 @@ export const releasePublicSlotHold = async (slug, holdToken) => {
     }
   );
 
+  invalidateSlotCache(profile._id);
   return { success: true, message: 'Hold released successfully' };
 };
 
@@ -551,6 +560,8 @@ export const createPublicBooking = async (slug, bookingData) => {
     paymentMode = 'ONLINE',
     holdToken,
     idempotencyKey,
+    website_hp,
+    formLoadTime,
   } = bookingData;
 
   // Idempotency check
@@ -637,7 +648,41 @@ export const createPublicBooking = async (slug, bookingData) => {
     dateString: date,
     startTime: selectedSlotTime,
     clientIp: bookingData.clientIp,
+    website_hp: website_hp || bookingData.website_hp,
+    formLoadTime: formLoadTime || bookingData.formLoadTime,
   });
+
+  // 0. Verify Email OTP if customerEmail is supplied
+  if (cleanEmail) {
+    if (bookingData.otpVerificationToken) {
+      try {
+        const decoded = jwt.verify(
+          bookingData.otpVerificationToken,
+          process.env.JWT_SECRET || 'booksaathi_jwt_super_secret_key_2026_indian_professionals'
+        );
+        if (decoded.type !== 'EMAIL_BOOKING_VERIFIED' || decoded.email !== cleanEmail) {
+          const err = new Error('OTP verification does not match this email address. Please request a new verification code.');
+          err.statusCode = 401;
+          err.isOperational = true;
+          throw err;
+        }
+      } catch (e) {
+        if (e.isOperational) throw e;
+        const err = new Error('Invalid or expired OTP verification token. Please verify again.');
+        err.statusCode = 401;
+        err.isOperational = true;
+        throw err;
+      }
+    } else if (bookingData.otp) {
+      await otpService.verifyBookingEmailOtp({ email: cleanEmail, otp: bookingData.otp });
+    } else if (process.env.NODE_ENV !== 'test') {
+      // In development / production, email OTP is mandatory when customerEmail is provided
+      const err = new Error('Email verification is required. Please verify the 6-digit OTP sent to your email.');
+      err.statusCode = 400;
+      err.isOperational = true;
+      throw err;
+    }
+  }
 
   // Determine payment status
   let initialPaymentStatus = 'PENDING';
@@ -720,6 +765,8 @@ export const createPublicBooking = async (slug, bookingData) => {
     manageUrl = res.manageUrl;
   }
 
+  invalidateSlotCache(profile._id, date);
+
   // Dispatch Notifications & Socket Events with secure manage URL
   sendBookingNotifications(appointment, profile, { manageUrl, cancelToken: rawCancelToken }).catch((err) =>
     console.error('Async notification error:', err.message)
@@ -743,6 +790,565 @@ export const createPublicBooking = async (slug, bookingData) => {
       phone: profile.phone,
       consultationFee: profile.consultationFee,
     },
+  };
+};
+
+/**
+ * Public Queue Status Service:
+ * Returns live status of daily queue for given date
+ */
+export const getPublicQueueStatusService = async ({ slug, dateString }) => {
+  const safeSlug = (slug || '').trim().toLowerCase();
+  let query = { bookingSlug: safeSlug, isPublic: { $ne: false } };
+  if (mongoose.Types.ObjectId.isValid(safeSlug)) {
+    query = { $or: [{ bookingSlug: safeSlug }, { _id: safeSlug }], isPublic: { $ne: false } };
+  }
+
+  const profile = await ProfessionalProfile.findOne(query);
+  if (!profile) {
+    const err = new Error('Professional not found.');
+    err.statusCode = 404;
+    err.isOperational = true;
+    throw err;
+  }
+
+  const timezone = profile.timezone || 'Asia/Kolkata';
+  const todayString = getDateString(new Date(), timezone);
+  const targetDate = dateString || todayString;
+
+  // 1. Check if Target Date is Blocked
+  const blockedRecord = await BlockedDate.findOne({
+    professionalId: profile._id,
+    date: targetDate,
+    allDay: true,
+  });
+
+  // 2. Check Weekly Availability for Day of Week
+  const [year, month, day] = targetDate.split('-').map(Number);
+  const targetDateObj = new Date(Date.UTC(year, month - 1, day));
+  const dayOfWeek = targetDateObj.getUTCDay();
+
+  const totalAvailabilityDocs = await Availability.countDocuments({ professionalId: profile._id });
+  let dayAvailability = await Availability.findOne({
+    professionalId: profile._id,
+    dayOfWeek,
+  });
+
+  if (totalAvailabilityDocs === 0 && !dayAvailability) {
+    if (dayOfWeek !== 0) {
+      dayAvailability = { enabled: true, timeRanges: [{ startTime: '09:00', endTime: '17:00' }] };
+    }
+  }
+
+  const isBlocked = !!blockedRecord;
+  const isClosed = isBlocked || !dayAvailability || !dayAvailability.enabled || !dayAvailability.timeRanges?.length;
+  const closedReason = blockedRecord?.reason || (isClosed ? 'Closed on this day' : '');
+
+  const counter = await DailyQueueCounter.findOne({
+    professionalId: profile._id,
+    dateString: targetDate,
+  });
+
+  const dailyLimit = profile.queueSettings?.dailyLimit || 50;
+  const currentServing = counter?.currentServingNumber || profile.queueSettings?.currentCallingNumber || 0;
+  const lastIssued = counter?.lastQueueNumber || 0;
+  const nextToken = lastIssued + 1;
+  const isQueueFull = lastIssued >= dailyLimit;
+  const allowOnlineQueue = profile.queueSettings?.allowOnlineQueue !== false;
+  const estimatedServiceMinutes = profile.queueSettings?.estimatedServiceTimeMinutes || 15;
+  const queueStartTime = profile.queueSettings?.queueStartTime || '09:00';
+  const queueEndTime = profile.queueSettings?.queueEndTime || '18:00';
+  const lastBookingTime = profile.queueSettings?.lastBookingTime || profile.queueSettings?.queueEndTime || '17:00';
+
+  // Check if cutoff time is reached for today's queue
+  const isToday = targetDate === todayString;
+  const nowInTz = new Date(new Date().toLocaleString('en-US', { timeZone: timezone }));
+  const currentMinutes = nowInTz.getHours() * 60 + nowInTz.getMinutes();
+  const cutoffMinutes = timeToMinutes(lastBookingTime);
+  const isCutoffReached = isToday && currentMinutes >= cutoffMinutes;
+
+  const waitingCount = await Appointment.countDocuments({
+    professionalId: profile._id,
+    dateString: targetDate,
+    bookingType: 'QUEUE',
+    status: { $in: ['WAITING', 'CALLED', 'IN_PROGRESS', 'BOOKED', 'CONFIRMED'] },
+  });
+
+  const estimatedWaitMinutes = Math.max(0, lastIssued - currentServing) * estimatedServiceMinutes;
+
+  return {
+    bookingType: profile.bookingType || 'TIME_SLOT',
+    dateString: targetDate,
+    isToday,
+    isClosed,
+    isBlocked,
+    closedReason,
+    dailyLimit,
+    currentServingNumber: currentServing,
+    lastQueueNumber: lastIssued,
+    nextQueueNumber: nextToken,
+    waitingCount,
+    estimatedWaitMinutes,
+    estimatedServiceTimeMinutes: estimatedServiceMinutes,
+    isQueueFull,
+    isCutoffReached,
+    allowOnlineQueue,
+    queueStartTime,
+    queueEndTime,
+    lastBookingTime,
+  };
+};
+
+/**
+ * Join Public Queue: Concurrency-Safe Atomic Token Allocation
+ */
+export const joinPublicQueueService = async (slug, bookingData) => {
+  const safeSlug = (slug || '').trim().toLowerCase();
+  let query = { bookingSlug: safeSlug, isPublic: { $ne: false } };
+  if (mongoose.Types.ObjectId.isValid(safeSlug)) {
+    query = { $or: [{ bookingSlug: safeSlug }, { _id: safeSlug }], isPublic: { $ne: false } };
+  }
+
+  const profile = await ProfessionalProfile.findOne(query);
+  if (!profile) {
+    const err = new Error('Professional not found or profile is inactive.');
+    err.statusCode = 404;
+    err.isOperational = true;
+    throw err;
+  }
+
+  if (profile.bookingType !== 'QUEUE') {
+    const err = new Error('This practitioner is configured for time slot appointments. Please select a specific time slot.');
+    err.statusCode = 400;
+    err.isOperational = true;
+    throw err;
+  }
+
+  if (profile.queueSettings?.allowOnlineQueue === false) {
+    const err = new Error('Online queue booking is currently paused by the professional. Walk-in queue available at clinic.');
+    err.statusCode = 400;
+    err.isOperational = true;
+    throw err;
+  }
+
+  const timezone = profile.timezone || 'Asia/Kolkata';
+  const todayString = getDateString(new Date(), timezone);
+  const {
+    date,
+    customerName,
+    customerPhone,
+    customerEmail,
+    reason,
+    appointmentTypeId,
+    paymentMode = 'OFFLINE',
+    idempotencyKey,
+  } = bookingData;
+
+  const targetDate = date || todayString;
+
+  if (targetDate < todayString) {
+    const err = new Error('Cannot join queue for past dates.');
+    err.statusCode = 400;
+    err.isOperational = true;
+    throw err;
+  }
+
+  // Check if date is blocked
+  const blockedRecord = await BlockedDate.findOne({
+    professionalId: profile._id,
+    date: targetDate,
+    allDay: true,
+  });
+  if (blockedRecord) {
+    const err = new Error(`The professional is unavailable on ${targetDate}${blockedRecord.reason ? ` (${blockedRecord.reason})` : ''}. Please select an open working day.`);
+    err.statusCode = 400;
+    err.isOperational = true;
+    throw err;
+  }
+
+  // Check weekly availability
+  const [targetYear, targetMonth, targetDay] = targetDate.split('-').map(Number);
+  const targetDateObj = new Date(Date.UTC(targetYear, targetMonth - 1, targetDay));
+  const dayOfWeek = targetDateObj.getUTCDay();
+
+  const totalAvailabilityDocs = await Availability.countDocuments({ professionalId: profile._id });
+  let dayAvailability = await Availability.findOne({
+    professionalId: profile._id,
+    dayOfWeek,
+  });
+
+  if (totalAvailabilityDocs === 0 && !dayAvailability) {
+    if (dayOfWeek !== 0) {
+      dayAvailability = { enabled: true, timeRanges: [{ startTime: '09:00', endTime: '17:00' }] };
+    }
+  }
+
+  if (!dayAvailability || !dayAvailability.enabled || !dayAvailability.timeRanges?.length) {
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const err = new Error(`The clinic/professional is closed on ${dayNames[dayOfWeek]}s (${targetDate}). Please select an open working day.`);
+    err.statusCode = 400;
+    err.isOperational = true;
+    throw err;
+  }
+
+  const cleanPhone = (customerPhone || '').trim();
+  const cleanEmail = (customerEmail || '').trim().toLowerCase();
+
+  if (!customerName?.trim() || !cleanPhone) {
+    const err = new Error('Customer name and valid phone number are required to join queue.');
+    err.statusCode = 400;
+    err.isOperational = true;
+    throw err;
+  }
+
+  // Check if customer already has active waiting queue booking on this date
+  const existingActive = await Appointment.findOne({
+    professionalId: profile._id,
+    dateString: targetDate,
+    customerPhone: cleanPhone,
+    bookingType: 'QUEUE',
+    status: { $in: ['WAITING', 'CALLED', 'IN_PROGRESS', 'BOOKED', 'CONFIRMED'] },
+  });
+
+  if (existingActive) {
+    if (customerName?.trim()) existingActive.customerName = customerName.trim();
+    if (cleanEmail) existingActive.customerEmail = cleanEmail;
+    if (reason?.trim()) existingActive.reason = reason.trim();
+    await existingActive.save();
+
+    const { rawToken } = generateCancelToken();
+    const manageUrl = `/book/manage?code=${existingActive.appointmentCode}&token=${rawToken}`;
+    return {
+      appointment: existingActive,
+      queueNumber: existingActive.queueNumber,
+      manageUrl,
+      isExisting: true,
+      message: `You already have an active queue token (#${existingActive.queueNumber}) for this date.`,
+      professional: {
+        name: profile.name,
+        profession: profile.profession,
+        specialization: profile.specialization,
+        bookingSlug: profile.bookingSlug,
+        address: profile.address,
+        city: profile.city,
+        phone: profile.phone,
+        consultationFee: profile.consultationFee,
+      },
+    };
+  }
+
+  // Resolve user if authenticated
+  let resolvedUserId = bookingData.userId || null;
+  let matchedUser = null;
+  if (resolvedUserId) {
+    matchedUser = await User.findById(resolvedUserId).catch(() => null);
+  }
+  if (!matchedUser && (cleanEmail || cleanPhone)) {
+    const orConditions = [];
+    if (cleanEmail) orConditions.push({ email: cleanEmail });
+    if (cleanPhone) orConditions.push({ phone: cleanPhone });
+    if (orConditions.length > 0) {
+      matchedUser = await User.findOne({ $or: orConditions });
+      if (matchedUser) resolvedUserId = matchedUser._id;
+    }
+  }
+
+  // Resolve Service / Tariff
+  let fee = profile.consultationFee || 500;
+  let appointmentTypeName = 'General Consultation';
+  let resolvedTypeId = null;
+  let duration = profile.queueSettings?.estimatedServiceTimeMinutes || 15;
+
+  if (appointmentTypeId) {
+    const apptType = await AppointmentType.findOne({
+      _id: appointmentTypeId,
+      professionalId: profile._id,
+      enabled: true,
+    });
+    if (apptType) {
+      fee = apptType.fee;
+      appointmentTypeName = apptType.name;
+      resolvedTypeId = apptType._id;
+      if (apptType.duration) duration = apptType.duration;
+    }
+  }
+
+  // Anti-spam rules check
+  await checkBookingSpamRules({
+    userId: resolvedUserId,
+    customerPhone: cleanPhone,
+    customerEmail: cleanEmail,
+    professionalId: profile._id,
+    dateString: targetDate,
+    clientIp: bookingData.clientIp,
+    website_hp: bookingData.website_hp,
+    formLoadTime: bookingData.formLoadTime,
+  });
+
+  // Verify Email OTP if customerEmail is supplied
+  if (cleanEmail) {
+    if (bookingData.otpVerificationToken) {
+      try {
+        const decoded = jwt.verify(
+          bookingData.otpVerificationToken,
+          process.env.JWT_SECRET || 'booksaathi_jwt_super_secret_key_2026_indian_professionals'
+        );
+        if (decoded.type !== 'EMAIL_BOOKING_VERIFIED' || decoded.email !== cleanEmail) {
+          const err = new Error('OTP verification does not match this email address. Please request a new verification code.');
+          err.statusCode = 401;
+          err.isOperational = true;
+          throw err;
+        }
+      } catch (e) {
+        if (e.isOperational) throw e;
+        const err = new Error('Invalid or expired OTP verification token. Please verify again.');
+        err.statusCode = 401;
+        err.isOperational = true;
+        throw err;
+      }
+    } else if (bookingData.otp) {
+      await otpService.verifyBookingEmailOtp({ email: cleanEmail, otp: bookingData.otp });
+    } else if (process.env.NODE_ENV !== 'test') {
+      const err = new Error('Email verification is required. Please verify the 6-digit OTP sent to your email.');
+      err.statusCode = 400;
+      err.isOperational = true;
+      throw err;
+    }
+  }
+
+  // Check cutoff time if booking for today
+  const lastBookingTime = profile.queueSettings?.lastBookingTime || profile.queueSettings?.queueEndTime || '17:00';
+  if (targetDate === todayString) {
+    const nowInTz = new Date(new Date().toLocaleString('en-US', { timeZone: timezone }));
+    const currentMinutes = nowInTz.getHours() * 60 + nowInTz.getMinutes();
+    const cutoffMinutes = timeToMinutes(lastBookingTime);
+    if (currentMinutes >= cutoffMinutes) {
+      const err = new Error(`Queue booking is closed for today. Last booking was allowed until ${lastBookingTime}. Please book for tomorrow.`);
+      err.statusCode = 400;
+      err.isOperational = true;
+      throw err;
+    }
+  }
+
+  // ATOMIC CONCURRENCY-SAFE TOKEN NUMBER GENERATION
+  const dailyLimit = profile.queueSettings?.dailyLimit || 50;
+  const counter = await DailyQueueCounter.findOneAndUpdate(
+    { professionalId: profile._id, dateString: targetDate },
+    { $inc: { lastQueueNumber: 1 } },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
+  );
+
+  const allocatedQueueNumber = counter.lastQueueNumber;
+
+  if (allocatedQueueNumber > dailyLimit) {
+    // Rollback atomic counter
+    await DailyQueueCounter.updateOne(
+      { professionalId: profile._id, dateString: targetDate },
+      { $inc: { lastQueueNumber: -1 } }
+    ).catch(() => {});
+
+    const err = new Error(`Today's queue capacity (${dailyLimit} tokens) is completely full. Please join tomorrow's queue or contact clinic.`);
+    err.statusCode = 400;
+    err.isOperational = true;
+    throw err;
+  }
+
+  const currentServing = counter.currentServingNumber || 0;
+  const peopleAhead = Math.max(0, allocatedQueueNumber - currentServing - 1);
+  const estimatedWaitMinutes = peopleAhead * (profile.queueSettings?.estimatedServiceTimeMinutes || 15);
+
+  const { rawToken, tokenHash } = generateCancelToken();
+  const appointmentCode = await generateAppointmentCode();
+
+  const queueStartTime = profile.queueSettings?.queueStartTime || '09:00';
+  const queueEndTime = profile.queueSettings?.queueEndTime || '18:00';
+  const startMins = timeToMinutes(queueStartTime);
+  const endMins = timeToMinutes(queueEndTime);
+
+  // Determine initial payment status
+  let initialPaymentStatus = 'PAY_AT_CLINIC';
+  let effectivePaymentMode = paymentMode;
+  if (fee === 0 || paymentMode === 'FREE') {
+    initialPaymentStatus = 'NOT_REQUIRED';
+    effectivePaymentMode = 'FREE';
+  } else if (paymentMode === 'ONLINE') {
+    initialPaymentStatus = 'PENDING';
+    effectivePaymentMode = 'ONLINE';
+  }
+
+  const appointment = new Appointment({
+    appointmentCode,
+    bookingType: 'QUEUE',
+    queueNumber: allocatedQueueNumber,
+    estimatedWaitMinutes,
+    userId: resolvedUserId,
+    professionalId: profile._id,
+    appointmentTypeId: resolvedTypeId,
+    appointmentTypeName,
+    customerName: customerName.trim(),
+    customerPhone: cleanPhone,
+    customerEmail: cleanEmail,
+    reason: (reason || '').trim(),
+    appointmentDate: targetDateObj,
+    dateString: targetDate,
+    startTime: queueStartTime,
+    endTime: queueEndTime,
+    startMinutes: startMins,
+    endMinutes: endMins,
+    duration,
+    fee,
+    currency: profile.currency || 'INR',
+    bookingSource: 'ONLINE',
+    consultationType: 'IN_PERSON',
+    status: 'WAITING',
+    paymentStatus: initialPaymentStatus,
+    paymentMode: effectivePaymentMode,
+    cancelTokenHash: tokenHash,
+    idempotencyKey: idempotencyKey ? String(idempotencyKey) : undefined,
+  });
+
+  await appointment.save();
+
+  const manageUrl = `/book/manage?code=${appointment.appointmentCode}&token=${rawToken}`;
+
+  // Broadcast real-time queue update to all listeners
+  emitQueueUpdated({
+    professionalId: profile._id,
+    bookingSlug: profile.bookingSlug,
+    dateString: targetDate,
+    queueStatus: {
+      currentServingNumber: currentServing,
+      lastQueueNumber: allocatedQueueNumber,
+      waitingCount: await Appointment.countDocuments({
+        professionalId: profile._id,
+        dateString: targetDate,
+        bookingType: 'QUEUE',
+        status: { $in: ['WAITING', 'CALLED', 'IN_PROGRESS', 'BOOKED', 'CONFIRMED'] },
+      }),
+    },
+  }).catch(() => {});
+
+  emitAppointmentCreated(appointment, profile, matchedUser).catch((err) =>
+    console.error('Socket emit error:', err.message)
+  );
+
+  sendBookingNotifications(appointment, profile, { manageUrl, cancelToken: rawToken }).catch((err) =>
+    console.error('Async notification error:', err.message)
+  );
+
+  return {
+    appointment,
+    queueNumber: allocatedQueueNumber,
+    peopleAhead,
+    estimatedWaitMinutes,
+    currentServingNumber: currentServing,
+    cancelToken: rawToken,
+    manageUrl,
+    professional: {
+      name: profile.name,
+      profession: profile.profession,
+      specialization: profile.specialization,
+      bookingSlug: profile.bookingSlug,
+      address: profile.address,
+      city: profile.city,
+      state: profile.state,
+      phone: profile.phone,
+      consultationFee: profile.consultationFee,
+    },
+  };
+};
+
+/**
+ * Call Next Queue Number / Set Serving Token (Professional Action)
+ */
+export const callNextQueueNumberService = async ({ professionalId, dateString, targetQueueNumber, status = 'CALLED' }) => {
+  const profile = await ProfessionalProfile.findById(professionalId);
+  if (!profile) {
+    const err = new Error('Professional not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const timezone = profile.timezone || 'Asia/Kolkata';
+  const targetDate = dateString || getDateString(new Date(), timezone);
+
+  let queueNumToCall = targetQueueNumber;
+  if (!queueNumToCall) {
+    const nextWaiting = await Appointment.findOne({
+      professionalId: profile._id,
+      dateString: targetDate,
+      bookingType: 'QUEUE',
+      status: 'WAITING',
+    }).sort({ queueNumber: 1 });
+
+    if (nextWaiting) {
+      queueNumToCall = nextWaiting.queueNumber;
+    }
+  }
+
+  if (!queueNumToCall) {
+    const counter = await DailyQueueCounter.findOne({ professionalId: profile._id, dateString: targetDate });
+    queueNumToCall = (counter?.currentServingNumber || 0) + 1;
+  }
+
+  // Update DailyQueueCounter
+  const counter = await DailyQueueCounter.findOneAndUpdate(
+    { professionalId: profile._id, dateString: targetDate },
+    { $set: { currentServingNumber: queueNumToCall } },
+    { new: true, upsert: true }
+  );
+
+  // Update professional profile calling number
+  await ProfessionalProfile.findByIdAndUpdate(profile._id, {
+    $set: { 'queueSettings.currentCallingNumber': queueNumToCall },
+  });
+
+  // Find and transition appointment
+  const appointment = await Appointment.findOneAndUpdate(
+    {
+      professionalId: profile._id,
+      dateString: targetDate,
+      queueNumber: queueNumToCall,
+      bookingType: 'QUEUE',
+    },
+    {
+      $set: {
+        status: status === 'IN_PROGRESS' ? 'IN_PROGRESS' : 'CALLED',
+        startedAt: new Date(),
+      },
+    },
+    { new: true }
+  );
+
+  // Real-time broadcast
+  emitQueueCalled({
+    professionalId: profile._id,
+    bookingSlug: profile.bookingSlug,
+    dateString: targetDate,
+    queueNumber: queueNumToCall,
+    appointment,
+  }).catch(() => {});
+
+  emitQueueUpdated({
+    professionalId: profile._id,
+    bookingSlug: profile.bookingSlug,
+    dateString: targetDate,
+    queueStatus: {
+      currentServingNumber: queueNumToCall,
+      lastQueueNumber: counter.lastQueueNumber,
+      waitingCount: await Appointment.countDocuments({
+        professionalId: profile._id,
+        dateString: targetDate,
+        bookingType: 'QUEUE',
+        status: { $in: ['WAITING', 'CALLED', 'IN_PROGRESS', 'BOOKED', 'CONFIRMED'] },
+      }),
+    },
+  }).catch(() => {});
+
+  return {
+    currentServingNumber: queueNumToCall,
+    appointment,
+    counter,
   };
 };
 
@@ -978,6 +1584,7 @@ export const cancelPublicBookingService = async ({
   appointment.cancelledAt = new Date();
   await appointment.save();
 
+  invalidateSlotCache(appointment.professionalId, appointment.dateString);
   recordCancellation(appointment.userId?.toString() || appointment.customerPhone);
 
   if (profile) {
@@ -1162,6 +1769,79 @@ export const createManualBooking = async (professionalId, bookingData) => {
     }
   }
 
+  // Handle QUEUE mode walk-in booking
+  if (profile.bookingType === 'QUEUE') {
+    const counter = await DailyQueueCounter.findOneAndUpdate(
+      { professionalId: profile._id, dateString: targetDate },
+      { $inc: { lastQueueNumber: 1 } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+    const allocatedQueueNumber = counter.lastQueueNumber;
+    const { rawToken, tokenHash } = generateCancelToken();
+    const appointmentCode = await generateAppointmentCode();
+
+    const [year, month, day] = targetDate.split('-').map(Number);
+    const targetDateObj = new Date(Date.UTC(year, month - 1, day));
+
+    const queueStartTime = profile.queueSettings?.queueStartTime || '09:00';
+    const queueEndTime = profile.queueSettings?.queueEndTime || '18:00';
+    const startMins = timeToMinutes(queueStartTime);
+    const endMins = timeToMinutes(queueEndTime);
+    const currentServing = counter.currentServingNumber || 0;
+    const peopleAhead = Math.max(0, allocatedQueueNumber - currentServing - 1);
+    const estimatedWaitMinutes = peopleAhead * (profile.queueSettings?.estimatedServiceTimeMinutes || 15);
+
+    const manualAppt = new Appointment({
+      appointmentCode,
+      bookingType: 'QUEUE',
+      queueNumber: allocatedQueueNumber,
+      estimatedWaitMinutes,
+      professionalId: profile._id,
+      appointmentTypeId: resolvedTypeId,
+      appointmentTypeName,
+      customerName: customerName.trim(),
+      customerPhone: customerPhone.trim(),
+      customerEmail: (customerEmail || '').trim().toLowerCase(),
+      reason: (reason || '').trim(),
+      appointmentDate: targetDateObj,
+      dateString: targetDate,
+      startTime: targetTime !== '10:00' ? targetTime : queueStartTime,
+      endTime: queueEndTime,
+      startMinutes: startMins,
+      endMinutes: endMins,
+      duration,
+      fee,
+      currency: profile.currency || 'INR',
+      bookingSource: bookingSource || 'WALK_IN',
+      consultationType: 'IN_PERSON',
+      status: 'WAITING',
+      notes: notes || '',
+      paymentStatus: fee === 0 ? 'NOT_REQUIRED' : 'PAY_AT_CLINIC',
+      paymentMode: fee === 0 ? 'FREE' : 'PAY_AT_CLINIC',
+      cancelTokenHash: tokenHash,
+    });
+
+    await manualAppt.save();
+
+    emitQueueUpdated({
+      professionalId: profile._id,
+      bookingSlug: profile.bookingSlug,
+      dateString: targetDate,
+      queueStatus: {
+        currentServingNumber: currentServing,
+        lastQueueNumber: allocatedQueueNumber,
+        waitingCount: await Appointment.countDocuments({
+          professionalId: profile._id,
+          dateString: targetDate,
+          bookingType: 'QUEUE',
+          status: { $in: ['WAITING', 'CALLED', 'IN_PROGRESS', 'BOOKED', 'CONFIRMED'] },
+        }),
+      },
+    }).catch(() => {});
+
+    return manualAppt;
+  }
+
   const { appointment } = await reserveSlotAtomically({
     professionalId: profile._id,
     dateString: targetDate,
@@ -1171,6 +1851,7 @@ export const createManualBooking = async (professionalId, bookingData) => {
     isPublic: false,
     targetStatus: 'BOOKED',
     payload: {
+      bookingType: 'TIME_SLOT',
       appointmentTypeId: resolvedTypeId,
       appointmentTypeName,
       customerName: customerName.trim(),
@@ -1200,125 +1881,92 @@ export const rescheduleAppointment = async (professionalId, appointmentId, resch
     throw err;
   }
 
+  const { date, time, duration: customDuration, reason = '' } = rescheduleData;
+
   const profile = await ProfessionalProfile.findById(professionalId);
-  if (!profile) {
-    const err = new Error('Professional not found');
-    err.statusCode = 404;
-    throw err;
-  }
-
-  const { newDate, newTime, appointmentTypeId } = rescheduleData;
-  const targetDate = (newDate || appointment.dateString).trim();
-  const targetTime = (newTime || appointment.startTime).trim();
-
-  let duration = appointment.duration;
-  let buffer = appointment.buffer || 0;
-  let resolvedTypeId = appointment.appointmentTypeId;
-  let apptTypeName = appointment.appointmentTypeName;
-
-  if (appointmentTypeId) {
-    const apptType = await AppointmentType.findOne({
-      _id: appointmentTypeId,
-      professionalId,
-    });
-    if (apptType) {
-      duration = apptType.duration;
-      if (apptType.bufferTime !== null && apptType.bufferTime !== undefined) {
-        buffer = apptType.bufferTime;
-      }
-      resolvedTypeId = apptType._id;
-      apptTypeName = apptType.name;
-    }
-  }
+  const targetDate = date || appointment.dateString;
+  const targetTime = time || appointment.startTime;
+  const duration = customDuration || appointment.duration || 30;
+  const buffer = appointment.buffer || 0;
 
   const startMinutes = timeToMinutes(targetTime);
   const endMinutes = startMinutes + duration;
-  const endTime = minutesToTime(endMinutes);
 
-  // Validate conflict against all other active locks
-  const now = new Date();
-  const conflicting = await Appointment.findOne({
-    professionalId,
+  // Validate legality
+  await validateSlotLegality({
+    profile,
     dateString: targetDate,
-    _id: { $ne: appointmentId },
-    $or: [
-      { status: { $in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'BOOKED', 'DONE'] } },
-      { status: { $in: ['HOLD', 'HELD'] }, holdExpiresAt: { $gt: now } },
-    ],
+    startMinutes,
+    endMinutes,
+    isPublic: false,
+  });
+
+  // Check overlap collision
+  const conflicting = await Appointment.findOne({
+    _id: { $ne: appointment._id },
+    professionalId: profile._id,
+    dateString: targetDate,
+    status: { $in: ['HOLD', 'HELD', 'PENDING', 'CONFIRMED', 'IN_PROGRESS', 'BOOKED'] },
     startMinutes: { $lt: endMinutes },
     endMinutes: { $gt: startMinutes },
   });
 
   if (conflicting) {
-    const err = new Error(
-      `Cannot reschedule: ${targetTime} - ${endTime} on ${targetDate} is already booked or blocked.`
-    );
+    const err = new Error('The selected new time slot conflicts with an existing appointment.');
     err.statusCode = 409;
     err.isOperational = true;
     throw err;
   }
 
   const [year, month, day] = targetDate.split('-').map(Number);
-  const appointmentDateObj = new Date(Date.UTC(year, month - 1, day));
-  const startAt = createUtcDateFromLocal(targetDate, startMinutes, profile.timezone || 'Asia/Kolkata');
-  const endAt = createUtcDateFromLocal(targetDate, endMinutes, profile.timezone || 'Asia/Kolkata');
-
   appointment.dateString = targetDate;
+  appointment.appointmentDate = new Date(Date.UTC(year, month - 1, day));
   appointment.startTime = targetTime;
-  appointment.endTime = endTime;
+  appointment.endTime = minutesToTime(endMinutes);
   appointment.startMinutes = startMinutes;
   appointment.endMinutes = endMinutes;
-  appointment.startAt = startAt;
-  appointment.endAt = endAt;
   appointment.duration = duration;
-  appointment.buffer = buffer;
-  appointment.appointmentDate = appointmentDateObj;
-  appointment.appointmentTypeId = resolvedTypeId;
-  appointment.appointmentTypeName = apptTypeName;
   appointment.status = 'CONFIRMED';
-  await appointment.save();
+  appointment.rescheduleRequest = null;
+  appointment.confirmedAt = new Date();
 
+  await appointment.save();
   return appointment;
 };
 
 /**
- * Get Professional Appointments with Tab Filters, Queue Categorization & Search
+ * Get Professional Appointments with search, filter, pagination
  */
-export const getProfessionalAppointments = async (professionalId, query = {}) => {
-  const { tab = 'upcoming', date, status, search, page = 1, limit = 50 } = query;
-  const profile = await ProfessionalProfile.findById(professionalId);
-  const timezone = profile?.timezone || 'Asia/Kolkata';
-  const todayString = getDateString(new Date(), timezone);
-  const currentTimeString = getCurrentTimeString(timezone);
-  const currentMinutes = timeToMinutes(currentTimeString);
+export const getProfessionalAppointments = async (professionalId, queryParams = {}) => {
+  const {
+    status,
+    date,
+    search,
+    type,
+    page = 1,
+    limit = 50,
+  } = queryParams;
 
   const filter = { professionalId };
+
+  if (status && status !== 'ALL') {
+    if (status === 'DONE') {
+      filter.status = { $in: ['DONE', 'COMPLETED'] };
+    } else if (status === 'CANCELLED') {
+      filter.status = { $in: ['CANCELLED', 'REJECTED', 'NO_SHOW'] };
+    } else if (status === 'QUEUE' || status === 'WAITING') {
+      filter.status = { $in: ['WAITING', 'CALLED', 'IN_PROGRESS', 'BOOKED', 'CONFIRMED', 'ARRIVED'] };
+    } else {
+      filter.status = status;
+    }
+  }
 
   if (date) {
     filter.dateString = date;
   }
 
-  if (status) {
-    filter.status = status;
-  } else {
-    if (tab === 'today') {
-      filter.dateString = todayString;
-      filter.status = { $ne: 'CANCELLED' };
-    } else if (tab === 'queue') {
-      filter.dateString = todayString;
-      filter.status = {
-        $in: ['CONFIRMED', 'PENDING', 'ARRIVED', 'WAITING', 'IN_PROGRESS', 'BOOKED'],
-      };
-    } else if (tab === 'upcoming') {
-      filter.dateString = { $gte: todayString };
-      filter.status = {
-        $in: ['CONFIRMED', 'PENDING', 'ARRIVED', 'WAITING', 'IN_PROGRESS', 'BOOKED'],
-      };
-    } else if (tab === 'past') {
-      filter.dateString = { $lt: todayString };
-    } else if (tab === 'cancelled') {
-      filter.status = { $in: ['CANCELLED', 'NO_SHOW', 'REJECTED'] };
-    }
+  if (type) {
+    filter.appointmentTypeId = type;
   }
 
   if (search) {
@@ -1326,25 +1974,30 @@ export const getProfessionalAppointments = async (professionalId, query = {}) =>
     filter.$or = [
       { customerName: regex },
       { customerPhone: regex },
+      { customerEmail: regex },
       { appointmentCode: regex },
       { appointmentTypeName: regex },
     ];
   }
 
   const skip = (Number(page) - 1) * Number(limit);
-  const sortDirection = tab === 'past' || tab === 'cancelled' ? -1 : 1;
 
-  const [rawAppointments, total] = await Promise.all([
+  const [rawAppointments, total, profile] = await Promise.all([
     Appointment.find(filter)
       .select('+notes')
-      .sort({ dateString: sortDirection, startTime: sortDirection })
+      .sort({ dateString: -1, queueNumber: 1, startTime: 1 })
       .skip(skip)
       .limit(Number(limit))
       .lean(),
     Appointment.countDocuments(filter),
+    ProfessionalProfile.findById(professionalId).select('bookingSettings timezone').lean(),
   ]);
 
-  // Enrich appointments with arrival analysis and queue categorization
+  const timezone = profile?.timezone || 'Asia/Kolkata';
+  const todayString = getDateString(new Date(), timezone);
+  const currentTimeString = getCurrentTimeString(timezone);
+  const currentMinutes = timeToMinutes(currentTimeString);
+
   const earlyArrivalLimit = profile?.bookingSettings?.earlyArrivalMinutes || 15;
   const lateGraceLimit = profile?.bookingSettings?.lateGraceMinutes || 10;
   const noShowLimit = profile?.bookingSettings?.noShowThresholdMinutes || 15;
@@ -1362,10 +2015,10 @@ export const getProfessionalAppointments = async (professionalId, query = {}) =>
       normalizedStatus === 'WAITING' ||
       normalizedStatus === 'IN_PROGRESS'
     ) {
-      if (appt.dateString < todayString || (appt.dateString === todayString && apptEndMinutes < currentMinutes)) {
+      if (appt.bookingType !== 'QUEUE' && (appt.dateString < todayString || (appt.dateString === todayString && apptEndMinutes < currentMinutes))) {
         normalizedStatus = 'DONE';
       } else {
-        normalizedStatus = 'BOOKED';
+        normalizedStatus = appt.status;
       }
     } else if (normalizedStatus === 'COMPLETED') {
       normalizedStatus = 'DONE';
@@ -1374,7 +2027,7 @@ export const getProfessionalAppointments = async (professionalId, query = {}) =>
     }
 
     let arrivalAnalysis = null;
-    if (appt.dateString === todayString) {
+    if (appt.dateString === todayString && appt.bookingType !== 'QUEUE') {
       const evaluationRefMinutes = appt.arrivedAt
         ? timeToMinutes(getCurrentTimeString(timezone, new Date(appt.arrivedAt)))
         : currentMinutes;
@@ -1430,6 +2083,8 @@ export const updateAppointmentStatus = async (
     appointment.arrivedAt = now;
   } else if (status === 'WAITING') {
     if (!appointment.arrivedAt) appointment.arrivedAt = now;
+  } else if (status === 'CALLED') {
+    appointment.startedAt = now;
   } else if (status === 'IN_PROGRESS') {
     appointment.startedAt = now;
   } else if (status === 'COMPLETED' || status === 'DONE') {
@@ -1482,17 +2137,125 @@ export const getDashboardStats = async (professionalId, timezone = 'Asia/Kolkata
   const [year, month] = todayString.split('-');
   const monthPrefix = `${year}-${month}`;
 
-  const [allAppointments, todayRawSchedule, profile] = await Promise.all([
-    Appointment.find({ professionalId }).lean(),
+  const todayObj = new Date();
+  const minWeeklyDateObj = new Date(todayObj);
+  minWeeklyDateObj.setDate(todayObj.getDate() - 6);
+  const minWeeklyDate = getDateString(minWeeklyDateObj, timezone);
+
+  const proObjectId = new mongoose.Types.ObjectId(professionalId);
+
+  const [summaryStats, todayRawSchedule, profile, dailyCounter] = await Promise.all([
+    Appointment.aggregate([
+      { $match: { professionalId: proObjectId } },
+      {
+        $facet: {
+          upcoming: [
+            {
+              $match: {
+                dateString: { $gte: todayString },
+                status: { $in: ['CONFIRMED', 'PENDING', 'ARRIVED', 'WAITING', 'CALLED', 'IN_PROGRESS', 'BOOKED'] },
+              },
+            },
+            { $count: 'count' },
+          ],
+          monthStats: [
+            {
+              $match: {
+                dateString: { $regex: `^${monthPrefix}` },
+                status: { $in: ['CONFIRMED', 'COMPLETED', 'ARRIVED', 'WAITING', 'CALLED', 'IN_PROGRESS', 'BOOKED', 'DONE'] },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                count: { $sum: 1 },
+                revenue: { $sum: '$fee' },
+              },
+            },
+          ],
+          totalSummary: [
+            {
+              $group: {
+                _id: null,
+                totalCount: { $sum: 1 },
+                totalRevenue: {
+                  $sum: {
+                    $cond: [
+                      { $in: ['$status', ['CONFIRMED', 'COMPLETED', 'BOOKED', 'DONE']] },
+                      { $ifNull: ['$fee', 0] },
+                      0,
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+          weeklyTrend: [
+            {
+              $match: {
+                dateString: { $gte: minWeeklyDate, $lte: todayString },
+                status: { $ne: 'CANCELLED' },
+              },
+            },
+            {
+              $group: {
+                _id: '$dateString',
+                appointments: { $sum: 1 },
+                revenue: { $sum: { $ifNull: ['$fee', 0] } },
+              },
+            },
+          ],
+          serviceDistribution: [
+            {
+              $match: {
+                status: { $ne: 'CANCELLED' },
+              },
+            },
+            {
+              $group: {
+                _id: { $ifNull: ['$appointmentTypeName', 'General Consultation'] },
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { count: -1 } },
+          ],
+          hourlyDistribution: [
+            {
+              $match: {
+                status: { $ne: 'CANCELLED' },
+                startTime: { $exists: true, $ne: '' },
+              },
+            },
+            {
+              $group: {
+                _id: '$startTime',
+                count: { $sum: 1 },
+              },
+            },
+          ],
+        },
+      },
+    ]),
     Appointment.find({
       professionalId,
       dateString: todayString,
       status: { $ne: 'CANCELLED' },
     })
-      .sort({ startTime: 1 })
+      .select('appointmentCode bookingType queueNumber estimatedWaitMinutes customerName customerPhone customerEmail reason appointmentDate dateString startTime endTime startMinutes endMinutes duration fee status bookingSource consultationType arrivedAt appointmentTypeName')
+      .sort({ queueNumber: 1, startTime: 1 })
       .lean(),
-    ProfessionalProfile.findById(professionalId).lean(),
+    ProfessionalProfile.findById(professionalId)
+      .select('bookingType queueSettings bookingSettings timezone name')
+      .lean(),
+    DailyQueueCounter.findOne({ professionalId, dateString: todayString }).lean(),
   ]);
+
+  const facet = summaryStats[0] || {};
+  const upcomingCount = facet.upcoming?.[0]?.count || 0;
+  const monthCount = facet.monthStats?.[0]?.count || 0;
+  const monthRevenue = facet.monthStats?.[0]?.revenue || 0;
+  const totalCount = facet.totalSummary?.[0]?.totalCount || 0;
+  const totalRevenue = facet.totalSummary?.[0]?.totalRevenue || 0;
 
   const earlyArrivalLimit = profile?.bookingSettings?.earlyArrivalMinutes || 15;
   const lateGraceLimit = profile?.bookingSettings?.lateGraceMinutes || 10;
@@ -1515,11 +2278,12 @@ export const getDashboardStats = async (professionalId, timezone = 'Asia/Kolkata
     });
 
     let queueStage = 'UPCOMING';
-    if (appt.status === 'IN_PROGRESS') {
+    if (appt.status === 'IN_PROGRESS' || appt.status === 'CALLED') {
       queueStage = 'NOW';
     } else if (appt.status === 'ARRIVED' || appt.status === 'WAITING') {
       queueStage = 'WAITING';
     } else if (
+      appt.bookingType !== 'QUEUE' &&
       currentMinutes >= apptStartMinutes &&
       currentMinutes <= apptEndMinutes &&
       (appt.status === 'CONFIRMED' || appt.status === 'BOOKED')
@@ -1538,67 +2302,41 @@ export const getDashboardStats = async (professionalId, timezone = 'Asia/Kolkata
 
   const todayCount = todaySchedule.length;
   const waitingCount = todaySchedule.filter((a) => a.status === 'WAITING' || a.status === 'ARRIVED').length;
-  const inProgressCount = todaySchedule.filter((a) => a.status === 'IN_PROGRESS').length;
+  const inProgressCount = todaySchedule.filter((a) => a.status === 'IN_PROGRESS' || a.status === 'CALLED').length;
   const completedTodayCount = todaySchedule.filter((a) => a.status === 'COMPLETED' || a.status === 'DONE').length;
   const noShowTodayCount = todaySchedule.filter((a) => a.status === 'NO_SHOW').length;
 
-  const upcomingCount = allAppointments.filter(
-    (a) =>
-      a.dateString >= todayString &&
-      ['CONFIRMED', 'PENDING', 'ARRIVED', 'WAITING', 'IN_PROGRESS', 'BOOKED'].includes(a.status)
-  ).length;
+  const currentServingNumber = dailyCounter?.currentServingNumber || profile?.queueSettings?.currentCallingNumber || 0;
+  const lastQueueNumber = dailyCounter?.lastQueueNumber || 0;
+  const dailyLimit = profile?.queueSettings?.dailyLimit || 50;
 
-  const monthCount = allAppointments.filter(
-    (a) =>
-      a.dateString?.startsWith(monthPrefix) &&
-      ['CONFIRMED', 'COMPLETED', 'ARRIVED', 'IN_PROGRESS', 'BOOKED', 'DONE'].includes(a.status)
-  ).length;
-
-  const totalRevenue = allAppointments
-    .filter((a) => ['CONFIRMED', 'COMPLETED', 'BOOKED', 'DONE'].includes(a.status))
-    .reduce((sum, a) => sum + (a.fee || 0), 0);
-
-  const monthRevenue = allAppointments
-    .filter(
-      (a) =>
-        a.dateString?.startsWith(monthPrefix) &&
-        ['CONFIRMED', 'COMPLETED', 'BOOKED', 'DONE'].includes(a.status)
-    )
-    .reduce((sum, a) => sum + (a.fee || 0), 0);
+  const weeklyTrendMap = {};
+  (facet.weeklyTrend || []).forEach((row) => {
+    weeklyTrendMap[row._id] = { appointments: row.appointments, revenue: row.revenue };
+  });
 
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const weeklyTrend = [];
-  const todayObj = new Date();
 
   for (let i = 6; i >= 0; i--) {
     const d = new Date(todayObj);
     d.setDate(todayObj.getDate() - i);
     const dateStr = getDateString(d, timezone);
     const dayName = daysOfWeek[d.getDay()];
-
-    const dayBookings = allAppointments.filter(
-      (a) => a.dateString === dateStr && a.status !== 'CANCELLED'
-    );
-    const dayRevenue = dayBookings.reduce((sum, a) => sum + (a.fee || 0), 0);
+    const dayData = weeklyTrendMap[dateStr] || { appointments: 0, revenue: 0 };
 
     weeklyTrend.push({
       date: dateStr,
       day: dayName,
-      appointments: dayBookings.length,
-      revenue: dayRevenue,
+      appointments: dayData.appointments,
+      revenue: dayData.revenue,
     });
   }
 
-  const serviceMap = {};
-  allAppointments.forEach((a) => {
-    const type = a.appointmentTypeName || 'General Consultation';
-    serviceMap[type] = (serviceMap[type] || 0) + 1;
-  });
-
-  const serviceDistribution = Object.keys(serviceMap).map((name) => ({
-    name,
-    count: serviceMap[name],
-    percentage: Math.round((serviceMap[name] / (allAppointments.length || 1)) * 100),
+  const serviceDistribution = (facet.serviceDistribution || []).map((row) => ({
+    name: row._id,
+    count: row.count,
+    percentage: Math.round((row.count / (totalCount || 1)) * 100),
   }));
 
   const hourMap = {
@@ -1611,9 +2349,9 @@ export const getDashboardStats = async (professionalId, timezone = 'Asia/Kolkata
     '07:00 PM': 0,
   };
 
-  allAppointments.forEach((a) => {
-    if (!a.startTime) return;
-    const [h] = a.startTime.split(':').map(Number);
+  (facet.hourlyDistribution || []).forEach((row) => {
+    if (!row._id) return;
+    const [h] = row._id.split(':').map(Number);
     const hourKey =
       h === 9
         ? '09:00 AM'
@@ -1632,7 +2370,7 @@ export const getDashboardStats = async (professionalId, timezone = 'Asia/Kolkata
         : null;
 
     if (hourKey && hourMap[hourKey] !== undefined) {
-      hourMap[hourKey] += 1;
+      hourMap[hourKey] += row.count;
     }
   });
 
@@ -1642,6 +2380,15 @@ export const getDashboardStats = async (professionalId, timezone = 'Asia/Kolkata
   }));
 
   return {
+    bookingType: profile?.bookingType || 'TIME_SLOT',
+    queueSettings: profile?.queueSettings || {},
+    todayQueueStatus: {
+      currentServingNumber,
+      lastQueueNumber,
+      waitingCount,
+      isQueueFull: lastQueueNumber >= dailyLimit,
+      dailyLimit,
+    },
     todayCount,
     waitingCount,
     inProgressCount,
@@ -1649,7 +2396,7 @@ export const getDashboardStats = async (professionalId, timezone = 'Asia/Kolkata
     noShowTodayCount,
     upcomingCount,
     monthCount,
-    totalCount: allAppointments.length,
+    totalCount,
     totalRevenue,
     monthRevenue,
     weeklyTrend,

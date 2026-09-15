@@ -1,23 +1,46 @@
 import { create } from 'zustand';
 import { professionalService } from '@/services/professional.service';
+import { dedupeQuery, invalidateQuery } from '@/lib/queryCache';
 
-export const useSetupStatusStore = create((set) => ({
+export const useSetupStatusStore = create((set, get) => ({
   setupStatus: null,
-  loading: true,
+  loading: false,
 
-  fetchSetupStatus: async () => {
+  fetchSetupStatus: async (force = false) => {
+    // If we already have setup status in state and not forcing, return it immediately
+    const current = get().setupStatus;
+    if (current && !force) {
+      return current;
+    }
+
     try {
-      const res = await professionalService.getSetupStatus();
-      if (res.data) {
-        set({ setupStatus: res.data, loading: false });
-        return res.data;
+      const data = await dedupeQuery(
+        'professional:setup-status',
+        async () => {
+          const res = await professionalService.getSetupStatus();
+          return res?.data || null;
+        },
+        { ttl: 180000, force } // 3 minute cache
+      );
+
+      if (data) {
+        set({ setupStatus: data, loading: false });
+        return data;
       }
     } catch {
-      // Fallback gracefully if offline
+      // Fallback gracefully
     } finally {
       set({ loading: false });
     }
   },
 
-  resetSetupStatus: () => set({ setupStatus: null, loading: true }),
+  invalidateSetupStatus: () => {
+    invalidateQuery('professional:setup-status');
+  },
+
+  resetSetupStatus: () => {
+    invalidateQuery('professional:setup-status');
+    set({ setupStatus: null, loading: false });
+  },
 }));
+

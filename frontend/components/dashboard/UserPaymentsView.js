@@ -190,7 +190,7 @@ export default function UserPaymentsView({ user }) {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by doctor, service, or code..."
+              placeholder="Search by professional, service, or code..."
               className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
             />
           </div>
@@ -212,11 +212,11 @@ export default function UserPaymentsView({ user }) {
               When you book appointments and complete consultations, your itemized receipts will appear here.
             </p>
             <Link
-              href="/dashboard/find"
+              href="/dashboard/appointments"
               className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all cursor-pointer"
             >
-              <Search className="w-4 h-4" />
-              <span>Browse Verified Professionals</span>
+              <Calendar className="w-4 h-4" />
+              <span>View My Appointments</span>
             </Link>
           </div>
         ) : (
@@ -410,13 +410,13 @@ export default function UserPaymentsView({ user }) {
 
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <div>
-                  <span className="text-[10px] font-bold uppercase text-slate-400 block">Patient / Client</span>
+                  <span className="text-[10px] font-bold uppercase text-slate-400 block">Customer / Client</span>
                   <span className="font-bold text-slate-800">{selectedReceipt.customerName}</span>
                   <p className="text-[11px] text-slate-500">{selectedReceipt.customerPhone}</p>
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold uppercase text-slate-400 block">Consultant / Doctor</span>
+                  <span className="text-[10px] font-bold uppercase text-slate-400 block">Professional / Consultant</span>
                   <span className="font-bold text-slate-800">{selectedReceipt.professionalId?.name || 'Professional'}</span>
                   <p className="text-[11px] text-indigo-600 font-semibold">{selectedReceipt.professionalId?.profession || 'Consultant'}</p>
                 </div>

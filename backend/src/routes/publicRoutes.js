@@ -4,6 +4,8 @@ import {
   getPublicProfile,
   getPublicAvailability,
   getPublicSlots,
+  getPublicQueueStatus,
+  joinPublicQueue,
   holdSlotPublic,
   releaseHoldPublic,
   bookPublicAppointment,
@@ -13,6 +15,8 @@ import {
   getBookingChallenge,
   sendBookingOtp,
   verifyBookingOtp,
+  sendPublicEmailOtp,
+  verifyPublicEmailOtp,
   cancelPublicBooking,
   requestPublicReschedule,
 } from '../controllers/publicController.js';
@@ -21,6 +25,7 @@ import {
   searchLimiter,
   slotLimiter,
   bookingLimiter,
+  otpLimiter,
 } from '../middleware/rateLimiter.js';
 import { optionalAuth } from '../middleware/authMiddleware.js';
 import {
@@ -46,6 +51,13 @@ router.get('/professionals', searchLimiter, listProfessionals);
 router.get('/:slug', getPublicProfile);
 router.get('/:slug/availability', slotLimiter, getPublicAvailability);
 router.get('/:slug/slots', slotLimiter, getPublicSlots);
+router.get('/:slug/queue-status', slotLimiter, getPublicQueueStatus);
+router.post('/:slug/queue', bookingLimiter, optionalAuth, joinPublicQueue);
+router.post('/:slug/queue/join', bookingLimiter, optionalAuth, joinPublicQueue);
+// Pre-Booking Email OTP Verification Flow
+router.post('/:slug/send-email-otp', otpLimiter, sendPublicEmailOtp);
+router.post('/:slug/verify-email-otp', otpLimiter, verifyPublicEmailOtp);
+
 router.post('/:slug/hold', bookingLimiter, validate(holdSlotSchema), holdSlotPublic);
 router.post('/:slug/hold/release', bookingLimiter, releaseHoldPublic);
 router.post('/:slug/book', bookingLimiter, optionalAuth, validate(publicBookingSchema), bookPublicAppointment);

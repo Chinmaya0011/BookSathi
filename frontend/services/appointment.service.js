@@ -46,6 +46,11 @@ export const appointmentService = {
     return res.data;
   },
 
+  async callNextQueue(data = {}) {
+    const res = await api.post('/appointments/queue/call-next', data);
+    return res.data;
+  },
+
   async rescheduleAppointment(id, data) {
     const res = await api.patch(`/appointments/${id}/reschedule`, data);
     return res.data;

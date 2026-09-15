@@ -265,10 +265,10 @@ export default function OnboardingPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Full Name or Clinic Name *
+                  Full Name or Practice / Business Name *
                 </label>
                 <Input
-                  placeholder="e.g. Dr. Rajesh Sharma or City Dental Clinic"
+                  placeholder="e.g. Adv. Priya Patel, Dr. Rajesh Sharma, CA Amit Verma"
                   value={name}
                   onChange={(e) => {
                     setName(e.target.value);
@@ -310,7 +310,7 @@ export default function OnboardingPage() {
                   </span>
                   <input
                     type="text"
-                    placeholder="dr-rajesh"
+                    placeholder="priya-patel"
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
                     className="w-full pl-28 pr-10 h-12 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"

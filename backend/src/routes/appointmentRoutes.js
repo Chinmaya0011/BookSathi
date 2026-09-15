@@ -10,6 +10,7 @@ import {
   reschedule,
   saveNotes,
   createManual,
+  callNextQueue,
 } from '../controllers/appointmentController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 import {
@@ -23,6 +24,7 @@ router.use(authenticate);
 
 router.get('/', getAppointments);
 router.post('/manual', bookingLimiter, createManual);
+router.post('/queue/call-next', appointmentActionLimiter, callNextQueue);
 router.get('/:id', getAppointmentById);
 
 // Specific lifecycle actions

@@ -4,6 +4,7 @@ import {
   updateProfile,
   getStats,
   getSetupStatus,
+  checkModeSwitch,
 } from '../controllers/professionalController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validateMiddleware.js';
@@ -17,5 +18,6 @@ router.get('/profile', getProfile);
 router.put('/profile', validate(updateProfileSchema), updateProfile);
 router.get('/stats', getStats);
 router.get('/setup-status', getSetupStatus);
+router.get('/switch-check', checkModeSwitch);
 
 export default router;

@@ -38,7 +38,7 @@ export default function QrBannerHero() {
         </h1>
 
         <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal max-w-2xl">
-          Upgrade your practice with laser-engraved 3D Acrylic QR Desk Standees and UV-resistant Matte Wall Banners. Patients simply scan with Google Lens, Paytm, PhonePe, or Camera to book tokens and pay directly with zero reception queue chaos.
+          Upgrade your practice with laser-engraved 3D Acrylic QR Desk Standees and UV-resistant Matte Wall Banners. Customers &amp; clients simply scan with Google Lens, Paytm, PhonePe, or Camera to book tokens and pay directly with zero reception queue chaos.
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-slate-800 text-xs">

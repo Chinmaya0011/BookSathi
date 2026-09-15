@@ -14,6 +14,44 @@ import {
   APP_TZ,
 } from '../utils/dateHelpers.js';
 
+// In-memory TTL cache for high-throughput slot querying
+const slotCache = new Map();
+const monthlyCache = new Map();
+
+const SLOT_CACHE_TTL_MS = 30 * 1000; // 30 seconds
+const MONTHLY_CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+// Periodic garbage collection for expired cache entries
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of slotCache.entries()) {
+    if (v.expiresAt <= now) slotCache.delete(k);
+  }
+  for (const [k, v] of monthlyCache.entries()) {
+    if (v.expiresAt <= now) monthlyCache.delete(k);
+  }
+}, 60 * 1000);
+
+/**
+ * Invalidate slot cache when appointments, holds, or blocked dates change
+ */
+export const invalidateSlotCache = (professionalId, dateString = null) => {
+  if (!professionalId) return;
+  const pId = String(professionalId);
+  for (const [k] of slotCache.keys()) {
+    if (k.startsWith(`slots:${pId}`)) {
+      if (!dateString || k.includes(`:${dateString}:`)) {
+        slotCache.delete(k);
+      }
+    }
+  }
+  for (const [k] of monthlyCache.keys()) {
+    if (k.startsWith(`monthly:${pId}`)) {
+      monthlyCache.delete(k);
+    }
+  }
+};
+
 /**
  * Generate all available booking slots for a professional on a given date (YYYY-MM-DD)
  */
@@ -23,6 +61,17 @@ export const getAvailableSlots = async (
   requestedDuration = null,
   requestedBuffer = null
 ) => {
+  const duration = requestedDuration || profile.bookingSettings?.appointmentDuration || 30;
+  const buffer = requestedBuffer !== null && requestedBuffer !== undefined
+    ? requestedBuffer
+    : (profile.bookingSettings?.bufferTime ?? 10);
+
+  const cacheKey = `slots:${profile._id}:${targetDateString}:${duration}:${buffer}`;
+  const cached = slotCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.data;
+  }
+
   const istNow = nowIst();
   const todayString = istNow.dateString;
 
@@ -35,10 +84,6 @@ export const getAvailableSlots = async (
   const maxDays = profile.bookingSettings?.maxAdvanceDays || 60;
   const minNoticeMinutes = profile.bookingSettings?.minNoticeMinutes ?? 0;
   const allowSameDay = profile.bookingSettings?.allowSameDayBooking !== false;
-  const duration = requestedDuration || profile.bookingSettings?.appointmentDuration || 30;
-  const buffer = requestedBuffer !== null && requestedBuffer !== undefined
-    ? requestedBuffer
-    : (profile.bookingSettings?.bufferTime ?? 10);
 
   if (targetDateString < todayString) {
     return { date: targetDateString, slots: [], message: 'Past dates are not available' };
@@ -59,32 +104,38 @@ export const getAvailableSlots = async (
     };
   }
 
-  // 2. Check if Full Day or Partial Day is Blocked
+  // 2. Check if Full Day or Partial Day is Blocked (Optimized covered lean query)
   const blockedDates = await BlockedDate.find({
     professionalId: profile._id,
     date: targetDateString,
-  });
+  })
+    .select('date allDay startTime endTime reason')
+    .lean();
 
   const fullDayBlocked = blockedDates.find((b) => b.allDay);
   if (fullDayBlocked) {
-    return {
+    const resData = {
       date: targetDateString,
       isBlocked: true,
       reason: fullDayBlocked.reason || 'Professional is unavailable on this date',
       slots: [],
     };
+    slotCache.set(cacheKey, { expiresAt: Date.now() + SLOT_CACHE_TTL_MS, data: resData });
+    return resData;
   }
 
-  // 3. Fetch Weekly Availability
-  const totalAvailabilityDocs = await Availability.countDocuments({ professionalId: profile._id });
+  // 3. Fetch Weekly Availability (Optimized covered lean query)
   let dayAvailability = await Availability.findOne({
     professionalId: profile._id,
     dayOfWeek,
-  });
+  })
+    .select('dayOfWeek enabled timeRanges')
+    .lean();
 
   // If professional hasn't saved custom availability yet, default to Mon-Sat 09:00-17:00 (Sunday closed)
-  if (totalAvailabilityDocs === 0 && !dayAvailability) {
-    if (dayOfWeek !== 0) {
+  if (!dayAvailability) {
+    const totalAvailabilityDocs = await Availability.countDocuments({ professionalId: profile._id });
+    if (totalAvailabilityDocs === 0 && dayOfWeek !== 0) {
       dayAvailability = {
         enabled: true,
         timeRanges: [{ startTime: '09:00', endTime: '17:00' }],
@@ -93,12 +144,14 @@ export const getAvailableSlots = async (
   }
 
   if (!dayAvailability || !dayAvailability.enabled || !dayAvailability.timeRanges?.length) {
-    return {
+    const resData = {
       date: targetDateString,
       isClosed: true,
       message: 'Closed on this day',
       slots: [],
     };
+    slotCache.set(cacheKey, { expiresAt: Date.now() + SLOT_CACHE_TTL_MS, data: resData });
+    return resData;
   }
 
   // 4. Fetch Existing Active Appointments & Active Non-Expired Holds for this date
@@ -117,7 +170,9 @@ export const getAvailableSlots = async (
         holdExpiresAt: { $gt: now },
       },
     ],
-  });
+  })
+    .select('startTime endTime startMinutes endMinutes duration buffer status holdExpiresAt')
+    .lean();
 
   // Map booked time intervals in minutes, factoring in their scheduled duration + individual buffer
   const bookedIntervals = existingAppointments.map((appt) => {
@@ -239,7 +294,7 @@ export const getAvailableSlots = async (
     }
   }
 
-  return {
+  const resultData = {
     date: targetDateString,
     timezone: APP_TZ,
     duration,
@@ -247,17 +302,28 @@ export const getAvailableSlots = async (
     totalAvailable: candidateSlots.filter((s) => s.available).length,
     slots: candidateSlots,
   };
+
+  slotCache.set(cacheKey, { expiresAt: Date.now() + SLOT_CACHE_TTL_MS, data: resultData });
+  return resultData;
 };
 
 /**
  * Get monthly availability overview (days that have open slots / closed status)
  */
 export const getMonthlyAvailabilityOverview = async (profile, year, month) => {
+  const cacheKey = `monthly:${profile._id}:${year}:${month}`;
+  const cached = monthlyCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.data;
+  }
+
   const istNow = nowIst();
   const todayString = istNow.dateString;
   const daysInMonth = new Date(year, month, 0).getDate();
 
-  const availability = await Availability.find({ professionalId: profile._id });
+  const availability = await Availability.find({ professionalId: profile._id })
+    .select('dayOfWeek enabled timeRanges')
+    .lean();
   const hasCustomAvailability = availability.length > 0;
   const availabilityMap = new Map(availability.map((a) => [a.dayOfWeek, a]));
 
@@ -267,7 +333,9 @@ export const getMonthlyAvailabilityOverview = async (profile, year, month) => {
       $gte: `${year}-${String(month).padStart(2, '0')}-01`,
       $lte: `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`,
     },
-  });
+  })
+    .select('date allDay reason')
+    .lean();
   const blockedMap = new Map(blockedList.map((b) => [b.date, b]));
 
   const daysOverview = [];
@@ -301,6 +369,7 @@ export const getMonthlyAvailabilityOverview = async (profile, year, month) => {
     });
   }
 
+  monthlyCache.set(cacheKey, { expiresAt: Date.now() + MONTHLY_CACHE_TTL_MS, data: daysOverview });
   return daysOverview;
 };
 

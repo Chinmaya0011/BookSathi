@@ -74,14 +74,14 @@ export default function QrOrderReviewModal({
           <div className="space-y-3 pt-1">
             <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5 uppercase tracking-wider">
               <MapPin className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Clinic / Delivery Shipping Address</span>
+              <span>Office / Practice / Clinic Delivery Address</span>
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
-                label="Recipient Doctor / Clinic Name"
+                label="Recipient Professional / Practice Name"
                 required
-                placeholder="Dr. Rajesh Sharma"
+                placeholder="e.g. Adv. Priya Patel / Apex Chambers"
                 value={shippingForm.recipientName}
                 onChange={(e) => onShippingChange('recipientName', e.target.value)}
               />
@@ -96,7 +96,7 @@ export default function QrOrderReviewModal({
             </div>
 
             <Input
-              label="Street Address / Clinic Plot Number"
+              label="Street Address / Office / Plot Number"
               required
               placeholder="e.g. Plot 42, Saheed Nagar, Near Axis Bank"
               value={shippingForm.street}

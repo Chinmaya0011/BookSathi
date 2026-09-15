@@ -158,7 +158,7 @@ export default function BannerDesignSelector({
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Premium UV-matte wall board with chrome standoff bolts, patient check-in guide, and instant QR booking.
+              Premium UV-matte wall board with chrome standoff bolts, customer check-in guide, and instant QR booking.
             </p>
           </div>
         </div>

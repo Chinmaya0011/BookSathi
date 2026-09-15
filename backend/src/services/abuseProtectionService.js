@@ -22,6 +22,7 @@ setInterval(() => {
 export const SPAM_CONFIG = {
   MAX_UPCOMING_PER_CUSTOMER: 10,
   MAX_ACTIVE_PER_PROFESSIONAL: 3,
+  MAX_BOOKINGS_PER_DAY_PER_PROFESSIONAL: 2, // Max 2 bookings / day / professional for same phone
   MAX_FAILED_ATTEMPTS_BEFORE_RESTRICTION: 5,
   FAILED_ATTEMPTS_WINDOW_MS: 15 * 60 * 1000,
   MAX_CANCELLATIONS_24H: 5,
@@ -80,6 +81,8 @@ export const checkBookingSpamRules = async ({
   dateString,
   startTime,
   clientIp,
+  website_hp,
+  formLoadTime,
 }) => {
   const now = Date.now();
   const identifiers = [
@@ -88,6 +91,27 @@ export const checkBookingSpamRules = async ({
     customerEmail ? `email_${customerEmail.trim().toLowerCase()}` : null,
     clientIp ? `ip_${clientIp}` : null,
   ].filter(Boolean);
+
+  // 0. Invisible Honeypot Trap (Automated bots fill all hidden inputs)
+  if (website_hp && typeof website_hp === 'string' && website_hp.trim().length > 0) {
+    const err = new Error('Invalid request detected. Submission rejected.');
+    err.statusCode = 400;
+    err.code = 'BOT_SUBMISSION_REJECTED';
+    err.isOperational = true;
+    throw err;
+  }
+
+  // 0b. Time-to-Submit Velocity Heuristic (prevent < 1.2s scripted instant submissions)
+  if (formLoadTime && typeof formLoadTime === 'number' && formLoadTime > 0) {
+    const elapsedMs = now - formLoadTime;
+    if (elapsedMs < 1200 && elapsedMs > 0) {
+      const err = new Error('Submission was too fast. Please take a moment and submit again.');
+      err.statusCode = 429;
+      err.code = 'SUBMISSION_TOO_FAST';
+      err.isOperational = true;
+      throw err;
+    }
+  }
 
   // 1. Check temporary abuse restrictions
   for (const id of identifiers) {
@@ -171,6 +195,26 @@ export const checkBookingSpamRules = async ({
       err.code = 'MAX_ACTIVE_PER_PROFESSIONAL_EXCEEDED';
       err.isOperational = true;
       throw err;
+    }
+
+    // 4b. Same phone number: Maximum 2 bookings / day / professional
+    if (dateString) {
+      const dailyBookingsWithPro = await Appointment.countDocuments({
+        professionalId,
+        $or: customerOrConditions,
+        dateString,
+        status: { $in: activeStatuses },
+      });
+
+      if (dailyBookingsWithPro >= SPAM_CONFIG.MAX_BOOKINGS_PER_DAY_PER_PROFESSIONAL) {
+        const err = new Error(
+          `Maximum allowed limit of ${SPAM_CONFIG.MAX_BOOKINGS_PER_DAY_PER_PROFESSIONAL} bookings per day with this professional has been reached for this phone number.`
+        );
+        err.statusCode = 429;
+        err.code = 'MAX_DAILY_BOOKINGS_PER_PROFESSIONAL_EXCEEDED';
+        err.isOperational = true;
+        throw err;
+      }
     }
   }
 

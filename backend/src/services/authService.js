@@ -6,6 +6,10 @@ import { Availability } from '../models/Availability.js';
 import { AppointmentType } from '../models/AppointmentType.js';
 import { slugify } from '../utils/slugify.js';
 import { isReservedSlug } from '../utils/reservedSlugs.js';
+import {
+  sendPasswordResetEmail,
+  sendPasswordChangedConfirmationEmail,
+} from './emailService.js';
 
 export const ACCESS_TOKEN_EXPIRES_IN = '15m'; // 15 minutes access token
 export const REFRESH_TOKEN_EXPIRES_DAYS = 7; // 7 days refresh token
@@ -539,29 +543,51 @@ export const changePassword = async (userId, currentPassword, newPassword) => {
 };
 
 /**
- * Generate password reset token
+ * Generate password reset token and send secure reset link via Nodemailer
  */
 export const createPasswordResetToken = async (email) => {
-  const user = await User.findOne({ email: email.toLowerCase().trim() });
+  const cleanEmail = (email || '').toLowerCase().trim();
+  const user = await User.findOne({ email: cleanEmail });
   if (!user) {
+    // Return null so controller returns a generic message (prevents email enumeration)
     return null;
   }
 
-  const resetToken = crypto.randomBytes(32).toString('hex');
-  const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
 
+  // Set 15-minute expiration
+  const expiresMinutes = 15;
   user.passwordResetToken = hashedToken;
-  user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  user.passwordResetExpires = new Date(Date.now() + expiresMinutes * 60 * 1000);
   await user.save({ validateBeforeSave: false });
 
-  return { user, resetToken };
+  const frontendUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
+  const resetUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
+
+  // Send Nodemailer Email
+  await sendPasswordResetEmail({
+    to: user.email,
+    name: user.name,
+    resetUrl,
+    expiresMinutes,
+  });
+
+  return { user, resetToken: rawToken };
 };
 
 /**
- * Reset password using token
+ * Verify if a password reset token is valid and unexpired
  */
-export const resetUserPassword = async (rawToken, newPassword, { userAgent = '', ipAddress = '' } = {}) => {
-  const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+export const verifyPasswordResetToken = async (rawToken) => {
+  if (!rawToken || typeof rawToken !== 'string') {
+    const error = new Error('A valid reset token is required.');
+    error.statusCode = 400;
+    error.isOperational = true;
+    throw error;
+  }
+
+  const hashedToken = crypto.createHash('sha256').update(rawToken.trim()).digest('hex');
 
   const user = await User.findOne({
     passwordResetToken: hashedToken,
@@ -569,18 +595,74 @@ export const resetUserPassword = async (rawToken, newPassword, { userAgent = '',
   });
 
   if (!user) {
-    const error = new Error('Password reset token is invalid or has expired.');
+    const error = new Error('This password reset link has expired or has already been used.');
     error.statusCode = 400;
     error.isOperational = true;
     throw error;
   }
 
+  // Mask email for client display (e.g. j***@gmail.com)
+  const [localPart, domain] = (user.email || '').split('@');
+  const maskedLocal = localPart.length > 2 ? `${localPart[0]}***${localPart[localPart.length - 1]}` : `${localPart}***`;
+  const maskedEmail = `${maskedLocal}@${domain || ''}`;
+
+  return {
+    valid: true,
+    email: maskedEmail,
+  };
+};
+
+/**
+ * Reset password using token (Single-use: expires immediately upon consumption)
+ */
+export const resetUserPassword = async (rawToken, newPassword, { userAgent = '', ipAddress = '' } = {}) => {
+  if (!rawToken || typeof rawToken !== 'string') {
+    const error = new Error('A valid reset token is required.');
+    error.statusCode = 400;
+    error.isOperational = true;
+    throw error;
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    const error = new Error('New password must be at least 6 characters long.');
+    error.statusCode = 400;
+    error.isOperational = true;
+    throw error;
+  }
+
+  const hashedToken = crypto.createHash('sha256').update(rawToken.trim()).digest('hex');
+
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    const error = new Error('This password reset link has expired or has already been used. Please request a new one.');
+    error.statusCode = 400;
+    error.isOperational = true;
+    throw error;
+  }
+
+  // 1. Update password
   user.password = newPassword;
+
+  // 2. Invalidate reset token immediately (Single-use enforcement)
   user.passwordResetToken = undefined;
   user.passwordResetExpires = undefined;
   user.failedLoginAttempts = 0;
   user.lockUntil = null;
+
+  // 3. Security: Invalidate all existing refresh tokens
+  user.refreshTokens = [];
+
   await user.save();
+
+  // 4. Send Security Confirmation Email
+  await sendPasswordChangedConfirmationEmail({
+    to: user.email,
+    name: user.name,
+  }).catch(() => {});
 
   const accessToken = generateAccessToken(user);
   const refreshToken = await generateRefreshToken(user, { userAgent, ipAddress });

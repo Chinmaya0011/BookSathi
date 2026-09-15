@@ -7,6 +7,7 @@ import {
   updateUserProfile,
   changePassword,
   createPasswordResetToken,
+  verifyPasswordResetToken,
   resetUserPassword,
   generateCsrfToken,
   setAuthCookies,
@@ -145,6 +146,16 @@ export const forgotPassword = async (req, res, next) => {
       200,
       'If an account exists with that email, a password reset link has been dispatched.'
     );
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const verifyResetToken = async (req, res, next) => {
+  try {
+    const token = req.query.token || req.body?.token;
+    const result = await verifyPasswordResetToken(token);
+    return successResponse(res, 200, 'Password reset link is valid', result);
   } catch (err) {
     next(err);
   }

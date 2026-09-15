@@ -175,11 +175,11 @@ export default function UserAppointmentsView({ user }) {
 
         <div className="flex items-center gap-2">
           <Link
-            href="/dashboard/find"
+            href="/lookup"
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
           >
-            <CalendarCheck className="w-4 h-4" />
-            <span>Book New Appointment</span>
+            <Search className="w-4 h-4" />
+            <span>Lookup Pass by Phone</span>
           </Link>
 
           <button
@@ -280,14 +280,14 @@ export default function UserAppointmentsView({ user }) {
             <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <h3 className="text-base font-bold text-slate-900">No appointments found in this section</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-5">
-              Ready to schedule a new consultation? Explore verified doctors, CAs, and professionals.
+              Bookings made through your practitioner&apos;s personal booking link or clinic QR code will appear here.
             </p>
             <Link
-              href="/dashboard/find"
+              href="/lookup"
               className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
             >
               <Search className="w-4 h-4" />
-              <span>Browse Professionals</span>
+              <span>Lookup Booking with Phone Number</span>
             </Link>
           </div>
         ) : (
@@ -305,7 +305,10 @@ export default function UserAppointmentsView({ user }) {
                     {/* Header: Pro Info & Status Badge */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 min-w-0">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold flex items-center justify-center text-base shrink-0 shadow-md">
+                        <Link
+                          href={`/profile/${pro.bookingSlug || pro._id}`}
+                          className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold flex items-center justify-center text-base shrink-0 shadow-md hover:opacity-90 transition-opacity"
+                        >
                           {pro.profileImage ? (
                             <img
                               src={pro.profileImage}
@@ -315,9 +318,14 @@ export default function UserAppointmentsView({ user }) {
                           ) : (
                             pro.name?.charAt(0) || 'P'
                           )}
-                        </div>
+                        </Link>
                         <div className="min-w-0">
-                          <h3 className="text-sm font-bold text-slate-900 truncate">{pro.name || 'Professional'}</h3>
+                          <Link
+                            href={`/profile/${pro.bookingSlug || pro._id}`}
+                            className="text-sm font-bold text-slate-900 truncate hover:text-indigo-600 transition-colors block"
+                          >
+                            {pro.name || 'Professional'}
+                          </Link>
                           <p className="text-xs font-semibold text-indigo-600 truncate">{pro.profession || 'Specialist'}</p>
                           <p className="text-[11px] text-slate-400 truncate">{pro.specialization || pro.city}</p>
                         </div>
@@ -367,6 +375,14 @@ export default function UserAppointmentsView({ user }) {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 pt-3 mt-3 border-t border-slate-100 flex-wrap">
+                    <Link
+                      href={`/profile/${pro.bookingSlug || pro._id}`}
+                      className="inline-flex items-center justify-center gap-1 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      <span>Doctor Profile</span>
+                    </Link>
+
                     <button
                       onClick={() => handleDownloadPdf(appt)}
                       disabled={downloadingId === appt._id}

@@ -197,19 +197,19 @@ export default function SubscriptionDetailsModal({ isOpen, onClose, profile, onO
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
               <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200/70">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span><strong>Unlimited Patient Bookings</strong> with zero platform commission</span>
+                <span><strong>Unlimited Customer Bookings</strong> with zero platform commission</span>
               </div>
               <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200/70">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span><strong>Instant WhatsApp Token & Receipts</strong> for every patient</span>
+                <span><strong>Instant WhatsApp Token & Receipts</strong> for every customer</span>
               </div>
               <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200/70">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span><strong>1x Laser-Engraved 3D Standee</strong> + 1x Clinic Wall Banner</span>
+                <span><strong>1x Laser-Engraved 3D Standee</strong> + 1x Wall Banner</span>
               </div>
               <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200/70">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span><strong>Direct UPI Payments</strong> to doctor's bank account</span>
+                <span><strong>Direct UPI Payments</strong> to your bank account</span>
               </div>
             </div>
           </div>

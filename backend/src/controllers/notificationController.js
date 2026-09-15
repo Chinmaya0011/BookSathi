@@ -15,7 +15,11 @@ export const getNotifications = async (req, res, next) => {
     };
 
     const [notifications, unreadCount] = await Promise.all([
-      Notification.find(query).sort({ createdAt: -1 }).limit(50).lean(),
+      Notification.find(query)
+        .select('title message link isRead type createdAt metadata')
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
       Notification.countDocuments({ ...query, isRead: false }),
     ]);
 

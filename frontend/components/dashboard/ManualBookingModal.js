@@ -5,6 +5,7 @@ import {
   User,
   Phone,
   Clock,
+  Ticket,
   Sparkles,
 } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
@@ -18,7 +19,10 @@ export default function ManualBookingModal({
   setManualForm,
   onSubmit,
   creatingManual,
+  profile,
 }) {
+  const isQueueMode = profile?.bookingType === 'QUEUE';
+
   const setTimeToNow = () => {
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, '0');
@@ -34,27 +38,37 @@ export default function ManualBookingModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Quick Walk-In Booking"
+      title={isQueueMode ? "Issue Walk-In Queue Token" : "Quick Walk-In Booking"}
     >
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100 text-xs text-indigo-900 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-indigo-600 shrink-0" />
-            <span className="font-medium">3-field quick walk-in. Added directly to today's list.</span>
+            {isQueueMode ? (
+              <Ticket className="w-4 h-4 text-indigo-600 shrink-0" />
+            ) : (
+              <Zap className="w-4 h-4 text-indigo-600 shrink-0" />
+            )}
+            <span className="font-medium">
+              {isQueueMode
+                ? "Next sequential queue token will be generated instantly."
+                : "3-field quick walk-in. Added directly to today's schedule."}
+            </span>
           </div>
-          <button
-            type="button"
-            onClick={setTimeToNow}
-            className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-[10px] shrink-0 transition-all cursor-pointer inline-flex items-center gap-1"
-          >
-            <Sparkles className="w-3 h-3" />
-            <span>Right NOW</span>
-          </button>
+          {!isQueueMode && (
+            <button
+              type="button"
+              onClick={setTimeToNow}
+              className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-[10px] shrink-0 transition-all cursor-pointer inline-flex items-center gap-1"
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>Right NOW</span>
+            </button>
+          )}
         </div>
 
-        {/* 1. Patient / Client Name */}
+        {/* 1. Customer Name */}
         <Input
-          label="Client / Patient Full Name"
+          label="Customer Full Name"
           required
           placeholder="e.g. Rahul Sharma"
           value={manualForm.customerName}
@@ -73,30 +87,37 @@ export default function ManualBookingModal({
           prefix={<Phone className="w-4 h-4 text-slate-400" />}
         />
 
-        {/* 3. Time Slot */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Time Slot <span className="text-rose-500">*</span>
-            </label>
-            <button
-              type="button"
-              onClick={setTimeToNow}
-              className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
-            >
-              Set Current Time
-            </button>
+        {/* 3. Time Slot (Only for TIME_SLOT mode) */}
+        {!isQueueMode ? (
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Time Slot <span className="text-rose-500">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={setTimeToNow}
+                className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+              >
+                Set Current Time
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                type="time"
+                required
+                value={manualForm.time}
+                onChange={(e) => setManualForm({ ...manualForm, time: e.target.value })}
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              />
+            </div>
           </div>
-          <div className="relative">
-            <input
-              type="time"
-              required
-              value={manualForm.time}
-              onChange={(e) => setManualForm({ ...manualForm, time: e.target.value })}
-              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-            />
+        ) : (
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 flex items-center justify-between">
+            <span className="font-semibold">Queue Allocation:</span>
+            <span className="font-bold text-indigo-700 font-mono">Next Token in Line (Today)</span>
           </div>
-        </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -104,7 +125,7 @@ export default function ManualBookingModal({
             Cancel
           </Button>
           <Button type="submit" size="sm" loading={creatingManual} className="bg-indigo-600 hover:bg-indigo-700 shadow-md">
-            Add to Today's Queue
+            {isQueueMode ? "Issue Walk-In Token" : "Add to Today's List"}
           </Button>
         </div>
       </form>

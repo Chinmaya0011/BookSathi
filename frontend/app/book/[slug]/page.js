@@ -7,7 +7,10 @@ import BookingStepIndicator from '@/components/booking/BookingStepIndicator';
 import BookingSlotPicker from '@/components/booking/BookingSlotPicker';
 import BookingPatientForm from '@/components/booking/BookingPatientForm';
 import BookingSuccessView from '@/components/booking/BookingSuccessView';
+import BookingQueueView from '@/components/booking/BookingQueueView';
+import BookingQueueSuccessView from '@/components/booking/BookingQueueSuccessView';
 import BookingCheckoutModal from '@/components/booking/BookingCheckoutModal';
+import BookingOtpModal from '@/components/booking/BookingOtpModal';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
 import { AlertCircle, ShieldCheck, Lock, Sparkles, CheckCircle2, CalendarX2, Settings, Search, ArrowLeft } from 'lucide-react';
@@ -25,6 +28,10 @@ export default function PublicBookingPage() {
     profile,
     loadingProfile,
     error,
+    isQueueMode,
+    queueStatus,
+    loadingQueue,
+    fetchQueueStatus,
     currentStep,
     selectedType,
     selectedDate,
@@ -42,12 +49,21 @@ export default function PublicBookingPage() {
     setReason,
     paymentMode,
     setPaymentMode,
+    websiteHp,
+    setWebsiteHp,
     submitting,
     confirmedBooking,
     confirmedPayment,
     downloadingPdf,
     showCheckoutModal,
     setShowCheckoutModal,
+    showOtpModal,
+    setShowOtpModal,
+    handleVerifyOtpAndConfirm,
+    handleResendBookingOtp,
+    sendingBookingOtp,
+    verifyingBookingOtp,
+    otpModalError,
     pendingOrder,
     selectedCheckoutMethod,
     setSelectedCheckoutMethod,
@@ -94,7 +110,7 @@ export default function PublicBookingPage() {
     );
   }
 
-  const hasServices = Boolean(profile.appointmentTypes && profile.appointmentTypes.length > 0);
+  const hasServices = Boolean(profile.appointmentTypes && profile.appointmentTypes.length > 0) || isQueueMode;
   const isOwner = Boolean(
     user && (user._id === profile._id || user.bookingSlug === slug || user.email === profile.email)
   );
@@ -135,7 +151,7 @@ export default function PublicBookingPage() {
         {/* Doctor Hero Card */}
         <div className="bg-slate-950">
           <BookingDoctorHero profile={profile} />
-          {hasServices && (
+          {hasServices && !isQueueMode && (
             <div className="px-5 sm:px-7 pb-4">
               <BookingStepIndicator currentStep={currentStep} />
             </div>
@@ -167,11 +183,11 @@ export default function PublicBookingPage() {
                 </Link>
               ) : (
                 <Link
-                  href="/dashboard/find"
+                  href="/lookup"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all active:scale-95"
                 >
                   <Search className="w-4 h-4" />
-                  <span>Browse Available Professionals</span>
+                  <span>Lookup My Booking</span>
                 </Link>
               )}
               <Link
@@ -182,7 +198,51 @@ export default function PublicBookingPage() {
               </Link>
             </div>
           </div>
+        ) : isQueueMode ? (
+          /* QUEUE MODE INTERFACE */
+          currentStep === 3 ? (
+            <BookingQueueSuccessView
+              confirmedBooking={confirmedBooking}
+              confirmedPayment={confirmedPayment}
+              profile={profile}
+              currentFee={currentFee}
+              downloadingPdf={downloadingPdf}
+              onDownloadPdf={handleDownloadPdf}
+              icsDownloadUrl={icsDownloadUrl}
+              whatsappShareUrl={whatsappShareUrl}
+              onBookAnother={handleBookAnother}
+              queueStatus={queueStatus}
+            />
+          ) : (
+            <BookingQueueView
+              profile={profile}
+              appointmentTypes={profile.appointmentTypes}
+              selectedType={selectedType}
+              onTypeSelect={handleTypeSelect}
+              availableDays={availableDays}
+              selectedDate={selectedDate}
+              onDateSelect={handleDateSelect}
+              queueStatus={queueStatus}
+              loadingQueue={loadingQueue}
+              user={user}
+              patientName={patientName}
+              setPatientName={setPatientName}
+              patientPhone={patientPhone}
+              setPatientPhone={setPatientPhone}
+              patientEmail={patientEmail}
+              setPatientEmail={setPatientEmail}
+              reason={reason}
+              setReason={setReason}
+              paymentMode={paymentMode}
+              setPaymentMode={setPaymentMode}
+              websiteHp={websiteHp}
+              setWebsiteHp={setWebsiteHp}
+              submitting={submitting}
+              onSubmit={handleSubmitBooking}
+            />
+          )
         ) : (
+          /* TIME_SLOT MODE INTERFACE */
           <>
             {/* Step 1: Select Consultation Service & Time Slot */}
             {currentStep === 1 && (
@@ -217,6 +277,8 @@ export default function PublicBookingPage() {
                 setReason={setReason}
                 paymentMode={paymentMode}
                 setPaymentMode={setPaymentMode}
+                websiteHp={websiteHp}
+                setWebsiteHp={setWebsiteHp}
                 submitting={submitting}
                 onSubmit={handleSubmitBooking}
                 onBack={handleBackToStep1}
@@ -242,6 +304,19 @@ export default function PublicBookingPage() {
           </>
         )}
       </main>
+
+      {/* Booking Email OTP Verification Modal */}
+      <BookingOtpModal
+        isOpen={showOtpModal}
+        onClose={() => setShowOtpModal(false)}
+        email={patientEmail}
+        patientName={patientName}
+        onVerifyAndConfirm={handleVerifyOtpAndConfirm}
+        onResendOtp={handleResendBookingOtp}
+        sendingOtp={sendingBookingOtp}
+        verifying={verifyingBookingOtp}
+        error={otpModalError}
+      />
 
       {/* Payment Gateway Modal */}
       <BookingCheckoutModal

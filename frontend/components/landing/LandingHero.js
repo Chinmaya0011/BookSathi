@@ -57,11 +57,7 @@ export default function LandingHero() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           {/* Left Column: Core Value Proposition */}
           <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-            {/* Live Trust Pill */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200/70 text-indigo-800 text-xs font-bold shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>BookSaathi Simple Booking Network (India)</span>
-            </div>
+
 
             {/* Main Headline */}
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight leading-[1.12]">
@@ -203,7 +199,7 @@ export default function LandingHero() {
                   </span>
                   <div>
                     <strong className="text-emerald-950 font-bold block">Show Up & Mark Done</strong>
-                    <span className="text-emerald-700 text-[11px]">Synced directly to doctor's Today queue</span>
+                    <span className="text-emerald-700 text-[11px]">Synced directly to professional&apos;s live queue</span>
                   </div>
                 </div>
               </div>

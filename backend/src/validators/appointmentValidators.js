@@ -6,6 +6,8 @@ export const holdSlotSchema = z
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be formatted as YYYY-MM-DD'),
     time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Time must be in HH:mm format').optional(),
     startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Time must be in HH:mm format').optional(),
+    website_hp: z.string().optional().default(''),
+    formLoadTime: z.number().optional(),
   })
   .refine((data) => data.time || data.startTime, {
     message: 'Time slot selection is required',
@@ -18,16 +20,25 @@ export const publicBookingSchema = z
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be formatted as YYYY-MM-DD'),
     time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Time must be in HH:mm format').optional(),
     startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Time must be in HH:mm format').optional(),
-    customerName: z.string().min(2, 'Please enter your full name (minimum 2 characters)'),
+    customerName: z
+      .string()
+      .trim()
+      .min(2, 'Please enter your full name (minimum 2 characters)')
+      .max(100, 'Name cannot exceed 100 characters'),
     customerPhone: z
       .string()
+      .trim()
       .min(10, 'Please enter a valid 10-digit mobile number')
       .max(15, 'Phone number too long'),
-    customerEmail: z.string().email('Please enter a valid email address').optional().or(z.literal('')),
-    reason: z.string().max(500, 'Reason cannot exceed 500 characters').optional().default(''),
+    customerEmail: z.string().trim().email('Please enter a valid email address').optional().or(z.literal('')),
+    reason: z.string().trim().max(500, 'Reason cannot exceed 500 characters').optional().default(''),
     paymentMode: z.enum(['ONLINE', 'PAY_AT_CLINIC', 'OFFLINE', 'FREE']).optional().default('ONLINE'),
     holdToken: z.string().optional(),
     idempotencyKey: z.string().optional(),
+    website_hp: z.string().optional().default(''),
+    formLoadTime: z.number().optional(),
+    otp: z.string().optional(),
+    otpVerificationToken: z.string().optional(),
   })
   .refine((data) => data.time || data.startTime, {
     message: 'Time slot selection is required',

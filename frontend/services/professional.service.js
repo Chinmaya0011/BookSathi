@@ -20,4 +20,9 @@ export const professionalService = {
     const res = await api.get('/professional/setup-status');
     return res.data;
   },
+
+  async checkModeSwitch(targetMode) {
+    const res = await api.get('/professional/switch-check', { params: { targetMode } });
+    return res.data;
+  },
 };

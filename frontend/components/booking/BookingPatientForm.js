@@ -20,7 +20,9 @@ import {
   IndianRupee,
   ArrowRight,
   Video,
+  KeyRound,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { formatINR, format12Hour, formatDisplayDate, cn } from '@/lib/utils';
 import { publicService } from '@/services/public.service';
 import Input from '@/components/ui/Input';
@@ -42,6 +44,8 @@ export default function BookingPatientForm({
   setReason,
   paymentMode,
   setPaymentMode,
+  websiteHp,
+  setWebsiteHp,
   submitting,
   onSubmit,
   onBack,
@@ -88,6 +92,65 @@ export default function BookingPatientForm({
 
   const currentUser = user || storedUser;
 
+  // Email OTP Verification state
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [enteredOtp, setEnteredOtp] = useState('');
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+
+  const handleSendEmailOtp = async () => {
+    if (!patientEmail || !patientEmail.includes('@')) {
+      toast.error('Please enter a valid email address first');
+      return;
+    }
+    setSendingOtp(true);
+    try {
+      await publicService.sendEmailOtp(profile?.bookingSlug, {
+        email: patientEmail,
+        customerName: patientName,
+      });
+      setOtpSent(true);
+      setOtpCooldown(30);
+      toast.success(`6-digit code sent to ${patientEmail}`);
+      const timer = setInterval(() => {
+        setOtpCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not send verification code');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    if (!enteredOtp || enteredOtp.trim().length < 6) {
+      toast.error('Please enter the 6-digit verification code');
+      return;
+    }
+    setVerifyingOtp(true);
+    try {
+      await publicService.verifyEmailOtp(profile?.bookingSlug, {
+        email: patientEmail,
+        otp: enteredOtp.trim(),
+      });
+      setIsEmailVerified(true);
+      setOtpSent(false);
+      toast.success('Email verified successfully!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Invalid verification code');
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
   const formatCountdown = (secs) => {
     const mins = Math.floor(secs / 60);
     const remainder = secs % 60;
@@ -95,8 +158,29 @@ export default function BookingPatientForm({
   };
 
   return (
-    <form onSubmit={onSubmit} className="p-5 sm:p-7 space-y-6 animate-in fade-in duration-200">
-      {/* 5-minute Slot Hold Countdown Banner */}
+    <form onSubmit={onSubmit} className="p-5 sm:p-7 space-y-6 animate-in fade-in duration-200 relative">
+      {/* Invisible Honeypot field for bot trapping */}
+      <input
+        type="text"
+        name="website_hp"
+        value={websiteHp || ''}
+        onChange={(e) => setWebsiteHp && setWebsiteHp(e.target.value)}
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        style={{
+          opacity: 0,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          height: 0,
+          width: 0,
+          zIndex: -1,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* 3-minute Slot Hold Countdown Banner */}
       {holdCountdown > 0 && (
         <div className="p-3.5 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/15 border border-amber-300/80 rounded-2xl flex items-center justify-between text-xs text-amber-950 shadow-xs">
           <div className="flex items-center gap-2">
@@ -178,17 +262,69 @@ export default function BookingPatientForm({
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-800 mb-1.5">
-            Email Address <span className="text-slate-400 font-normal">(Optional for calendar slip)</span>
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-bold text-slate-800">
+              Email Address <span className="text-slate-400 font-normal">(For instant calendar invite & OTP)</span>
+            </label>
+            {isEmailVerified ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                <CheckCircle2 className="w-3 h-3" />
+                <span>Verified</span>
+              </span>
+            ) : patientEmail && patientEmail.includes('@') ? (
+              <button
+                type="button"
+                disabled={sendingOtp || otpCooldown > 0}
+                onClick={handleSendEmailOtp}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-0.5 rounded-full border border-indigo-200 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <KeyRound className="w-3 h-3" />
+                <span>{sendingOtp ? 'Sending...' : otpCooldown > 0 ? `Resend (${otpCooldown}s)` : otpSent ? 'Resend OTP' : 'Verify with OTP'}</span>
+              </button>
+            ) : null}
+          </div>
           <Input
             type="email"
             placeholder="e.g. aarav@gmail.com"
             value={patientEmail}
-            onChange={(e) => setPatientEmail(e.target.value)}
+            onChange={(e) => {
+              setPatientEmail(e.target.value);
+              if (isEmailVerified) setIsEmailVerified(false);
+            }}
             prefix={<Mail className="w-4 h-4 text-slate-400" />}
             className="py-2.5 text-xs sm:text-sm bg-white border-slate-200 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
           />
+
+          {/* Inline Email OTP Input Field */}
+          {otpSent && !isEmailVerified && (
+            <div className="mt-2.5 p-3 rounded-xl bg-indigo-50/70 border border-indigo-200 animate-in fade-in duration-200 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-indigo-950 flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Enter 6-Digit Email Code</span>
+                </span>
+                <span className="text-[10px] text-indigo-700">Code sent via Nodemailer</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={enteredOtp}
+                  onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g, ''))}
+                  placeholder="123456"
+                  className="w-36 px-3 py-1.5 text-center tracking-widest font-mono font-black text-sm bg-white border border-indigo-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                />
+                <button
+                  type="button"
+                  disabled={verifyingOtp || enteredOtp.length < 6}
+                  onClick={handleVerifyEmailOtp}
+                  className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {verifyingOtp ? 'Verifying...' : 'Confirm OTP'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div>
@@ -285,7 +421,7 @@ export default function BookingPatientForm({
           loading={submitting}
           className="w-full sm:flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:to-violet-600 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-indigo-600/25 active:scale-95 transition-all flex items-center justify-center gap-2"
         >
-          <span>Confirm & Lock Appointment</span>
+          <span>{user ? 'Confirm & Lock Appointment' : 'Sign In & Confirm Appointment'}</span>
           <ArrowRight className="w-4 h-4" />
         </Button>
       </div>

@@ -511,3 +511,56 @@ export const emitAppointmentStatusChanged = async (appointment, professional, st
   ioInstance.to('admin:ops').emit('appointment:status_changed', payload);
   ioInstance.to('role:admin').emit('appointment:status_changed', payload);
 };
+
+/**
+ * Live Queue Updated Event
+ */
+export const emitQueueUpdated = async ({ professionalId, bookingSlug, dateString, queueStatus }) => {
+  if (!ioInstance) return;
+
+  const payload = {
+    event: 'queue:updated',
+    professionalId,
+    bookingSlug,
+    dateString,
+    queueStatus,
+    timestamp: new Date().toISOString(),
+  };
+
+  if (bookingSlug) {
+    ioInstance.to(`public:booking:${bookingSlug}`).emit('queue:updated', payload);
+  }
+  if (professionalId) {
+    ioInstance.to(`professional:${professionalId.toString()}`).emit('queue:updated', payload);
+  }
+};
+
+/**
+ * Token Called Event
+ */
+export const emitQueueCalled = async ({ professionalId, bookingSlug, dateString, queueNumber, appointment }) => {
+  if (!ioInstance) return;
+
+  const payload = {
+    event: 'queue:called',
+    professionalId,
+    bookingSlug,
+    dateString,
+    queueNumber,
+    appointment: appointment ? toSocketAppointment(appointment) : null,
+    timestamp: new Date().toISOString(),
+  };
+
+  if (bookingSlug) {
+    ioInstance.to(`public:booking:${bookingSlug}`).emit('queue:called', payload);
+  }
+  if (professionalId) {
+    ioInstance.to(`professional:${professionalId.toString()}`).emit('queue:called', payload);
+  }
+  if (appointment?.appointmentCode) {
+    ioInstance.to(`booking:${appointment.appointmentCode}`).emit('queue:called', payload);
+  }
+  if (appointment?.userId) {
+    ioInstance.to(`user:${appointment.userId.toString()}`).emit('queue:called', payload);
+  }
+};

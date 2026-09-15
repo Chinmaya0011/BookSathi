@@ -1,6 +1,7 @@
 'use client';
 
-import { ShieldCheck, MapPin, Briefcase, Globe, Navigation, Sparkles, Clock, CheckCircle2, Star } from 'lucide-react';
+import Link from 'next/link';
+import { ShieldCheck, MapPin, Briefcase, Globe, Navigation, Sparkles, Clock, CheckCircle2, Star, ChevronRight } from 'lucide-react';
 
 export default function BookingDoctorHero({ profile }) {
   if (!profile) return null;
@@ -107,6 +108,14 @@ export default function BookingDoctorHero({ profile }) {
                   <span>Directions</span>
                 </a>
               )}
+
+              <Link
+                href={`/profile/${profile.bookingSlug || profile._id}`}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold transition-all cursor-pointer shadow-xs"
+              >
+                <span>View Full Profile</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </div>
         </div>

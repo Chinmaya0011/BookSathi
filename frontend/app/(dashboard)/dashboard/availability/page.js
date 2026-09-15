@@ -28,9 +28,11 @@ import {
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { availabilityService } from '@/services/availability.service';
+import { professionalService } from '@/services/professional.service';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { cn } from '@/lib/utils';
+import { Ticket } from 'lucide-react';
 
 const DAYS = [
   { index: 1, name: 'Monday', short: 'Mon' },
@@ -104,9 +106,25 @@ function calculateShiftHours(startTime, endTime) {
 
 export default function AvailabilityPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile: authProfile, refreshProfile, loading: authLoading } = useAuth();
 
-  // State
+  // Booking Mode & Queue Settings State
+  const [bookingMode, setBookingMode] = useState('TIME_SLOT'); // 'TIME_SLOT' | 'QUEUE'
+  const [queueSettings, setQueueSettings] = useState({
+    dailyLimit: 50,
+    queueStartTime: '09:00',
+    queueEndTime: '18:00',
+    lastBookingTime: '17:00',
+    estimatedServiceTimeMinutes: 15,
+    allowOnlineQueue: true,
+  });
+
+  // Mode Switch Warning Modal
+  const [switchModalOpen, setSwitchModalOpen] = useState(false);
+  const [pendingTargetMode, setPendingTargetMode] = useState(null);
+  const [futureBookingsCount, setFutureBookingsCount] = useState(0);
+
+  // Time Slots State
   const [availability, setAvailability] = useState([]);
   const [selectedShiftPreset, setSelectedShiftPreset] = useState('STANDARD_9_5');
 
@@ -135,7 +153,21 @@ export default function AvailabilityPage() {
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      const availRes = await availabilityService.getWeeklyAvailability();
+      const [availRes, profRes] = await Promise.all([
+        availabilityService.getWeeklyAvailability(),
+        professionalService.getProfile().catch(() => ({ data: null })),
+      ]);
+
+      if (profRes?.data) {
+        setBookingMode(profRes.data.bookingType || 'TIME_SLOT');
+        if (profRes.data.queueSettings) {
+          setQueueSettings((prev) => ({
+            ...prev,
+            ...profRes.data.queueSettings,
+          }));
+        }
+      }
+
       const existing = availRes.data || [];
       const fullList = DAYS.map((d) => {
         const found = existing.find((item) => item.dayOfWeek === d.index);
@@ -153,6 +185,41 @@ export default function AvailabilityPage() {
       toast.error('Failed to load availability schedule');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Booking Mode Switcher Handler
+  const handleRequestModeChange = async (targetMode) => {
+    if (targetMode === bookingMode) return;
+
+    try {
+      const checkRes = await professionalService.checkModeSwitch(targetMode);
+      const count = checkRes.data?.futureBookingsCount || 0;
+      if (count > 0) {
+        setPendingTargetMode(targetMode);
+        setFutureBookingsCount(count);
+        setSwitchModalOpen(true);
+      } else {
+        await executeModeSwitch(targetMode);
+      }
+    } catch (err) {
+      // Fallback: switch directly
+      await executeModeSwitch(targetMode);
+    }
+  };
+
+  const executeModeSwitch = async (targetMode) => {
+    try {
+      await professionalService.updateProfile({ bookingType: targetMode });
+      setBookingMode(targetMode);
+      setSwitchModalOpen(false);
+      setPendingTargetMode(null);
+      if (refreshProfile) await refreshProfile();
+      toast.success(
+        `Switched booking mode to ${targetMode === 'QUEUE' ? 'Live Token Queue' : 'Fixed Time Slots'}`
+      );
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to switch booking mode');
     }
   };
 
@@ -384,23 +451,25 @@ export default function AvailabilityPage() {
     toast.success('Monday working hours copied to Tue – Fri!');
   };
 
-  // Save All
+  // Save All (Availability & Queue Settings)
   const handleSave = async () => {
-    // Validate
-    for (const day of availability) {
-      if (day.enabled && day.timeRanges && day.timeRanges.length > 0) {
-        const dayObj = DAYS.find((d) => d.index === day.dayOfWeek);
-        const dayName = dayObj ? dayObj.name : `Day ${day.dayOfWeek}`;
-        for (const range of day.timeRanges) {
-          if (!range.startTime || !range.endTime) {
-            toast.warning(`Please provide both start and end times for ${dayName}`);
-            return;
-          }
-          if (range.startTime >= range.endTime) {
-            toast.warning(
-              `On ${dayName}, start time (${range.startTime}) must be earlier than end time (${range.endTime})`
-            );
-            return;
+    // Validate Time Slots if in TIME_SLOT mode
+    if (bookingMode === 'TIME_SLOT') {
+      for (const day of availability) {
+        if (day.enabled && day.timeRanges && day.timeRanges.length > 0) {
+          const dayObj = DAYS.find((d) => d.index === day.dayOfWeek);
+          const dayName = dayObj ? dayObj.name : `Day ${day.dayOfWeek}`;
+          for (const range of day.timeRanges) {
+            if (!range.startTime || !range.endTime) {
+              toast.warning(`Please provide both start and end times for ${dayName}`);
+              return;
+            }
+            if (range.startTime >= range.endTime) {
+              toast.warning(
+                `On ${dayName}, start time (${range.startTime}) must be earlier than end time (${range.endTime})`
+              );
+              return;
+            }
           }
         }
       }
@@ -420,9 +489,23 @@ export default function AvailabilityPage() {
             : [],
       }));
 
-      await availabilityService.updateWeeklyAvailability(sanitizedPayload);
+      await Promise.all([
+        availabilityService.updateWeeklyAvailability(sanitizedPayload),
+        professionalService.updateProfile({
+          bookingType: bookingMode,
+          queueSettings: {
+            dailyLimit: Number(queueSettings.dailyLimit) || 50,
+            queueStartTime: queueSettings.queueStartTime || '09:00',
+            queueEndTime: queueSettings.queueEndTime || '18:00',
+            lastBookingTime: queueSettings.lastBookingTime || '17:00',
+            estimatedServiceTimeMinutes: Number(queueSettings.estimatedServiceTimeMinutes) || 15,
+            allowOnlineQueue: Boolean(queueSettings.allowOnlineQueue),
+          },
+        }),
+      ]);
 
-      toast.success('Consultation working schedule and availability saved successfully!');
+      if (refreshProfile) await refreshProfile();
+      toast.success('Availability schedule and booking settings saved successfully!');
       await loadInitialData();
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed to save availability settings');
@@ -455,65 +538,308 @@ export default function AvailabilityPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <Clock className="w-6 h-6 text-indigo-600" />
-            <span>Consultation Working Hours & Availability</span>
+            <span>Booking System & Availability</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Configure your active working days and daily consultation shift hours in 2 easy steps.
+            Choose your booking model (Time Slots vs Live Token Queue) and set your operating hours.
           </p>
         </div>
 
         <Button size="sm" loading={saving} onClick={handleSave}>
-          <Save className="w-3.5 h-3.5 mr-1" /> Save Working Hours
+          <Save className="w-3.5 h-3.5 mr-1" /> Save All Settings
         </Button>
       </div>
 
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-            Working Days
+      {/* 0. PRIMARY BOOKING MODE SELECTOR */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-7 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">
+              CORE SYSTEM SETTING
+            </span>
+            <h2 className="text-base sm:text-lg font-black text-slate-900 mt-0.5">
+              Select Booking System Type
+            </h2>
+            <p className="text-xs text-slate-500">
+              Only one mode is active at a time. Your public booking link adjusts automatically.
+            </p>
+          </div>
+          <span className="px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold">
+            Active: {bookingMode === 'QUEUE' ? 'Live Token Queue' : 'Fixed Time Slots'}
           </span>
-          <p className="text-2xl font-black text-slate-900">{activeDaysCount} Days</p>
-          <span className="text-[11px] text-emerald-600 font-semibold">Active per week</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-            Total Hours
-          </span>
-          <p className="text-2xl font-black text-slate-900">{totalWeeklyHours} hrs</p>
-          <span className="text-[11px] text-indigo-600 font-semibold">Weekly working time</span>
-        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+          {/* Option 1: Time Slot Mode */}
+          <button
+            type="button"
+            onClick={() => handleRequestModeChange('TIME_SLOT')}
+            className={cn(
+              'p-5 rounded-3xl border text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between gap-3',
+              bookingMode === 'TIME_SLOT'
+                ? 'bg-gradient-to-br from-indigo-50/90 via-white to-indigo-50/50 border-indigo-600 ring-2 ring-indigo-600/20 shadow-md'
+                : 'bg-slate-50/60 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+            )}
+          >
+            <div className="flex items-start justify-between">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/25">
+                <Clock className="w-5 h-5" />
+              </div>
+              {bookingMode === 'TIME_SLOT' ? (
+                <span className="inline-flex items-center gap-1 text-xs font-black text-indigo-700 bg-indigo-100/80 px-2.5 py-1 rounded-full">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>ACTIVE</span>
+                </span>
+              ) : (
+                <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600">
+                  Switch to Slots →
+                </span>
+              )}
+            </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-            Shift Preset
-          </span>
-          <p className="text-sm font-black text-slate-900 truncate">
-            {selectedShiftPreset === 'STANDARD_9_5'
-              ? '9:00 AM – 5:00 PM'
-              : selectedShiftPreset === 'SPLIT_MORNING_EVENING'
-              ? 'Split Shifts'
-              : selectedShiftPreset === 'SPLIT_9_12_1_5'
-              ? 'Lunch Break Shift'
-              : selectedShiftPreset === 'EXTENDED_10_7'
-              ? '10:00 AM – 7:00 PM'
-              : selectedShiftPreset === 'EVENING_5_9'
-              ? '5:00 PM – 9:00 PM'
-              : 'Custom Shifts'}
-          </p>
-          <span className="text-[11px] text-indigo-600 font-semibold">Shift structure</span>
-        </div>
+            <div>
+              <h3 className="text-sm font-black text-slate-900">Type 1: Fixed Time Slots</h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Clients book specific times (e.g. 09:00 AM – 09:30 AM). Best for planned consultations, video calls, legal/financial advice, and scheduled appointments.
+              </p>
+            </div>
 
-        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-2xl border border-indigo-100 shadow-xs">
-          <span className="text-[11px] font-bold text-indigo-800 uppercase tracking-wider block mb-1">
-            Service Timings
-          </span>
-          <p className="text-xs text-indigo-950 font-medium">
-            Slot durations (15m, 20m, 30m, 60m) are configured directly on your Services page.
-          </p>
+            <div className="flex items-center gap-2 text-[11px] text-indigo-700 font-semibold pt-1 border-t border-indigo-100/60">
+              <span>• Slot durations: 15 / 30 / 45 / 60 mins</span>
+            </div>
+          </button>
+
+          {/* Option 2: Live Token Queue Mode */}
+          <button
+            type="button"
+            onClick={() => handleRequestModeChange('QUEUE')}
+            className={cn(
+              'p-5 rounded-3xl border text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between gap-3',
+              bookingMode === 'QUEUE'
+                ? 'bg-gradient-to-br from-indigo-50/90 via-white to-indigo-50/50 border-indigo-600 ring-2 ring-indigo-600/20 shadow-md'
+                : 'bg-slate-50/60 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+            )}
+          >
+            <div className="flex items-start justify-between">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/25">
+                <Ticket className="w-5 h-5" />
+              </div>
+              {bookingMode === 'QUEUE' ? (
+                <span className="inline-flex items-center gap-1 text-xs font-black text-indigo-700 bg-indigo-100/80 px-2.5 py-1 rounded-full">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>ACTIVE</span>
+                </span>
+              ) : (
+                <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600">
+                  Switch to Queue →
+                </span>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-sm font-black text-slate-900">Type 2: Live Token Queue</h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Sequential tokens (#1, #2, #3...) with live queue tracking, estimated wait time, and dashboard "Call Next Token" controls. Best for clinics, OPDs, salons, and walk-ins.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 text-[11px] text-indigo-700 font-semibold pt-1 border-t border-indigo-100/60">
+              <span>• Live "Now Serving" counter & WhatsApp passes</span>
+            </div>
+          </button>
         </div>
       </div>
+
+      {/* QUEUE SETTINGS CONFIGURATION (Visible only in QUEUE Mode) */}
+      {bookingMode === 'QUEUE' && (
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-7 shadow-xs space-y-5 animate-in fade-in-50 duration-200">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-7 h-7 rounded-xl bg-violet-600 text-white flex items-center justify-center text-xs font-black shadow-sm shadow-violet-600/30">
+                ⚡
+              </span>
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                  Daily Queue Configuration & Rules
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Set how many tokens can be booked daily, operating times, and last booking cutoff.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* 1. Daily Tokens Limit */}
+            <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200">
+              <label className="text-xs font-bold text-slate-800 block mb-1">
+                Max Daily Tokens Limit <span className="text-indigo-600 font-normal">(Capacity)</span>
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={500}
+                value={queueSettings.dailyLimit}
+                onChange={(e) =>
+                  setQueueSettings((prev) => ({ ...prev, dailyLimit: Number(e.target.value) }))
+                }
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+              />
+              <p className="text-[11px] text-slate-500 mt-1.5">
+                Maximum tokens issued per day. Queue locks once reached.
+              </p>
+            </div>
+
+            {/* 2. Last Booking Cutoff Time */}
+            <div className="bg-indigo-50/60 p-4 rounded-2xl border border-indigo-200">
+              <label className="text-xs font-bold text-indigo-950 block mb-1">
+                Last Booking Cutoff Time <span className="text-rose-600">*</span>
+              </label>
+              <input
+                type="time"
+                value={queueSettings.lastBookingTime}
+                onChange={(e) =>
+                  setQueueSettings((prev) => ({ ...prev, lastBookingTime: e.target.value }))
+                }
+                className="w-full px-3.5 py-2 bg-white border border-indigo-300 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 shadow-2xs"
+              />
+              <p className="text-[11px] text-indigo-800 font-medium mt-1.5">
+                Queue automatically closes for new bookings after this time each day.
+              </p>
+            </div>
+
+            {/* 3. Avg Turnaround */}
+            <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200">
+              <label className="text-xs font-bold text-slate-800 block mb-1">
+                Avg. Consultation Time (Mins)
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={120}
+                value={queueSettings.estimatedServiceTimeMinutes}
+                onChange={(e) =>
+                  setQueueSettings((prev) => ({
+                    ...prev,
+                    estimatedServiceTimeMinutes: Number(e.target.value),
+                  }))
+                }
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+              />
+              <p className="text-[11px] text-slate-500 mt-1.5">
+                Used to compute estimated wait time for waiting clients.
+              </p>
+            </div>
+
+            {/* 4. Queue Start Time */}
+            <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200">
+              <label className="text-xs font-bold text-slate-800 block mb-1">
+                Queue Start Time
+              </label>
+              <input
+                type="time"
+                value={queueSettings.queueStartTime}
+                onChange={(e) =>
+                  setQueueSettings((prev) => ({ ...prev, queueStartTime: e.target.value }))
+                }
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+              />
+              <p className="text-[11px] text-slate-500 mt-1.5">
+                When daily consultations begin.
+              </p>
+            </div>
+
+            {/* 5. Queue End Time */}
+            <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200">
+              <label className="text-xs font-bold text-slate-800 block mb-1">
+                Queue End Time
+              </label>
+              <input
+                type="time"
+                value={queueSettings.queueEndTime}
+                onChange={(e) =>
+                  setQueueSettings((prev) => ({ ...prev, queueEndTime: e.target.value }))
+                }
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+              />
+              <p className="text-[11px] text-slate-500 mt-1.5">
+                When daily calling concludes.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-100">
+            <label className="flex items-center gap-3 p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={queueSettings.allowOnlineQueue}
+                onChange={(e) =>
+                  setQueueSettings((prev) => ({ ...prev, allowOnlineQueue: e.target.checked }))
+                }
+                className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
+              />
+              <div>
+                <span className="text-xs font-bold text-slate-900 block">
+                  Allow Customers to Join Queue Online
+                </span>
+                <span className="text-[11px] text-slate-500 block">
+                  When enabled, customers can take digital tokens from your public booking link until the last booking cutoff time. If disabled, tokens are walk-in only.
+                </span>
+              </div>
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* Summary KPI Cards (For Time Slot Mode) */}
+      {bookingMode === 'TIME_SLOT' && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+              Working Days
+            </span>
+            <p className="text-2xl font-black text-slate-900">{activeDaysCount} Days</p>
+            <span className="text-[11px] text-emerald-600 font-semibold">Active per week</span>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+              Total Hours
+            </span>
+            <p className="text-2xl font-black text-slate-900">{totalWeeklyHours} hrs</p>
+            <span className="text-[11px] text-indigo-600 font-semibold">Weekly working time</span>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+              Shift Preset
+            </span>
+            <p className="text-sm font-black text-slate-900 truncate">
+              {selectedShiftPreset === 'STANDARD_9_5'
+                ? '9:00 AM – 5:00 PM'
+                : selectedShiftPreset === 'SPLIT_MORNING_EVENING'
+                ? 'Split Shifts'
+                : selectedShiftPreset === 'SPLIT_9_12_1_5'
+                ? 'Lunch Break Shift'
+                : selectedShiftPreset === 'EXTENDED_10_7'
+                ? '10:00 AM – 7:00 PM'
+                : selectedShiftPreset === 'EVENING_5_9'
+                ? '5:00 PM – 9:00 PM'
+                : 'Custom Shifts'}
+            </p>
+            <span className="text-[11px] text-indigo-600 font-semibold">Shift structure</span>
+          </div>
+
+          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-2xl border border-indigo-100 shadow-xs">
+            <span className="text-[11px] font-bold text-indigo-800 uppercase tracking-wider block mb-1">
+              Service Timings
+            </span>
+            <p className="text-xs text-indigo-950 font-medium">
+              Slot durations (15m, 20m, 30m, 60m) are configured directly on your Services page.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* STEP 1: Choose Working Days */}
       <div className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-7 shadow-xs space-y-5">
@@ -1018,17 +1344,56 @@ export default function AvailabilityPage() {
             )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
-            <Button variant="outline" size="sm" onClick={() => setCustomModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" size="sm">
-              <Check className="w-3.5 h-3.5 mr-1" /> Apply Custom Hours
-            </Button>
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <Button variant="outline" size="sm" onClick={() => setCustomModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" size="sm">
+                <Check className="w-3.5 h-3.5 mr-1" /> Apply Custom Hours
+              </Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* MODE SWITCH CONFIRMATION MODAL */}
+        <Modal
+          isOpen={switchModalOpen}
+          onClose={() => setSwitchModalOpen(false)}
+          title="Confirm Booking Mode Change"
+          maxWidth="max-w-md"
+        >
+          <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-900 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-1 text-xs">
+                <p className="font-bold text-slate-900">
+                  You have {futureBookingsCount} active upcoming booking(s)
+                </p>
+                <p className="text-slate-600">
+                  Switching to{' '}
+                  <strong>
+                    {pendingTargetMode === 'QUEUE' ? 'Live Token Queue' : 'Fixed Time Slots'}
+                  </strong>{' '}
+                  will change how new customers book on your public profile link. Existing upcoming bookings will remain stored safely.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <Button variant="outline" size="sm" onClick={() => setSwitchModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => executeModeSwitch(pendingTargetMode)}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white"
+              >
+                Yes, Switch Mode
+              </Button>
+            </div>
           </div>
-        </form>
-      </Modal>
-    </div>
-  );
-}
+        </Modal>
+      </div>
+    );
+  }

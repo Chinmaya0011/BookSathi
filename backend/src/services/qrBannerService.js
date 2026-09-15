@@ -24,11 +24,15 @@ export const qrBannerService = {
    * Get active or latest QR/Banner order for authenticated professional
    */
   async getMyOrder(professionalId) {
+    const now = new Date();
     const activeOrder = await QrBannerOrder.findOne({
       professionalId,
       isActive: true,
-      subscriptionExpiresAt: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
+      subscriptionExpiresAt: { $gt: now },
+    })
+      .select('_id planKey bannerDesignId isActive status trackingNumber createdAt subscriptionExpiresAt deliveryAddress')
+      .sort({ createdAt: -1 })
+      .lean();
 
     if (activeOrder) {
       return {
@@ -38,7 +42,10 @@ export const qrBannerService = {
     }
 
     // Check if there is any pending or recent order
-    const latestOrder = await QrBannerOrder.findOne({ professionalId }).sort({ createdAt: -1 });
+    const latestOrder = await QrBannerOrder.findOne({ professionalId })
+      .select('_id planKey bannerDesignId isActive status trackingNumber createdAt subscriptionExpiresAt deliveryAddress')
+      .sort({ createdAt: -1 })
+      .lean();
 
     return {
       hasActivePurchase: false,

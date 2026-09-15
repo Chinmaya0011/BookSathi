@@ -9,6 +9,7 @@ import {
   updatePassword,
   logout,
   forgotPassword,
+  verifyResetToken,
   resetPassword,
 } from '../controllers/authController.js';
 import { authenticate, verifyCsrf } from '../middleware/authMiddleware.js';
@@ -30,6 +31,7 @@ router.post('/refresh-token', authLimiter, refresh);
 router.get('/csrf-token', getCsrfToken);
 router.post('/logout', logout);
 router.post('/forgot-password', otpLimiter, validate(forgotPasswordSchema), forgotPassword);
+router.get('/verify-reset-token', otpLimiter, verifyResetToken);
 router.post('/reset-password', otpLimiter, validate(resetPasswordSchema), resetPassword);
 
 // Authenticated user routes (with optional CSRF protection for cookie-based auth)

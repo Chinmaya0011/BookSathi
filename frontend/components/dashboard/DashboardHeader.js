@@ -28,6 +28,7 @@ import {
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { notificationService } from '@/services/userAppointment.service';
+import { dedupeQuery, invalidateQuery } from '@/lib/queryCache';
 import { connectSocket } from '@/lib/socket';
 import { cn } from '@/lib/utils';
 import { getProfessionalPublicUrl } from '@/lib/urlHelpers';
@@ -45,7 +46,6 @@ const SUBPAGE_METADATA = {
   '/dashboard/profile': { title: 'Profile Settings', back: '/dashboard' },
   '/dashboard/settings': { title: 'Account Settings', back: '/dashboard' },
   '/dashboard/payments': { title: 'Payments & Revenue', back: '/dashboard' },
-  '/dashboard/find': { title: 'Directory', back: '/dashboard' },
 };
 
 export default function DashboardHeader({ setMobileOpen }) {
@@ -70,12 +70,17 @@ export default function DashboardHeader({ setMobileOpen }) {
     SUBPAGE_METADATA[pathname] ||
     (pathname.startsWith('/dashboard/') ? { title: 'Back', back: '/dashboard' } : null);
 
+  const userId = user?._id;
+
   useEffect(() => {
-    loadNotifications();
+    if (userId) {
+      loadNotifications();
+    }
 
     const socket = connectSocket();
     if (socket) {
       const handleNewNotification = (notification) => {
+        invalidateQuery('user:notifications');
         setNotifications((prev) => [notification, ...prev.slice(0, 9)]);
         setUnreadCount((prev) => prev + 1);
       };
@@ -85,7 +90,7 @@ export default function DashboardHeader({ setMobileOpen }) {
         socket.off('notification:new', handleNewNotification);
       };
     }
-  }, [user]);
+  }, [userId]);
 
   // Click outside listener
   useEffect(() => {
@@ -101,17 +106,27 @@ export default function DashboardHeader({ setMobileOpen }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const loadNotifications = async () => {
+  const loadNotifications = async (force = false) => {
     try {
-      const res = await notificationService.getNotifications();
-      setNotifications(res.data?.notifications?.slice(0, 8) || []);
-      setUnreadCount(res.data?.unreadCount || 0);
+      const data = await dedupeQuery(
+        'user:notifications',
+        async () => {
+          const res = await notificationService.getNotifications();
+          return res?.data || null;
+        },
+        { ttl: 60000, force } // 1 minute cache
+      );
+      if (data) {
+        setNotifications(data.notifications?.slice(0, 8) || []);
+        setUnreadCount(data.unreadCount || 0);
+      }
     } catch (e) {}
   };
 
   const handleMarkAllRead = async () => {
     try {
       await notificationService.markAllAsRead();
+      invalidateQuery('user:notifications');
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
       toast.success('All notifications marked as read');

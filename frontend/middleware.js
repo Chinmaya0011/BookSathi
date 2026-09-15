@@ -68,6 +68,11 @@ export function middleware(req) {
       return NextResponse.rewrite(new URL(`/book/${subdomain}`, req.url));
     }
 
+    // Rewrite /profile on subdomain to /profile/:subdomain
+    if (url.pathname === '/profile' || url.pathname === '/profile/') {
+      return NextResponse.rewrite(new URL(`/profile/${subdomain}`, req.url));
+    }
+
     // If client visits /book/:subdomain directly on their subdomain, redirect cleanly to root
     if (url.pathname === `/book/${subdomain}` || url.pathname === `/book/${subdomain}/`) {
       return NextResponse.redirect(new URL('/', req.url));
