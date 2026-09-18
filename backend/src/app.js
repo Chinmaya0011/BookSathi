@@ -16,22 +16,38 @@ const app = express();
 app.use(helmet());
 
 // Cross-Origin Resource Sharing
+const rawClientUrl = (process.env.CLIENT_URL || '').trim().replace(/\/+$/, '');
+const rawFrontendUrl = (process.env.FRONTEND_URL || '').trim().replace(/\/+$/, '');
+
 const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:3000',
+  rawClientUrl,
+  rawFrontendUrl,
+  'https://book-sathi-three.vercel.app',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
-];
+].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, Postman)
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Allow requests with no origin (like mobile apps, curl, Postman, server-to-server)
+      if (!origin) return callback(null, true);
+
+      const cleanOrigin = origin.trim().replace(/\/+$/, '');
+      if (
+        allowedOrigins.includes(cleanOrigin) ||
+        cleanOrigin.endsWith('.vercel.app') ||
+        cleanOrigin.includes('localhost') ||
+        cleanOrigin.includes('127.0.0.1')
+      ) {
         return callback(null, true);
       }
-      return callback(null, true); // Permissive in dev, can restrict in production
+      return callback(null, true); // Permissive for demo environment
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-XSRF-Token', 'Accept'],
+    exposedHeaders: ['Set-Cookie'],
   })
 );
 
