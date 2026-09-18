@@ -21,15 +21,21 @@ export function middleware(req) {
       subdomain = parts[0];
     }
   } 
-  // 2. Detect production / custom domain subdomain (e.g. dr-rajesh.booksaathi.in)
-  else if (hostname.includes('.') && configuredAppDomain && hostname.endsWith(configuredAppDomain)) {
+  // 2. Detect production custom domain subdomain ONLY if NOT on vercel.app (e.g. dr-rajesh.booksaathi.in)
+  else if (
+    hostname.includes('.') &&
+    configuredAppDomain &&
+    !configuredAppDomain.includes('vercel.app') &&
+    !configuredAppDomain.includes('localhost') &&
+    hostname.endsWith(configuredAppDomain)
+  ) {
     const prefix = hostname.slice(0, -(configuredAppDomain.length + 1));
     if (prefix && !prefix.includes('.')) {
       subdomain = prefix;
     }
   }
 
-  // Handle Subdomain Requests
+  // Handle Subdomain Requests (Only when on a valid custom domain with wildcard DNS or localhost)
   if (subdomain && !isReservedSlug(subdomain)) {
     // 1. If accessing an App route (dashboard, auth, admin, etc.) on a professional's subdomain,
     // redirect to the main apex domain so authentication and dashboard are unified
@@ -80,20 +86,22 @@ export function middleware(req) {
   }
 
   // 3. For apex domain /book/:slug
-  // In development, keep /book/:slug on localhost to preserve shared localStorage session.
-  // In production (with live custom domain), redirect to subdomain if configured.
+  // On localhost or Vercel deployments (*.vercel.app), serve /book/:slug directly!
+  // ONLY redirect to subdomain if running on a custom domain with wildcard DNS (e.g., booksaathi.in).
   if (!subdomain && url.pathname.startsWith('/book/')) {
     const pathSlug = url.pathname.replace(/^\/book\//, '').split('/')[0]?.trim().toLowerCase();
     
     if (pathSlug && !isReservedSlug(pathSlug)) {
       const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
-      // In local dev, allow /book/:slug directly on localhost:3000 so authentication session is preserved
-      if (isLocal) {
+      const isVercel = hostname.includes('.vercel.app') || configuredAppDomain.includes('vercel.app');
+
+      // Always allow path-based booking on localhost and Vercel
+      if (isLocal || isVercel) {
         return NextResponse.next();
       }
 
-      // In production with custom domain configured
-      if (configuredAppDomain && !configuredAppDomain.includes('localhost')) {
+      // Only redirect on custom domain that is NOT vercel and NOT localhost
+      if (configuredAppDomain && !configuredAppDomain.includes('localhost') && !configuredAppDomain.includes('vercel.app')) {
         const protocol = req.headers.get('x-forwarded-proto') || 'https';
         const targetHost = `${pathSlug}.${configuredAppDomain}${port}`;
         return NextResponse.redirect(`${protocol}://${targetHost}/`, 308);
