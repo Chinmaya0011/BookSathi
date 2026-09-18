@@ -12,6 +12,9 @@ dotenv.config();
 
 const app = express();
 
+// Enable trust proxy for reverse proxies & serverless environments (Vercel, Cloudflare, Heroku, AWS)
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet());
 

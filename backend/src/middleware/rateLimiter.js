@@ -1,11 +1,17 @@
 import rateLimit from 'express-rate-limit';
 
+const proxySafeValidate = {
+  xForwardedForHeader: false,
+  default: true,
+};
+
 // Standard general API rate limiter (15 minutes, 300 requests)
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: proxySafeValidate,
   message: {
     success: false,
     code: 'RATE_LIMIT_EXCEEDED',
@@ -19,6 +25,7 @@ export const authLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: proxySafeValidate,
   message: {
     success: false,
     code: 'AUTH_RATE_LIMIT_EXCEEDED',
@@ -32,6 +39,7 @@ export const otpLimiter = rateLimit({
   max: 15,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: proxySafeValidate,
   keyGenerator: (req) => {
     const email = (req.body?.email || req.query?.email || '').trim().toLowerCase();
     const phone = (req.body?.customerPhone || req.body?.phone || '').replace(/\D/g, '');
@@ -52,6 +60,7 @@ export const searchLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: proxySafeValidate,
   message: {
     success: false,
     code: 'SEARCH_RATE_LIMIT_EXCEEDED',
@@ -65,6 +74,7 @@ export const slotLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: proxySafeValidate,
   message: {
     success: false,
     code: 'SLOT_QUERY_RATE_LIMIT_EXCEEDED',
@@ -78,6 +88,7 @@ export const bookingLimiter = rateLimit({
   max: 10, // Max 10 attempts per hour
   standardHeaders: true,
   legacyHeaders: false,
+  validate: proxySafeValidate,
   keyGenerator: (req) => {
     return req.ip || req.headers['x-forwarded-for'] || 'unknown';
   },
@@ -94,6 +105,7 @@ export const appointmentActionLimiter = rateLimit({
   max: 15,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: proxySafeValidate,
   keyGenerator: (req) => {
     return req.user?._id ? `user_${req.user._id}` : req.ip || req.headers['x-forwarded-for'] || 'unknown';
   },
