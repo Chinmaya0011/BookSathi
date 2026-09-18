@@ -357,7 +357,6 @@ export function usePublicBooking(slug) {
         startTime: time,
         appointmentTypeId: selectedType?._id,
         website_hp: websiteHp,
-        formLoadTime: loadTime,
       });
 
       if (res.data?.holdToken) {

@@ -20,6 +20,8 @@ import {
   Ticket,
   Megaphone,
   UserX,
+  Receipt,
+  FileText,
 } from 'lucide-react';
 import { format12Hour, formatINR, formatDisplayDate, cn } from '@/lib/utils';
 
@@ -33,6 +35,10 @@ export default function DashboardTodaySchedule({
   onCallNextQueue,
   callingNext,
   currentServingToken,
+  isPro = false,
+  onOpenUpgradeModal,
+  onOpenReceiptModal,
+  onOpenNotesModal,
 }) {
   const [scheduleFilter, setScheduleFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -398,31 +404,65 @@ export default function DashboardTodaySchedule({
 
                   {/* Right: Quick Action Controls */}
                   <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
-                    {/* Patient Communication Icons */}
-                    {appt.customerPhone && (
-                      <div className="flex items-center gap-1 mr-0.5">
-                        <a
-                          href={`tel:${appt.customerPhone}`}
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
-                          title={`Call ${appt.customerPhone}`}
-                        >
-                          <Phone className="w-3 h-3" />
-                        </a>
-                        <a
-                          href={`https://wa.me/91${appt.customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                            isQueueMode || appt.queueNumber
-                              ? `Hello ${appt.customerName}, Dr./Pro ${profile?.name || ''} here regarding your Queue Token #${appt.queueNumber || ''} today.`
-                              : `Hello ${appt.customerName}, Dr./Pro ${profile?.name || ''} here regarding your appointment today at ${format12Hour(appt.startTime)}.`
-                          )}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors"
-                          title="WhatsApp customer"
-                        >
-                          <MessageCircle className="w-3 h-3" />
-                        </a>
-                      </div>
-                    )}
+                    {/* Patient Communication & Pro Tools */}
+                    <div className="flex items-center gap-1 mr-0.5">
+                      {appt.customerPhone && (
+                        <>
+                          <a
+                            href={`tel:${appt.customerPhone}`}
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                            title={`Call ${appt.customerPhone}`}
+                          >
+                            <Phone className="w-3 h-3" />
+                          </a>
+                          <a
+                            href={`https://wa.me/91${appt.customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                              isQueueMode || appt.queueNumber
+                                ? `Hello ${appt.customerName}, Dr./Pro ${profile?.name || ''} here regarding your Queue Token #${appt.queueNumber || ''} today.`
+                                : `Hello ${appt.customerName}, Dr./Pro ${profile?.name || ''} here regarding your appointment today at ${format12Hour(appt.startTime)}.`
+                            )}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors"
+                            title="WhatsApp customer"
+                          >
+                            <MessageCircle className="w-3 h-3" />
+                          </a>
+                        </>
+                      )}
+
+                      {/* Notes Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!isPro) {
+                            if (onOpenUpgradeModal) onOpenUpgradeModal();
+                          } else if (onOpenNotesModal) {
+                            onOpenNotesModal(appt);
+                          }
+                        }}
+                        className="p-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 transition-colors cursor-pointer"
+                        title={isPro ? "Private Case Notes" : "PRO: Case Notes Vault"}
+                      >
+                        <FileText className="w-3 h-3" />
+                      </button>
+
+                      {/* Receipt Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!isPro) {
+                            if (onOpenUpgradeModal) onOpenUpgradeModal();
+                          } else if (onOpenReceiptModal) {
+                            onOpenReceiptModal(appt);
+                          }
+                        }}
+                        className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors cursor-pointer"
+                        title={isPro ? "Print Consultation Receipt" : "PRO: Invoice & Tax Receipt"}
+                      >
+                        <Receipt className="w-3 h-3" />
+                      </button>
+                    </div>
 
                     {/* Operational Status Action Buttons */}
                     {appt.isDone ? (

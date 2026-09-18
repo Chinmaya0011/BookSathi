@@ -24,7 +24,15 @@ export const authService = {
     return res.data;
   },
 
-  logout() {
+  async getLoginActivity(params = {}) {
+    const res = await api.get('/auth/login-activity', { params });
+    return res.data;
+  },
+
+  async logout() {
+    try {
+      await api.post('/auth/logout', {});
+    } catch (e) {}
     localStorage.removeItem('bs_token');
     localStorage.removeItem('bs_user');
   },

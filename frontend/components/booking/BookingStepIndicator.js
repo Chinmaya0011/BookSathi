@@ -11,7 +11,7 @@ export default function BookingStepIndicator({ currentStep }) {
   ];
 
   return (
-    <div className="pt-3.5 pb-1 border-t border-white/10 flex items-center justify-between text-xs">
+    <div className="pt-3.5 pb-1 flex items-center justify-between text-xs">
       {steps.map((step, idx) => {
         const isCompleted = currentStep > step.id;
         const isCurrent = currentStep === step.id;
@@ -24,10 +24,10 @@ export default function BookingStepIndicator({ currentStep }) {
                 className={cn(
                   'w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300',
                   isCompleted
-                    ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30 ring-2 ring-emerald-400/30'
+                    ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/20'
                     : isCurrent
-                    ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-600/40 ring-2 ring-indigo-400/50 scale-105'
-                    : 'bg-white/10 text-slate-400 border border-white/10'
+                    ? 'bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-600/20 scale-105'
+                    : 'bg-white text-slate-400 border border-slate-200'
                 )}
               >
                 {isCompleted ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <Icon className="w-3.5 h-3.5" />}
@@ -36,9 +36,9 @@ export default function BookingStepIndicator({ currentStep }) {
                 className={cn(
                   'font-bold text-[11px] sm:text-xs transition-colors hidden sm:inline',
                   isCompleted
-                    ? 'text-emerald-300'
+                    ? 'text-emerald-700'
                     : isCurrent
-                    ? 'text-white font-black'
+                    ? 'text-indigo-600 font-extrabold'
                     : 'text-slate-400'
                 )}
               >
@@ -48,10 +48,10 @@ export default function BookingStepIndicator({ currentStep }) {
                 className={cn(
                   'font-bold text-[10px] transition-colors sm:hidden',
                   isCompleted
-                    ? 'text-emerald-300'
+                    ? 'text-emerald-700'
                     : isCurrent
-                    ? 'text-white font-black'
-                    : 'text-slate-500'
+                    ? 'text-indigo-600 font-extrabold'
+                    : 'text-slate-400'
                 )}
               >
                 {step.shortLabel}
@@ -59,11 +59,11 @@ export default function BookingStepIndicator({ currentStep }) {
             </div>
 
             {idx < steps.length - 1 && (
-              <div className="flex-1 mx-2 sm:mx-3 h-0.5 rounded-full overflow-hidden bg-white/10">
+              <div className="flex-1 mx-2 sm:mx-3 h-0.5 rounded-full overflow-hidden bg-slate-200">
                 <div
                   className={cn(
                     'h-full transition-all duration-500',
-                    currentStep > step.id ? 'w-full bg-gradient-to-r from-emerald-500 to-indigo-500' : 'w-0'
+                    currentStep > step.id ? 'w-full bg-gradient-to-r from-emerald-500 to-indigo-600' : 'w-0'
                   )}
                 />
               </div>

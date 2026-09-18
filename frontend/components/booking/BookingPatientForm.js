@@ -21,6 +21,7 @@ import {
   ArrowRight,
   Video,
   KeyRound,
+  Edit3,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatINR, format12Hour, formatDisplayDate, cn } from '@/lib/utils';
@@ -54,7 +55,7 @@ export default function BookingPatientForm({
   const currentFee = selectedType?.fee || profile?.consultationFee || 500;
   const redirectPath = typeof window !== 'undefined' ? window.location.pathname : `/book/${profile?.bookingSlug || ''}`;
 
-  // Feature 7: Auto-fill returning customer's name on phone entry
+  // Auto-fill returning customer's name on phone entry
   useEffect(() => {
     const cleanPhone = (patientPhone || '').replace(/[^0-9]/g, '');
     if (cleanPhone.length === 10 && !patientName) {
@@ -73,7 +74,7 @@ export default function BookingPatientForm({
           }
         })
         .catch(() => {
-          // Graceful fallback if no prior appointment
+          // Graceful fallback
         });
     }
   }, [patientPhone, patientName, patientEmail, setPatientName, setPatientEmail]);
@@ -182,7 +183,7 @@ export default function BookingPatientForm({
 
       {/* 3-minute Slot Hold Countdown Banner */}
       {holdCountdown > 0 && (
-        <div className="p-3.5 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/15 border border-amber-300/80 rounded-2xl flex items-center justify-between text-xs text-amber-950 shadow-xs">
+        <div className="p-3.5 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/15 border border-amber-300 rounded-2xl flex items-center justify-between text-xs text-amber-950 shadow-xs">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
             <span className="font-extrabold">Slot Temporarily Reserved For You</span>
@@ -195,10 +196,11 @@ export default function BookingPatientForm({
       )}
 
       {/* Selected Slot Recap Banner */}
-      <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-950 to-slate-900 text-white shadow-md border border-indigo-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white shadow-lg border border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">
-            Selected Slot
+          <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Selected Appointment Slot</span>
           </span>
           <div className="flex items-center gap-2 text-sm sm:text-base font-black">
             <Calendar className="w-4 h-4 text-indigo-400 shrink-0" />
@@ -212,9 +214,19 @@ export default function BookingPatientForm({
           </p>
         </div>
 
-        <div className="text-left sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">Consultation Fee</span>
-          <span className="text-lg sm:text-xl font-black text-white">{formatINR(currentFee)}</span>
+        <div className="flex items-center sm:flex-col sm:items-end justify-between pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block text-right">Consultation Fee</span>
+            <span className="text-lg sm:text-xl font-black text-white font-mono">{formatINR(currentFee)}</span>
+          </div>
+          <button
+            type="button"
+            onClick={onBack}
+            className="mt-1 inline-flex items-center gap-1 text-[11px] text-indigo-300 hover:text-white font-semibold transition-colors cursor-pointer"
+          >
+            <Edit3 className="w-3 h-3" />
+            <span>Change Slot</span>
+          </button>
         </div>
       </div>
 
@@ -227,7 +239,7 @@ export default function BookingPatientForm({
             </span>
             <span>Patient & Contact Details</span>
           </label>
-          <span className="text-[11px] text-slate-400 font-medium">No account needed</span>
+          <span className="text-[11px] text-slate-400 font-medium">No account required</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -241,7 +253,7 @@ export default function BookingPatientForm({
               onChange={(e) => setPatientName(e.target.value)}
               required
               prefix={<User className="w-4 h-4 text-slate-400" />}
-              className="py-2.5 text-xs sm:text-sm bg-white border-slate-200 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+              className="py-2.5 text-xs sm:text-sm bg-slate-50/50 border-slate-200 focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
             />
           </div>
 
@@ -256,7 +268,7 @@ export default function BookingPatientForm({
               onChange={(e) => setPatientPhone(e.target.value)}
               required
               prefix={<Phone className="w-4 h-4 text-slate-400" />}
-              className="py-2.5 text-xs sm:text-sm bg-white border-slate-200 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+              className="py-2.5 text-xs sm:text-sm bg-slate-50/50 border-slate-200 focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
             />
           </div>
         </div>
@@ -264,10 +276,10 @@ export default function BookingPatientForm({
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="block text-xs font-bold text-slate-800">
-              Email Address <span className="text-slate-400 font-normal">(For instant calendar invite & OTP)</span>
+              Email Address <span className="text-slate-400 font-normal">(Instant calendar & confirmation invite)</span>
             </label>
             {isEmailVerified ? (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                 <CheckCircle2 className="w-3 h-3" />
                 <span>Verified</span>
               </span>
@@ -292,18 +304,18 @@ export default function BookingPatientForm({
               if (isEmailVerified) setIsEmailVerified(false);
             }}
             prefix={<Mail className="w-4 h-4 text-slate-400" />}
-            className="py-2.5 text-xs sm:text-sm bg-white border-slate-200 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+            className="py-2.5 text-xs sm:text-sm bg-slate-50/50 border-slate-200 focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
           />
 
           {/* Inline Email OTP Input Field */}
           {otpSent && !isEmailVerified && (
-            <div className="mt-2.5 p-3 rounded-xl bg-indigo-50/70 border border-indigo-200 animate-in fade-in duration-200 space-y-2">
+            <div className="mt-2.5 p-3.5 rounded-2xl bg-indigo-50/80 border border-indigo-200 animate-in fade-in duration-200 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-indigo-950 flex items-center gap-1.5">
                   <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
                   <span>Enter 6-Digit Email Code</span>
                 </span>
-                <span className="text-[10px] text-indigo-700">Code sent via Nodemailer</span>
+                <span className="text-[10px] text-indigo-700">Code sent via email</span>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -312,13 +324,13 @@ export default function BookingPatientForm({
                   value={enteredOtp}
                   onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g, ''))}
                   placeholder="123456"
-                  className="w-36 px-3 py-1.5 text-center tracking-widest font-mono font-black text-sm bg-white border border-indigo-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  className="w-36 px-3 py-1.5 text-center tracking-widest font-mono font-black text-sm bg-white border border-indigo-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-600"
                 />
                 <button
                   type="button"
                   disabled={verifyingOtp || enteredOtp.length < 6}
                   onClick={handleVerifyEmailOtp}
-                  className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {verifyingOtp ? 'Verifying...' : 'Confirm OTP'}
                 </button>
@@ -329,14 +341,14 @@ export default function BookingPatientForm({
 
         <div>
           <label className="block text-xs font-bold text-slate-800 mb-1.5">
-            Symptoms or Reason for Visit <span className="text-slate-400 font-normal">(Optional)</span>
+            Symptoms or Purpose of Visit <span className="text-slate-400 font-normal">(Optional)</span>
           </label>
           <textarea
-            placeholder="Briefly describe symptoms, previous diagnosis, or purpose of consultation..."
+            placeholder="Briefly describe symptoms, previous diagnosis, or notes for the doctor..."
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={2}
-            className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 focus:outline-none transition-all"
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 focus:outline-none transition-all"
           />
         </div>
       </div>
@@ -348,7 +360,7 @@ export default function BookingPatientForm({
             <span className="w-5 h-5 rounded-lg bg-indigo-600 text-white inline-flex items-center justify-center text-[10px] font-black shadow-xs shadow-indigo-600/30">
               2
             </span>
-            <span>Payment Method</span>
+            <span>Payment Option</span>
           </label>
           <span className="text-[11px] font-semibold text-emerald-600">0% Convenience Fee</span>
         </div>
@@ -410,7 +422,7 @@ export default function BookingPatientForm({
           type="button"
           onClick={onBack}
           disabled={submitting}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
           <span>Back to Slots</span>
@@ -421,7 +433,7 @@ export default function BookingPatientForm({
           loading={submitting}
           className="w-full sm:flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:to-violet-600 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-indigo-600/25 active:scale-95 transition-all flex items-center justify-center gap-2"
         >
-          <span>{user ? 'Confirm & Lock Appointment' : 'Sign In & Confirm Appointment'}</span>
+          <span>{user ? `Confirm Appointment • ${formatINR(currentFee)}` : `Sign In & Book • ${formatINR(currentFee)}`}</span>
           <ArrowRight className="w-4 h-4" />
         </Button>
       </div>

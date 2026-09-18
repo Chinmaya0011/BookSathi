@@ -17,6 +17,13 @@ import DashboardTrendsChart from '@/components/dashboard/DashboardTrendsChart';
 import DashboardServiceDistribution from '@/components/dashboard/DashboardServiceDistribution';
 import ManualBookingModal from '@/components/dashboard/ManualBookingModal';
 import UserDashboardOverview from '@/components/dashboard/UserDashboardOverview';
+import FreeTierLimitBanner from '@/components/dashboard/FreeTierLimitBanner';
+import ProUpgradeModal from '@/components/dashboard/ProUpgradeModal';
+import ProFeaturesHub from '@/components/dashboard/ProFeaturesHub';
+import BatchWhatsAppModal from '@/components/dashboard/BatchWhatsAppModal';
+import ConsultationReceiptModal from '@/components/dashboard/ConsultationReceiptModal';
+import EmergencyNoticeModal from '@/components/dashboard/EmergencyNoticeModal';
+import PrivateNotesModal from '@/components/dashboard/PrivateNotesModal';
 import { connectSocket } from '@/lib/socket';
 import {
   Clock,
@@ -34,13 +41,20 @@ import { dedupeQuery, invalidateQuery } from '@/lib/queryCache';
 
 export default function DashboardOverviewPage() {
   const router = useRouter();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, refreshProfile, loading: authLoading } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
   const [callingNext, setCallingNext] = useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+
+  // Pro feature modal states
+  const [batchWhatsAppOpen, setBatchWhatsAppOpen] = useState(false);
+  const [emergencyNoticeOpen, setEmergencyNoticeOpen] = useState(false);
+  const [receiptModalAppt, setReceiptModalAppt] = useState(null);
+  const [notesModalAppt, setNotesModalAppt] = useState(null);
 
   // Manual booking modal state
   const [manualModalOpen, setManualModalOpen] = useState(false);
@@ -281,6 +295,58 @@ export default function DashboardOverviewPage() {
     }
   };
 
+  // CSV Financial & Patient Ledger Export for Pro
+  const handleExportCSV = () => {
+    if (!isPro) {
+      setUpgradeModalOpen(true);
+      return;
+    }
+    const schedule = stats?.todaySchedule || [];
+    if (schedule.length === 0) {
+      toast.info('No patient appointments recorded for today to export.');
+      return;
+    }
+
+    const headers = [
+      'Token/Slot',
+      'Customer Name',
+      'Phone',
+      'Email',
+      'Service',
+      'Fee (INR)',
+      'Status',
+      'Payment Status',
+      'Date',
+    ];
+    const rows = schedule.map((a) => [
+      a.queueNumber ? `Token #${a.queueNumber}` : a.startTime || '10:00',
+      `"${(a.customerName || '').replace(/"/g, '""')}"`,
+      `"${a.customerPhone || ''}"`,
+      `"${a.customerEmail || ''}"`,
+      `"${(a.appointmentTypeName || 'Consultation').replace(/"/g, '""')}"`,
+      a.fee || 500,
+      a.status || 'BOOKED',
+      a.paymentStatus || 'PENDING',
+      a.date
+        ? new Date(a.date).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0],
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute(
+      'download',
+      `BookSaathi_Ledger_${new Date().toISOString().split('T')[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('📊 Practice financial & patient ledger exported successfully!');
+  };
+
   // Find next upcoming active customer today for the quick spotlight card
   const todaySchedule = stats?.todaySchedule || [];
   const nextCustomer = useMemo(() => {
@@ -304,6 +370,18 @@ export default function DashboardOverviewPage() {
     ).length;
   }, [todaySchedule]);
 
+  // Check Pro membership status
+  const isPro =
+    profile?.plan === 'PRO' &&
+    (!profile?.planExpiresAt || new Date(profile.planExpiresAt) > new Date());
+
+  const usedMonthlyBookings =
+    stats?.monthCount !== undefined
+      ? stats.monthCount
+      : stats?.totalCount !== undefined
+      ? stats.totalCount
+      : todaySchedule.length;
+
   // If not a professional, render customer dashboard
   if (role !== 'PROFESSIONAL') {
     return <UserDashboardOverview user={user} />;
@@ -311,6 +389,15 @@ export default function DashboardOverviewPage() {
 
   return (
     <div className="space-y-3.5 sm:space-y-4 w-full font-sans animate-in fade-in duration-300">
+      {/* 0. Urgent Free Tier Quota & Upgrade Banner (Free Tier Only) */}
+      {!isPro && (
+        <FreeTierLimitBanner
+          usedCount={usedMonthlyBookings}
+          limit={15}
+          onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
+        />
+      )}
+
       {/* 1. Setup Checklist (Collapsible / Non-Intrusive) */}
       <ProfileCompletionCard />
 
@@ -323,12 +410,18 @@ export default function DashboardOverviewPage() {
         onRefresh={() => loadDashboardData(true)}
         onOpenManualModal={handleOpenManualModal}
         onCopyBookingLink={handleCopyBookingLink}
+        onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
       />
 
       {/* 3. High-Priority KPI Metrics at a Glance */}
-      <DashboardMetrics stats={stats} loading={loading} />
+      <DashboardMetrics
+        stats={stats}
+        loading={loading}
+        isPro={isPro}
+        onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
+      />
 
-      {/* 4. PRIMARY OPERATIONAL ZONE: Today's Live Schedule (Left 2 cols) + Next Spotlight & Shortcuts (Right 1 col) */}
+      {/* 4. ⭐ PRIMARY OPERATIONAL CENTERPIECE: Today's Live Schedule (Left 2 cols) + Next Spotlight & Shortcuts (Right 1 col) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 sm:gap-4 items-stretch">
         {/* Left 2 Cols: Main Today's Appointments Timeline & Queue Actions */}
         <div className="lg:col-span-2 flex flex-col h-full">
@@ -341,6 +434,10 @@ export default function DashboardOverviewPage() {
             updatingStatusId={updatingStatusId}
             onCallNextQueue={handleCallNextQueue}
             callingNext={callingNext}
+            isPro={isPro}
+            onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
+            onOpenReceiptModal={(appt) => setReceiptModalAppt(appt)}
+            onOpenNotesModal={(appt) => setNotesModalAppt(appt)}
           />
         </div>
 
@@ -441,11 +538,41 @@ export default function DashboardOverviewPage() {
           </div>
 
           {/* Quick Operational Shortcuts */}
-          <DashboardQuickShortcuts />
+          <DashboardQuickShortcuts
+            isPro={isPro}
+            onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
+          />
         </div>
       </div>
 
-      {/* 5. PRACTICE ANALYTICS & INSIGHTS: Balanced 2:1 Grid (Trends 2 cols + Distribution & Peak 1 col) */}
+      {/* 5. Pro Practice Operating Suite Grid (8 Real Features & Free Locks) */}
+      <ProFeaturesHub
+        isPro={isPro}
+        onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
+        onOpenBatchWhatsApp={() => setBatchWhatsAppOpen(true)}
+        onExportCSV={handleExportCSV}
+        onOpenEmergencyNotice={() => setEmergencyNoticeOpen(true)}
+        onOpenReceipt={() => {
+          const firstAppt =
+            todaySchedule.find((a) => a.status === 'DONE' || a.status === 'COMPLETED') ||
+            todaySchedule[0];
+          if (firstAppt) {
+            setReceiptModalAppt(firstAppt);
+          } else {
+            toast.info('No appointments scheduled yet today to print receipts for.');
+          }
+        }}
+        onOpenNotes={() => {
+          const firstAppt = todaySchedule[0];
+          if (firstAppt) {
+            setNotesModalAppt(firstAppt);
+          } else {
+            toast.info('Add or select an appointment to attach case notes.');
+          }
+        }}
+        todaySchedule={todaySchedule}
+      />
+      {/* 6. PRACTICE ANALYTICS & INSIGHTS: Balanced 2:1 Grid (Trends 2 cols + Distribution & Peak 1 col) */}
       <div className="space-y-2 pt-1">
         <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5 px-0.5">
           <div>
@@ -456,6 +583,15 @@ export default function DashboardOverviewPage() {
               Historical trends, peak appointment hours, and treatment breakdown
             </p>
           </div>
+          {!isPro && (
+            <button
+              type="button"
+              onClick={() => setUpgradeModalOpen(true)}
+              className="text-xs font-extrabold text-amber-600 hover:text-amber-700 inline-flex items-center gap-1 cursor-pointer"
+            >
+              <span>⚡ Unlock 30-Day Pro Reports</span>
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 sm:gap-4 items-stretch">
@@ -463,6 +599,8 @@ export default function DashboardOverviewPage() {
             <DashboardTrendsChart
               weeklyTrend={stats?.weeklyTrend}
               loading={loading}
+              isPro={isPro}
+              onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
             />
           </div>
           <div className="lg:col-span-1">
@@ -470,6 +608,8 @@ export default function DashboardOverviewPage() {
               serviceDistribution={stats?.serviceDistribution}
               hourlyDistribution={stats?.hourlyDistribution}
               loading={loading}
+              isPro={isPro}
+              onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
             />
           </div>
         </div>
@@ -486,6 +626,43 @@ export default function DashboardOverviewPage() {
         onSubmit={handleCreateManualBooking}
         creatingManual={creatingManual}
         profile={profile}
+      />
+
+      {/* 7. Pro Upgrade Modal */}
+      <ProUpgradeModal
+        isOpen={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        onUpgradeSuccess={() => loadDashboardData(true)}
+      />
+
+      {/* 8. Consultation Receipt Modal (Pro) */}
+      <ConsultationReceiptModal
+        isOpen={!!receiptModalAppt}
+        onClose={() => setReceiptModalAppt(null)}
+        appointment={receiptModalAppt}
+        profile={profile}
+      />
+
+      {/* 9. Batch WhatsApp Broadcast Modal (Pro) */}
+      <BatchWhatsAppModal
+        isOpen={batchWhatsAppOpen}
+        onClose={() => setBatchWhatsAppOpen(false)}
+        todaySchedule={todaySchedule}
+        profile={profile}
+      />
+
+      {/* 10. Emergency Notice Modal (Pro) */}
+      <EmergencyNoticeModal
+        isOpen={emergencyNoticeOpen}
+        onClose={() => setEmergencyNoticeOpen(false)}
+        profile={profile}
+      />
+
+      {/* 11. Private Case Notes Modal (Pro) */}
+      <PrivateNotesModal
+        isOpen={!!notesModalAppt}
+        onClose={() => setNotesModalAppt(null)}
+        appointment={notesModalAppt}
       />
     </div>
   );

@@ -18,6 +18,7 @@ import {
   Repeat,
   ArrowRight,
   Clock,
+  MapPin,
 } from 'lucide-react';
 import { formatINR, format12Hour, formatDisplayDate, formatTimeUntil } from '@/lib/utils';
 
@@ -61,7 +62,7 @@ export default function BookingSuccessView({
   const bookingDate =
     confirmedBooking.date || confirmedBooking.appointmentDate || confirmedBooking.dateString;
 
-  // Feature 2: Time-until-next-appointment (client-side computed)
+  // Time-until-next-appointment (client-side computed)
   const timeUntil = formatTimeUntil(bookingDate, confirmedBooking.startTime);
 
   // Custom client WhatsApp confirmation message
@@ -79,16 +80,16 @@ export default function BookingSuccessView({
     <div className="p-6 sm:p-9 text-center space-y-6 animate-in zoom-in-95 duration-200">
       {/* Celebration Icon & Header */}
       <div className="space-y-3">
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/30 ring-4 ring-emerald-400/20">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-500 text-white flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/25 ring-4 ring-emerald-500/15">
           <CheckCircle2 className="w-9 h-9 sm:w-11 sm:h-11 stroke-[2.5]" />
         </div>
 
         <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 text-xs font-bold border border-emerald-500/20 mb-1.5">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 mb-1.5 shadow-2xs">
             <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
             <span>Appointment Booked Successfully</span>
           </span>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
             You're All Set!
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
@@ -97,9 +98,9 @@ export default function BookingSuccessView({
         </div>
       </div>
 
-      {/* Prominent Holographic Reference Token Card */}
-      <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-violet-950 text-white max-w-md mx-auto shadow-2xl border border-indigo-500/30 flex items-center justify-between gap-3 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
+      {/* Prominent Digital Ticket Card */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white max-w-md mx-auto shadow-xl border border-indigo-500/30 flex items-center justify-between gap-3 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-36 h-36 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
 
         <div className="text-left relative z-10">
           <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-300 block">
@@ -110,11 +111,11 @@ export default function BookingSuccessView({
           </span>
         </div>
 
-        {/* Feature 4: Copy-to-clipboard button with inline "Copied!" confirmation */}
+        {/* Copy-to-clipboard button */}
         <button
           type="button"
           onClick={handleCopyCode}
-          className="relative z-10 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition-all active:scale-95 cursor-pointer backdrop-blur-md"
+          className="relative z-10 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition-all active:scale-95 cursor-pointer backdrop-blur-md"
         >
           {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-indigo-300" />}
           <span>{copied ? 'Copied!' : 'Copy'}</span>
@@ -122,10 +123,9 @@ export default function BookingSuccessView({
       </div>
 
       {/* Structured Confirmation Details Card */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-slate-50/90 border border-slate-200/90 max-w-md mx-auto text-left space-y-3 shadow-xs">
+      <div className="p-5 sm:p-6 rounded-3xl bg-slate-50 border border-slate-200 max-w-md mx-auto text-left space-y-3 shadow-xs">
         <div className="space-y-2.5 text-xs">
-          {/* Feature 9: Day of week label (formatDisplayDate) + Feature 2: Time-until (e.g. in 3 hours) */}
-          <div className="flex items-start justify-between pb-2.5 border-b border-slate-200/70 gap-2">
+          <div className="flex items-start justify-between pb-2.5 border-b border-slate-200/80 gap-2">
             <span className="text-slate-500 flex items-center gap-1.5 mt-0.5">
               <Calendar className="w-4 h-4 text-indigo-600 shrink-0" />
               <span>Date & Time:</span>
@@ -135,14 +135,14 @@ export default function BookingSuccessView({
                 {formatDisplayDate(bookingDate)} at {format12Hour(confirmedBooking.startTime)}
               </span>
               {timeUntil && (
-                <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md inline-block mt-0.5">
+                <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md inline-block mt-0.5">
                   {timeUntil}
                 </span>
               )}
             </div>
           </div>
 
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
             <span className="text-slate-500 flex items-center gap-1.5">
               <UserCheck className="w-4 h-4 text-indigo-600" />
               <span>Professional:</span>
@@ -150,15 +150,27 @@ export default function BookingSuccessView({
             <span className="font-bold text-slate-900">{profile?.name}</span>
           </div>
 
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
             <span className="text-slate-500 flex items-center gap-1.5">
               <Building2 className="w-4 h-4 text-indigo-600" />
               <span>Consultation Fee:</span>
             </span>
-            <span className="font-bold text-slate-900">
+            <span className="font-bold text-slate-900 font-mono">
               {formatINR(currentFee || confirmedBooking.fee || 500)}
             </span>
           </div>
+
+          {profile?.address && (
+            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-200/80">
+              <span className="text-slate-500 flex items-center gap-1.5 mt-0.5">
+                <MapPin className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>Location:</span>
+              </span>
+              <span className="font-semibold text-slate-800 text-right text-[11px] max-w-[200px]">
+                {profile.address}, {profile.city}
+              </span>
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <span className="text-slate-500 flex items-center gap-1.5">
@@ -166,7 +178,7 @@ export default function BookingSuccessView({
               <span>Status:</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[11px]">
-              BOOKED
+              CONFIRMED
             </span>
           </div>
         </div>
@@ -211,7 +223,7 @@ export default function BookingSuccessView({
             ) : (
               <Download className="w-3.5 h-3.5" />
             )}
-            <span>{downloadingPdf ? 'Generating...' : 'PDF Slip'}</span>
+            <span>{downloadingPdf ? 'Generating...' : 'PDF Receipt'}</span>
           </button>
         </div>
 
@@ -223,7 +235,7 @@ export default function BookingSuccessView({
             className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
           >
             <Repeat className="w-3.5 h-3.5" />
-            <span>1-Tap Book Again</span>
+            <span>Book Another Appointment</span>
           </button>
 
           <span className="text-slate-300">•</span>
@@ -232,7 +244,7 @@ export default function BookingSuccessView({
             href="/lookup"
             className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
           >
-            View My Bookings
+            View All Bookings
           </a>
         </div>
       </div>

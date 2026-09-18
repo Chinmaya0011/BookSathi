@@ -17,6 +17,8 @@ import {
   Lock,
   ArrowRight,
   XCircle,
+  Phone,
+  Mail,
 } from 'lucide-react';
 import { formatINR, formatDisplayDate } from '@/lib/utils';
 import Spinner from '@/components/ui/Spinner';
@@ -65,15 +67,15 @@ export default function BookingQueueView({
   const estimatedWait = queueStatus?.estimatedWaitMinutes ?? (waitingCount * (profile?.queueSettings?.estimatedServiceTimeMinutes || 15));
 
   return (
-    <div className="p-4 sm:p-7 space-y-6 animate-in fade-in-50 duration-200">
+    <div className="p-5 sm:p-7 space-y-6 animate-in fade-in duration-200">
       {/* 1. Date Strip Selector */}
       <div className="space-y-2.5">
-        <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-1">
-          <span className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between text-xs font-bold text-slate-800 px-1">
+          <span className="flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
             <Calendar className="w-4 h-4 text-indigo-600" />
             <span>Select Date</span>
           </span>
-          <span className="text-[11px] text-slate-400 font-normal">
+          <span className="text-[11px] text-slate-500 font-medium">
             {selectedDayObj?.isToday ? 'Today' : selectedDayObj?.isTomorrow ? 'Tomorrow' : formatDisplayDate(selectedDate)}
             {selectedDayObj?.isClosed && ' • (Closed)'}
           </span>
@@ -89,23 +91,23 @@ export default function BookingQueueView({
                 key={day.dateStr}
                 type="button"
                 onClick={() => onDateSelect(day.dateStr)}
-                className={`shrink-0 flex flex-col items-center justify-center min-w-[70px] sm:min-w-[78px] py-2.5 px-3 rounded-2xl border transition-all duration-200 cursor-pointer relative ${
+                className={`shrink-0 flex flex-col items-center justify-center min-w-[70px] sm:min-w-[78px] py-2.5 px-3 rounded-2xl border transition-all duration-200 cursor-pointer relative shadow-2xs ${
                   isSelected
                     ? isDayOff
-                      ? 'bg-rose-700 text-white border-rose-700 shadow-md shadow-rose-700/25 scale-[1.02]'
+                      ? 'bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-600/25 scale-[1.02]'
                       : 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/25 scale-[1.02]'
                     : isDayOff
-                    ? 'bg-rose-50/60 hover:bg-rose-50 text-rose-700 border-rose-200/80 opacity-75'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
+                    ? 'bg-rose-50 hover:bg-rose-100/70 text-rose-700 border-rose-200 opacity-75'
+                    : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 hover:border-indigo-300'
                 }`}
               >
                 <span className={`text-[10px] uppercase font-bold tracking-wider ${isSelected ? 'text-white/80' : isDayOff ? 'text-rose-600' : 'text-slate-400'}`}>
                   {day.dayName}
                 </span>
-                <span className="text-base sm:text-lg font-black leading-tight mt-0.5 font-mono">
+                <span className="text-base sm:text-lg font-black leading-tight my-0.5 font-mono">
                   {day.dayNum}
                 </span>
-                <span className={`text-[10px] font-semibold mt-0.5 ${isSelected ? 'text-white/90' : isDayOff ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>
+                <span className={`text-[10px] font-semibold ${isSelected ? 'text-white/90' : isDayOff ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>
                   {isDayOff ? 'Closed' : day.isToday ? 'Today' : day.monthName}
                 </span>
               </button>
@@ -151,7 +153,7 @@ export default function BookingQueueView({
             </div>
 
             {/* Next Available Token */}
-            <div className="bg-indigo-600/20 border border-indigo-500/40 rounded-2xl p-3 text-left backdrop-blur-xs">
+            <div className="bg-indigo-600/30 border border-indigo-400/50 rounded-2xl p-3 text-left backdrop-blur-xs">
               <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-300 block">
                 Your Token
               </span>
@@ -201,7 +203,7 @@ export default function BookingQueueView({
 
       {/* Closed Day / Blocked Date Warning */}
       {isDayClosed && (
-        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-800 text-xs flex items-start gap-2.5">
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5">
           <XCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <strong className="font-bold">Clinic / Professional is Closed on this Day</strong>
@@ -214,7 +216,7 @@ export default function BookingQueueView({
 
       {/* Daily limit reached warning */}
       {!isDayClosed && isDailyLimitReached && (
-        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 text-xs flex items-start gap-2.5">
+        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-start gap-2.5">
           <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <strong className="font-bold">Daily Queue Limit Reached for this Date</strong>
@@ -227,7 +229,7 @@ export default function BookingQueueView({
 
       {/* Cutoff time reached warning */}
       {!isDayClosed && isCutoffReached && (
-        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-800 text-xs flex items-start gap-2.5">
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5">
           <Clock className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <strong className="font-bold">Queue Booking Closed for Today</strong>
@@ -240,7 +242,7 @@ export default function BookingQueueView({
 
       {/* Online queue disabled warning */}
       {!isOnlineAllowed && (
-        <div className="p-4 rounded-2xl bg-slate-500/10 border border-slate-500/30 text-slate-800 text-xs flex items-start gap-2.5">
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-xs flex items-start gap-2.5">
           <Lock className="w-5 h-5 text-slate-600 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <strong className="font-bold">Walk-In Only Mode</strong>
@@ -254,7 +256,7 @@ export default function BookingQueueView({
       {/* 3. Service Type Selector (if multiple exist) */}
       {appointmentTypes && appointmentTypes.length > 1 && (
         <div className="space-y-2.5">
-          <label className="block text-xs font-bold text-slate-700 px-1">
+          <label className="block text-xs font-bold text-slate-800 px-1">
             Select Consultation Service
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -265,10 +267,10 @@ export default function BookingQueueView({
                   key={type._id}
                   type="button"
                   onClick={() => onTypeSelect(type)}
-                  className={`text-left p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer ${
+                  className={`text-left p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer shadow-2xs ${
                     isSelected
-                      ? 'bg-indigo-50/80 border-indigo-600 ring-2 ring-indigo-600/20'
-                      : 'bg-slate-50/70 border-slate-200 hover:border-slate-300'
+                      ? 'bg-indigo-50/80 border-indigo-600 ring-2 ring-indigo-600/20 shadow-xs'
+                      : 'bg-white border-slate-200 hover:border-indigo-300 hover:bg-slate-50'
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -280,7 +282,7 @@ export default function BookingQueueView({
                         </p>
                       )}
                     </div>
-                    <span className="text-xs font-black text-indigo-700 font-mono">
+                    <span className="text-xs font-black text-slate-900 font-mono">
                       {formatINR(type.fee || profile.consultationFee || 0)}
                     </span>
                   </div>
@@ -314,13 +316,13 @@ export default function BookingQueueView({
           }}
         />
         <div className="border-t border-slate-100 pt-4">
-          <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 px-1 mb-3">
-            Customer Details
+          <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 px-1 mb-3">
+            Patient & Contact Details
           </h3>
 
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label className="block text-xs font-bold text-slate-800 mb-1">
                 Full Name <span className="text-rose-500">*</span>
               </label>
               <input
@@ -329,13 +331,13 @@ export default function BookingQueueView({
                 value={patientName}
                 onChange={(e) => setPatientName(e.target.value)}
                 placeholder="e.g. Rahul Sharma"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 text-xs sm:text-sm font-medium outline-hidden transition-all bg-slate-50/50"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-600 focus:bg-white focus:ring-2 focus:ring-indigo-600/20 text-xs sm:text-sm font-medium outline-none transition-all bg-slate-50/50"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-800 mb-1">
                   Mobile Number <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative flex items-center">
@@ -349,13 +351,13 @@ export default function BookingQueueView({
                     value={patientPhone}
                     onChange={(e) => setPatientPhone(e.target.value.replace(/\D/g, ''))}
                     placeholder="9876543210"
-                    className="w-full pl-11 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 text-xs sm:text-sm font-medium outline-hidden transition-all bg-slate-50/50"
+                    className="w-full pl-11 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-600 focus:bg-white focus:ring-2 focus:ring-indigo-600/20 text-xs sm:text-sm font-medium outline-none transition-all bg-slate-50/50"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-800 mb-1">
                   Email Address <span className="text-slate-400 font-normal">(Optional)</span>
                 </label>
                 <input
@@ -363,13 +365,13 @@ export default function BookingQueueView({
                   value={patientEmail}
                   onChange={(e) => setPatientEmail(e.target.value)}
                   placeholder="rahul@example.com"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 text-xs sm:text-sm font-medium outline-hidden transition-all bg-slate-50/50"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-600 focus:bg-white focus:ring-2 focus:ring-indigo-600/20 text-xs sm:text-sm font-medium outline-none transition-all bg-slate-50/50"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label className="block text-xs font-bold text-slate-800 mb-1">
                 Reason for Visit <span className="text-slate-400 font-normal">(Optional)</span>
               </label>
               <input
@@ -377,7 +379,7 @@ export default function BookingQueueView({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="e.g. Regular Checkup, Consultation"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 text-xs sm:text-sm font-medium outline-hidden transition-all bg-slate-50/50"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-600 focus:bg-white focus:ring-2 focus:ring-indigo-600/20 text-xs sm:text-sm font-medium outline-none transition-all bg-slate-50/50"
               />
             </div>
           </div>
@@ -385,17 +387,17 @@ export default function BookingQueueView({
 
         {/* 5. Payment Mode Selection */}
         <div className="border-t border-slate-100 pt-4 space-y-2.5">
-          <label className="block text-xs font-bold text-slate-700 px-1">
+          <label className="block text-xs font-bold text-slate-800 px-1">
             Payment Option
           </label>
           <div className="grid grid-cols-2 gap-2.5">
             <button
               type="button"
               onClick={() => setPaymentMode('OFFLINE')}
-              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer shadow-2xs ${
                 paymentMode === 'OFFLINE'
-                  ? 'bg-indigo-50/80 border-indigo-600 ring-2 ring-indigo-600/20'
-                  : 'bg-slate-50/60 border-slate-200 hover:border-slate-300'
+                  ? 'bg-indigo-50/90 border-indigo-600 ring-2 ring-indigo-600/25 shadow-xs'
+                  : 'bg-white border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -403,17 +405,17 @@ export default function BookingQueueView({
                 <span className="text-xs font-bold text-slate-900">Pay on Arrival</span>
               </div>
               <p className="text-[10px] text-slate-500 mt-1">
-                Pay cash / UPI directly at desk
+                Pay cash / UPI directly at clinic
               </p>
             </button>
 
             <button
               type="button"
               onClick={() => setPaymentMode('ONLINE')}
-              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer shadow-2xs ${
                 paymentMode === 'ONLINE'
-                  ? 'bg-indigo-50/80 border-indigo-600 ring-2 ring-indigo-600/20'
-                  : 'bg-slate-50/60 border-slate-200 hover:border-slate-300'
+                  ? 'bg-indigo-50/90 border-indigo-600 ring-2 ring-indigo-600/25 shadow-xs'
+                  : 'bg-white border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -432,7 +434,7 @@ export default function BookingQueueView({
           <button
             type="submit"
             disabled={submitting || isBookingBlocked || !isOnlineAllowed}
-            className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm shadow-xl shadow-indigo-600/25 transition-all active:scale-98 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+            className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:to-violet-600 text-white font-black text-sm shadow-xl shadow-indigo-600/25 transition-all active:scale-98 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
           >
             {submitting ? (
               <>
@@ -469,7 +471,7 @@ export default function BookingQueueView({
           </button>
 
           <p className="text-center text-[11px] text-slate-400 mt-2.5 flex items-center justify-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
             <span>Instant token issued directly on {profile.name}'s live queue</span>
           </p>
         </div>

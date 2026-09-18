@@ -23,18 +23,36 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle unauthenticated 401s gracefully
+// Response interceptor to handle unauthenticated 401s and revoked sessions gracefully
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && typeof window !== 'undefined') {
-      // If unauthorized on protected routes, redirect to login
-      if (
+      const isSessionRevoked = error.response?.data?.code === 'SESSION_REVOKED';
+      const errorMessage =
+        error.response?.data?.message ||
+        'Your account was signed in from another device or browser. For your security, this session has been logged out.';
+
+      localStorage.removeItem('bs_token');
+      localStorage.removeItem('bs_user');
+
+      // Dispatch global session revoked event for modal notification
+      window.dispatchEvent(
+        new CustomEvent('booksaathi:session_revoked', {
+          detail: {
+            isRevoked: isSessionRevoked,
+            message: errorMessage,
+          },
+        })
+      );
+
+      // If on protected dashboard/admin/onboarding routes and not already on /login, redirect
+      const isProtectedRoute =
         window.location.pathname.startsWith('/dashboard') ||
-        window.location.pathname.startsWith('/onboarding')
-      ) {
-        localStorage.removeItem('bs_token');
-        localStorage.removeItem('bs_user');
+        window.location.pathname.startsWith('/admin') ||
+        window.location.pathname.startsWith('/onboarding');
+
+      if (isProtectedRoute && !window.location.pathname.startsWith('/login') && !isSessionRevoked) {
         window.location.href = '/login';
       }
     }

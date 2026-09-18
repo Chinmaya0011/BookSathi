@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Save,
   CheckCircle2,
   Globe,
+  Sliders,
+  Shield,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,8 +15,14 @@ import { professionalService } from '@/services/professional.service';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import UserCustomerSettings from '@/components/dashboard/UserCustomerSettings';
+import LoginActivityCard from '@/components/dashboard/LoginActivityCard';
+import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams?.get('tab') === 'security' || searchParams?.get('tab') === 'login-activity' ? 'security' : 'booking';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
   const { user, profile, refreshProfile } = useAuth();
   const role = user?.role || 'USER';
 
@@ -29,6 +38,12 @@ export default function SettingsPage() {
   const [allowSameDay, setAllowSameDay] = useState(true);
 
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (searchParams?.get('tab') === 'security' || searchParams?.get('tab') === 'login-activity') {
+      setActiveTab('security');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (profile?.bookingSettings) {
@@ -64,125 +79,161 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6 w-full animate-in fade-in duration-200">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-          Booking Preferences & Rules
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-          Configure appointment durations, rest buffer times, and advance notice rules.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            Settings & Security
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Configure appointment rules, buffer times, and manage your active login sessions.
+          </p>
+        </div>
+
+        {/* Tab Switcher */}
+        <div className="flex items-center p-1 bg-slate-200/70 rounded-2xl gap-1 self-start sm:self-auto border border-slate-200">
+          <button
+            type="button"
+            onClick={() => setActiveTab('booking')}
+            className={cn(
+              'flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer',
+              activeTab === 'booking'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            )}
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>Booking Preferences</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('security')}
+            className={cn(
+              'flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer',
+              activeTab === 'security'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            )}
+          >
+            <Shield className="w-3.5 h-3.5" />
+            <span>Login Activity</span>
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 sm:p-8">
-        <form onSubmit={handleSave} className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-              Slot Timing & Intervals
-            </h3>
+      {activeTab === 'security' ? (
+        <LoginActivityCard />
+      ) : (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 sm:p-8">
+          <form onSubmit={handleSave} className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
+                Slot Timing & Intervals
+              </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
-                  Default Consultation Duration
-                </label>
-                <select
-                  value={duration}
-                  onChange={(e) => setDuration(Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
-                >
-                  <option value={15}>15 Minutes</option>
-                  <option value={30}>30 Minutes (Recommended)</option>
-                  <option value={45}>45 Minutes</option>
-                  <option value={60}>60 Minutes (1 Hour)</option>
-                </select>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  How long each appointment slot will be scheduled for.
-                </p>
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Default Consultation Duration
+                  </label>
+                  <select
+                    value={duration}
+                    onChange={(e) => setDuration(Number(e.target.value))}
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                  >
+                    <option value={15}>15 Minutes</option>
+                    <option value={30}>30 Minutes (Recommended)</option>
+                    <option value={45}>45 Minutes</option>
+                    <option value={60}>60 Minutes (1 Hour)</option>
+                  </select>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    How long each appointment slot will be scheduled for.
+                  </p>
+                </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
-                  Buffer Time Between Bookings
-                </label>
-                <select
-                  value={buffer}
-                  onChange={(e) => setBuffer(Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
-                >
-                  <option value={0}>0 Minutes (Back-to-back)</option>
-                  <option value={5}>5 Minutes</option>
-                  <option value={10}>10 Minutes (Recommended)</option>
-                  <option value={15}>15 Minutes</option>
-                  <option value={30}>30 Minutes</option>
-                </select>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Rest/preparation gap added between consecutive appointments.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4 pt-4">
-            <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-              Advance Notice & Scheduling Window
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Minimum Booking Notice (Minutes)"
-                type="number"
-                value={minNotice}
-                onChange={(e) => setMinNotice(Number(e.target.value))}
-                helperText="Prevents clients from booking on zero notice (e.g. 30 mins before)."
-              />
-
-              <Input
-                label="Maximum Advance Booking Window (Days)"
-                type="number"
-                value={maxAdvance}
-                onChange={(e) => setMaxAdvance(Number(e.target.value))}
-                helperText="How many days into the future clients can schedule (e.g. 60 days)."
-              />
-            </div>
-
-            <label className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={allowSameDay}
-                onChange={(e) => setAllowSameDay(e.target.checked)}
-                className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-              />
-              <span className="text-xs font-bold text-slate-800">
-                Allow Same-Day Appointments (Subject to minimum notice)
-              </span>
-            </label>
-          </div>
-
-          <div className="space-y-4 pt-4">
-            <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-              Timezone & Region
-            </h3>
-
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3">
-              <Globe className="w-5 h-5 text-indigo-600 shrink-0" />
-              <div>
-                <p className="text-xs font-bold text-slate-800">
-                  Timezone: {profile?.timezone || 'Asia/Kolkata (IST)'}
-                </p>
-                <p className="text-[11px] text-slate-500">
-                  All customer slots and calendar exports are calculated in Indian Standard Time.
-                </p>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Buffer Time Between Bookings
+                  </label>
+                  <select
+                    value={buffer}
+                    onChange={(e) => setBuffer(Number(e.target.value))}
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                  >
+                    <option value={0}>0 Minutes (Back-to-back)</option>
+                    <option value={5}>5 Minutes</option>
+                    <option value={10}>10 Minutes (Recommended)</option>
+                    <option value={15}>15 Minutes</option>
+                    <option value={30}>30 Minutes</option>
+                  </select>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Rest/preparation gap added between consecutive appointments.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex justify-end pt-4 border-t border-slate-100">
-            <Button type="submit" loading={saving} size="lg">
-              <Save className="w-4 h-4 mr-1.5" /> Save Booking Preferences
-            </Button>
-          </div>
-        </form>
-      </div>
+            <div className="space-y-4 pt-4">
+              <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
+                Advance Notice & Scheduling Window
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Minimum Booking Notice (Minutes)"
+                  type="number"
+                  value={minNotice}
+                  onChange={(e) => setMinNotice(Number(e.target.value))}
+                  helperText="Prevents clients from booking on zero notice (e.g. 30 mins before)."
+                />
+
+                <Input
+                  label="Maximum Advance Booking Window (Days)"
+                  type="number"
+                  value={maxAdvance}
+                  onChange={(e) => setMaxAdvance(Number(e.target.value))}
+                  helperText="How many days into the future clients can schedule (e.g. 60 days)."
+                />
+              </div>
+
+              <label className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allowSameDay}
+                  onChange={(e) => setAllowSameDay(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                />
+                <span className="text-xs font-bold text-slate-800">
+                  Allow Same-Day Appointments (Subject to minimum notice)
+                </span>
+              </label>
+            </div>
+
+            <div className="space-y-4 pt-4">
+              <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
+                Timezone & Region
+              </h3>
+
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3">
+                <Globe className="w-5 h-5 text-indigo-600 shrink-0" />
+                <div>
+                  <p className="text-xs font-bold text-slate-800">
+                    Timezone: {profile?.timezone || 'Asia/Kolkata (IST)'}
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    All customer slots and calendar exports are calculated in Indian Standard Time.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-slate-100">
+              <Button type="submit" loading={saving} size="lg">
+                <Save className="w-4 h-4 mr-1.5" /> Save Booking Preferences
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

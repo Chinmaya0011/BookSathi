@@ -63,6 +63,11 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    activeSessionId: {
+      type: String,
+      default: null,
+      index: true,
+    },
     refreshTokens: [
       {
         tokenHash: {

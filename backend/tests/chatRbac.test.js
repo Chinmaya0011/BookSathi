@@ -104,8 +104,8 @@ async function runRbacTests() {
       customerPhone: '9876543210',
       appointmentDate: new Date('2026-09-20T10:00:00.000Z'),
       dateString: '2026-09-20',
-      startTime: '10:00 AM',
-      endTime: '10:30 AM',
+      startTime: '10:00',
+      endTime: '10:30',
       status: 'CONFIRMED',
     });
 

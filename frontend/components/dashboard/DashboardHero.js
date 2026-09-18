@@ -27,6 +27,7 @@ export default function DashboardHero({
   onRefresh,
   onOpenManualModal,
   onCopyBookingLink,
+  onOpenUpgradeModal,
 }) {
   const bookingUrl = getProfessionalPublicUrl(profile);
   const displayUrl = getProfessionalDisplayUrl(profile);
@@ -87,13 +88,19 @@ export default function DashboardHero({
                 />
               )}
               {isPro ? (
-                <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-black uppercase tracking-wide">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/15 to-orange-500/15 text-amber-900 border border-amber-300 text-[11px] font-black uppercase tracking-wide">
+                  <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" />
                   PRO
                 </span>
               ) : (
-                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-semibold uppercase tracking-wide">
-                  Standard
-                </span>
+                <button
+                  type="button"
+                  onClick={onOpenUpgradeModal}
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-300 hover:border-amber-300 text-[11px] font-bold tracking-wide transition-all cursor-pointer group"
+                >
+                  <span>Free Tier (15/mo)</span>
+                  <span className="text-amber-600 font-extrabold group-hover:underline">⚡ Upgrade</span>
+                </button>
               )}
             </div>
 

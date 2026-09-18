@@ -2,6 +2,7 @@ import './globals.css';
 import { AuthProvider } from '@/hooks/useAuth';
 import { Toaster } from 'sonner';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
+import SessionRevokedModal from '@/components/auth/SessionRevokedModal';
 
 export const metadata = {
   title: 'BookSaathi — Simple Booking Platform for Indian Professionals',
@@ -38,6 +39,7 @@ export default function RootLayout({ children }) {
       <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
         <AuthProvider>
           {children}
+          <SessionRevokedModal />
           <Toaster
             position="top-right"
             richColors

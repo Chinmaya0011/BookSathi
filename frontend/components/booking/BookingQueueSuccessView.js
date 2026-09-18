@@ -81,17 +81,17 @@ export default function BookingQueueSuccessView({
     <div className="p-6 sm:p-9 text-center space-y-6 animate-in zoom-in-95 duration-200">
       {/* Celebration Header */}
       <div className="space-y-3">
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center mx-auto shadow-xl shadow-indigo-600/30 ring-4 ring-indigo-500/20">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center mx-auto shadow-xl shadow-indigo-600/25 ring-4 ring-indigo-500/15">
           <Ticket className="w-9 h-9 sm:w-11 sm:h-11 stroke-[2]" />
         </div>
 
         <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 text-xs font-bold border border-emerald-500/20 mb-1.5">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 mb-1.5 shadow-2xs">
             <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
             <span>Queue Token Issued Successfully</span>
           </span>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">
-            You're in the Queue!
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            You're in the Live Queue!
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
             Your live token has been allocated with <strong className="text-slate-800">{profile?.name}</strong>.
@@ -100,8 +100,8 @@ export default function BookingQueueSuccessView({
       </div>
 
       {/* Massive Digital Token Pass Card */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-violet-950 text-white p-6 sm:p-7 shadow-2xl border border-indigo-500/40 max-w-md mx-auto">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/25 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-7 shadow-xl border border-indigo-500/30 max-w-md mx-auto">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-violet-500/20 rounded-full blur-2xl pointer-events-none" />
 
         <div className="relative z-10 space-y-4">
@@ -171,7 +171,7 @@ export default function BookingQueueSuccessView({
               onClick={handleCopyCode}
               className="inline-flex items-center gap-1 text-[11px] text-indigo-300 hover:text-white font-bold transition-colors cursor-pointer"
             >
-              {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+              {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-indigo-300" />}
               <span>{copied ? 'Copied' : 'Copy'}</span>
             </button>
           </div>
@@ -179,9 +179,9 @@ export default function BookingQueueSuccessView({
       </div>
 
       {/* Structured Details Card */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-slate-50/90 border border-slate-200/90 max-w-md mx-auto text-left space-y-3 shadow-xs">
+      <div className="p-5 sm:p-6 rounded-3xl bg-slate-50 border border-slate-200 max-w-md mx-auto text-left space-y-3 shadow-xs">
         <div className="space-y-2.5 text-xs">
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
             <span className="text-slate-500 flex items-center gap-1.5">
               <Ticket className="w-4 h-4 text-indigo-600" />
               <span>Token Number:</span>
@@ -189,7 +189,7 @@ export default function BookingQueueSuccessView({
             <span className="font-mono font-black text-slate-900 text-sm">#{tokenNumber}</span>
           </div>
 
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
             <span className="text-slate-500 flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-indigo-600" />
               <span>Booking Date:</span>
@@ -197,12 +197,12 @@ export default function BookingQueueSuccessView({
             <span className="font-bold text-slate-900">{formatDisplayDate(bookingDate)}</span>
           </div>
 
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
             <span className="text-slate-500 flex items-center gap-1.5">
               <Building2 className="w-4 h-4 text-indigo-600" />
               <span>Consultation Fee:</span>
             </span>
-            <span className="font-bold text-slate-900">
+            <span className="font-bold text-slate-900 font-mono">
               {formatINR(currentFee || confirmedBooking.fee || 500)}
             </span>
           </div>

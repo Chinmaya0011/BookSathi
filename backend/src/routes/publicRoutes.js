@@ -58,8 +58,8 @@ router.post('/:slug/queue/join', bookingLimiter, optionalAuth, joinPublicQueue);
 router.post('/:slug/send-email-otp', otpLimiter, sendPublicEmailOtp);
 router.post('/:slug/verify-email-otp', otpLimiter, verifyPublicEmailOtp);
 
-router.post('/:slug/hold', bookingLimiter, validate(holdSlotSchema), holdSlotPublic);
-router.post('/:slug/hold/release', bookingLimiter, releaseHoldPublic);
+router.post('/:slug/hold', slotLimiter, validate(holdSlotSchema), holdSlotPublic);
+router.post('/:slug/hold/release', slotLimiter, releaseHoldPublic);
 router.post('/:slug/book', bookingLimiter, optionalAuth, validate(publicBookingSchema), bookPublicAppointment);
 router.get('/:slug/ics/:code', downloadIcsCalendar);
 

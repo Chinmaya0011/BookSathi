@@ -42,7 +42,7 @@ function SlotButton({ slot, onSelect }) {
     <button
       type="button"
       onClick={() => onSelect(slot.time)}
-      className="py-2.5 px-2 rounded-2xl border border-emerald-300/80 bg-gradient-to-b from-emerald-50/90 to-emerald-100/40 hover:from-emerald-600 hover:to-teal-600 hover:text-white hover:border-emerald-600 hover:shadow-lg hover:shadow-emerald-600/20 text-emerald-950 text-xs font-bold transition-all text-center group active:scale-95 shadow-xs cursor-pointer flex flex-col items-center justify-center min-h-[58px]"
+      className="py-2.5 px-2 rounded-2xl border border-emerald-300 bg-emerald-50/70 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:shadow-md hover:shadow-emerald-600/20 text-emerald-950 text-xs font-bold transition-all text-center group active:scale-95 shadow-2xs cursor-pointer flex flex-col items-center justify-center min-h-[58px]"
     >
       <span className="group-hover:text-white font-extrabold text-xs tracking-tight">{slot.time12}</span>
       <span className="text-[10px] font-semibold text-emerald-700 group-hover:text-emerald-100 mt-1 flex items-center gap-1">
@@ -128,7 +128,7 @@ export default function BookingSlotPicker({
                   className={cn(
                     'p-4 rounded-2xl border text-left transition-all duration-200 flex items-start justify-between relative group cursor-pointer shadow-xs',
                     isSelected
-                      ? 'bg-gradient-to-br from-indigo-50/90 via-violet-50/50 to-white border-indigo-600 ring-2 ring-indigo-600/30 shadow-md shadow-indigo-500/10'
+                      ? 'bg-indigo-50/80 border-indigo-600 ring-2 ring-indigo-600/25 shadow-md shadow-indigo-500/10'
                       : 'bg-white border-slate-200/90 hover:border-indigo-300 hover:bg-slate-50/80'
                   )}
                 >
@@ -143,24 +143,24 @@ export default function BookingSlotPicker({
                     </div>
                     <div className="flex items-center gap-2 mt-1.5 text-[11px] text-slate-500">
                       <span className="flex items-center gap-1 font-medium">
-                        <Clock className="w-3 h-3 text-indigo-500" />
+                        <Clock className="w-3 h-3 text-indigo-600" />
                         <span>{t.duration || 30} mins</span>
                       </span>
                       <span>•</span>
                       <span className="flex items-center gap-1 font-medium">
                         {isVideo ? (
                           <>
-                            <Video className="w-3 h-3 text-indigo-500" />
+                            <Video className="w-3 h-3 text-indigo-600" />
                             <span>Video Consultation</span>
                           </>
                         ) : isPhone ? (
                           <>
-                            <PhoneCall className="w-3 h-3 text-indigo-500" />
+                            <PhoneCall className="w-3 h-3 text-indigo-600" />
                             <span>Phone Call</span>
                           </>
                         ) : (
                           <>
-                            <Building2 className="w-3 h-3 text-indigo-500" />
+                            <Building2 className="w-3 h-3 text-indigo-600" />
                             <span>In-Clinic Visit</span>
                           </>
                         )}
@@ -228,21 +228,21 @@ export default function BookingSlotPicker({
                   className={cn(
                     'p-2.5 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-center relative cursor-pointer active:scale-95 shadow-2xs',
                     isSelected
-                      ? 'bg-slate-950 text-white border-slate-900 shadow-md ring-2 ring-indigo-500/40'
-                      : 'bg-white border-slate-200/90 text-slate-700 hover:border-indigo-300 hover:bg-slate-50'
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/25 ring-2 ring-indigo-600/30 scale-[1.02]'
+                      : 'bg-white border-slate-200 text-slate-700 hover:border-indigo-300 hover:bg-slate-50'
                   )}
                 >
                   <span
                     className={cn(
                       'text-[10px] font-bold uppercase tracking-wider',
-                      isSelected ? 'text-indigo-400' : 'text-slate-400'
+                      isSelected ? 'text-indigo-100' : 'text-slate-400'
                     )}
                   >
                     {day.label}
                   </span>
                   <span
                     className={cn(
-                      'text-base sm:text-lg font-black my-0.5',
+                      'text-base sm:text-lg font-black my-0.5 font-mono',
                       isSelected ? 'text-white' : 'text-slate-900'
                     )}
                   >
@@ -250,8 +250,8 @@ export default function BookingSlotPicker({
                   </span>
                   <span
                     className={cn(
-                      'text-[10px] font-medium',
-                      isSelected ? 'text-slate-300' : 'text-slate-500'
+                      'text-[10px] font-semibold',
+                      isSelected ? 'text-indigo-100' : 'text-slate-500'
                     )}
                   >
                     {day.monthName}
@@ -306,7 +306,7 @@ export default function BookingSlotPicker({
             <p className="text-xs font-semibold">Calculating real-time slot availability...</p>
           </div>
         ) : totalSlotsCount === 0 ? (
-          <div className="p-8 rounded-2xl bg-amber-500/10 border border-amber-300/60 text-center space-y-2">
+          <div className="p-8 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-2">
             <Sun className="w-8 h-8 text-amber-600 mx-auto stroke-[1.5]" />
             <h4 className="text-xs sm:text-sm font-bold text-amber-950">No Consultation Slots on this Date</h4>
             <p className="text-[11px] text-amber-900/80 max-w-xs mx-auto">

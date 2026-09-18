@@ -86,25 +86,25 @@ export default function PublicBookingPage() {
 
   if (loadingProfile) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="w-14 h-14 rounded-3xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center mb-4 text-indigo-400 shadow-2xl relative z-10">
-          <Sparkles className="w-7 h-7 animate-pulse text-indigo-400" />
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="w-14 h-14 rounded-2xl bg-indigo-600/10 border border-indigo-200 flex items-center justify-center mb-4 text-indigo-600 shadow-lg shadow-indigo-500/10 relative z-10">
+          <Sparkles className="w-7 h-7 animate-pulse text-indigo-600" />
         </div>
-        <Spinner size="lg" label="Loading practitioner booking calendar..." className="text-white relative z-10" />
+        <Spinner size="lg" label="Loading practitioner booking calendar..." className="text-slate-800 relative z-10" />
       </div>
     );
   }
 
   if (error || !profile) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-rose-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
         <EmptyState
           icon={AlertCircle}
           title="Practitioner Not Found"
           description={error || 'The requested practitioner profile or booking link is inactive or does not exist.'}
-          className="max-w-md w-full bg-slate-900/90 border-slate-800 text-white shadow-2xl rounded-3xl relative z-10 backdrop-blur-xl"
+          className="max-w-md w-full bg-white border-slate-200/90 text-slate-900 shadow-xl rounded-3xl relative z-10"
         />
       </div>
     );
@@ -116,9 +116,11 @@ export default function PublicBookingPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between py-4 sm:py-8 px-3.5 sm:px-6 selection:bg-indigo-600 selection:text-white relative overflow-hidden">
-      {/* Dynamic ambient backdrop glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-gradient-to-b from-indigo-600/15 via-violet-600/10 to-transparent blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-indigo-50/20 to-slate-100/80 text-slate-900 flex flex-col justify-between py-4 sm:py-8 px-3.5 sm:px-6 selection:bg-indigo-600 selection:text-white relative overflow-hidden">
+      {/* Dynamic ambient backdrop decoration */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-96 bg-gradient-to-b from-indigo-100/50 via-violet-50/40 to-transparent blur-3xl pointer-events-none" />
+      <div className="absolute -top-24 -right-24 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <link rel="canonical" href={canonicalUrl} />
       <meta property="og:url" content={canonicalUrl} />
@@ -128,31 +130,31 @@ export default function PublicBookingPage() {
         content={`Book an appointment directly with ${profile.name} (${profile.profession}) on BookSaathi.`}
       />
 
-      {/* Top Header Bar */}
+      {/* Top Navigation Header */}
       <header className="max-w-2xl w-full mx-auto mb-4 flex items-center justify-between text-xs px-2 relative z-10">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center font-black text-sm shadow-md shadow-indigo-600/30 group-hover:scale-105 transition-transform">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center font-black text-sm shadow-md shadow-indigo-600/25 group-hover:scale-105 transition-transform">
             B
           </div>
-          <span className="font-extrabold text-white text-sm sm:text-base tracking-tight">
-            Book<span className="text-indigo-400">Saathi</span>
+          <span className="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight">
+            Book<span className="text-indigo-600">Saathi</span>
           </span>
         </Link>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 text-[11px] font-semibold backdrop-blur-md shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <Lock className="w-3 h-3 text-emerald-400" />
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200/80 text-slate-700 text-[11px] font-semibold shadow-xs backdrop-blur-md">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <Lock className="w-3 h-3 text-emerald-600" />
           <span>256-Bit SSL Secured</span>
         </div>
       </header>
 
       {/* Main Booking Card Container */}
-      <main className="max-w-2xl w-full mx-auto bg-white rounded-3xl sm:rounded-[32px] shadow-2xl shadow-indigo-950/50 border border-slate-200/80 overflow-hidden text-slate-900 ring-1 ring-white/10 relative z-10 transition-all duration-300">
-        {/* Doctor Hero Card */}
-        <div className="bg-slate-950">
+      <main className="max-w-2xl w-full mx-auto bg-white rounded-3xl sm:rounded-[32px] shadow-xl shadow-slate-200/60 border border-slate-200/90 overflow-hidden text-slate-900 relative z-10 transition-all duration-300">
+        {/* Doctor Hero Card with Step Indicator */}
+        <div className="border-b border-slate-100 bg-white">
           <BookingDoctorHero profile={profile} />
           {hasServices && !isQueueMode && (
-            <div className="px-5 sm:px-7 pb-4">
+            <div className="px-5 sm:px-7 pb-4 bg-slate-50/60 border-t border-slate-100">
               <BookingStepIndicator currentStep={currentStep} />
             </div>
           )}
@@ -176,7 +178,7 @@ export default function PublicBookingPage() {
               {isOwner ? (
                 <Link
                   href="/dashboard/services"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all active:scale-95"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all active:scale-95"
                 >
                   <Settings className="w-4 h-4" />
                   <span>Configure Services in Dashboard</span>
@@ -184,7 +186,7 @@ export default function PublicBookingPage() {
               ) : (
                 <Link
                   href="/lookup"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all active:scale-95"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all active:scale-95"
                 >
                   <Search className="w-4 h-4" />
                   <span>Lookup My Booking</span>
@@ -333,17 +335,17 @@ export default function PublicBookingPage() {
 
       {/* Footer Branding & Guarantees */}
       <footer className="mt-8 max-w-2xl w-full mx-auto text-center space-y-3 relative z-10">
-        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-[11px] text-slate-400">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-[11px] text-slate-500 font-medium">
           <span className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             <span>Direct Practitioner Booking</span>
           </span>
           <span className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             <span>Zero Convenience Fees</span>
           </span>
           <span className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             <span>Instant WhatsApp & Calendar Sync</span>
           </span>
         </div>
@@ -351,16 +353,16 @@ export default function PublicBookingPage() {
         <div className="pt-1">
           <Link
             href="/lookup"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
           >
             <Search className="w-3.5 h-3.5" />
             <span>Already booked? Find your appointment with your phone number</span>
           </Link>
         </div>
 
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-400">
           Powered by{' '}
-          <span className="font-bold text-slate-300">BookSaathi</span> Scheduling Network (India)
+          <span className="font-bold text-slate-700">BookSaathi</span> Scheduling Network (India)
         </p>
       </footer>
     </div>

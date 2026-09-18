@@ -1,3 +1,4 @@
+process.env.NODE_ENV = 'test';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { User } from '../src/models/User.js';

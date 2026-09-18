@@ -4,6 +4,7 @@ import {
   loginUser,
   rotateRefreshToken,
   revokeRefreshToken,
+  logoutUser,
   updateUserProfile,
   changePassword,
   createPasswordResetToken,
@@ -121,9 +122,12 @@ export const updatePassword = async (req, res, next) => {
 export const logout = async (req, res) => {
   try {
     const rawRefreshToken = req.body?.refreshToken || req.cookies?.refreshToken;
-    if (rawRefreshToken) {
-      await revokeRefreshToken(rawRefreshToken);
-    }
+    const meta = {
+      userAgent: req.headers['user-agent'] || '',
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '',
+      sessionId: req.sessionId || req.user?.activeSessionId || '',
+    };
+    await logoutUser(req.user, rawRefreshToken, meta);
     clearAuthCookies(res);
     return successResponse(res, 200, 'Logged out successfully');
   } catch (err) {

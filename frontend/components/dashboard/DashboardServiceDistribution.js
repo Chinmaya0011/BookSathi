@@ -21,17 +21,30 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 
+import LockedFeaturePaywall from './LockedFeaturePaywall';
+
 const PIE_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#8b5cf6'];
 
 export default function DashboardServiceDistribution({
   serviceDistribution = [],
   hourlyDistribution = [],
   loading,
+  isPro = false,
+  onOpenUpgradeModal,
 }) {
   const [activeTab, setActiveTab] = useState('services'); // 'services' | 'peak'
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-3.5 sm:p-4 flex flex-col justify-between min-w-0 w-full overflow-hidden font-sans h-full">
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-3.5 sm:p-4 flex flex-col justify-between min-w-0 w-full overflow-hidden font-sans h-full relative">
+      {!isPro && (
+        <LockedFeaturePaywall
+          title="Peak Demand & Treatment Insights"
+          description="Analyze your highest-revenue consultation hours, service margins, and patient flow with Pro."
+          badge="⭐ PRO ONLY"
+          compact={false}
+          onOpenUpgradeModal={onOpenUpgradeModal}
+        />
+      )}
       <div className="min-w-0">
         {/* Header with Switcher Tabs */}
         <div className="flex items-center justify-between gap-2 mb-3">

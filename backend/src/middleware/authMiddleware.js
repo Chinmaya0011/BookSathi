@@ -32,6 +32,17 @@ export const authenticate = async (req, res, next) => {
       return errorResponse(res, 401, 'User account not found or inactive.');
     }
 
+    // Single Active Session Verification
+    if (decoded.sessionId && decoded.sessionId !== user.activeSessionId) {
+      return errorResponse(
+        res,
+        401,
+        'Your session has been revoked because your account was signed in from another device.',
+        null,
+        'SESSION_REVOKED'
+      );
+    }
+
     let profile = await ProfessionalProfile.findOne({ userId: user._id });
     if (!profile && user.email) {
       profile = await ProfessionalProfile.findOne({ email: user.email.toLowerCase() });
@@ -116,6 +127,7 @@ export const authenticate = async (req, res, next) => {
 
     req.user = user;
     req.profile = profile || null;
+    req.sessionId = decoded.sessionId || user.activeSessionId || null;
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
@@ -142,6 +154,7 @@ export const optionalAuth = async (req, res, next) => {
       const decoded = jwt.verify(token, secret);
       const user = await User.findById(decoded.id);
       if (user && user.isActive) {
+        req.sessionId = decoded.sessionId || user.activeSessionId || null;
         req.user = user;
         req.profile = await ProfessionalProfile.findOne({ userId: user._id });
       }

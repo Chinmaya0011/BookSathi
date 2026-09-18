@@ -94,6 +94,7 @@ export default function AdminLayout({ children }) {
     {
       title: 'SECURITY & INFRASTRUCTURE',
       items: [
+        { label: 'Security & Login Activity', href: '/admin/security', icon: ShieldAlert, badge: 'Active' },
         { label: 'Users & RBAC', href: '/admin/users', icon: Users },
         { label: 'System Audit Logs', href: '/admin/audit-logs', icon: History },
         { label: 'Platform Settings', href: '/admin/settings', icon: Sliders },

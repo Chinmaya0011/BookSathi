@@ -18,8 +18,10 @@ export default function Navbar() {
   const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
@@ -83,7 +85,7 @@ export default function Navbar() {
               Client Pass Lookup
             </Link>
 
-            {user ? (
+            {mounted && user ? (
               <Link
                 href="/dashboard"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all active:scale-95"
@@ -180,7 +182,7 @@ export default function Navbar() {
           </nav>
 
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
-            {user ? (
+            {mounted && user ? (
               <Link
                 href="/dashboard"
                 onClick={() => setMobileMenuOpen(false)}

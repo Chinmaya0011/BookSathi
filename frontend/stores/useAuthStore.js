@@ -1,29 +1,11 @@
 import { create } from 'zustand';
 import { authService } from '@/services/auth.service';
 
-const getInitialUser = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('bs_user');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
-
-const hasInitialToken = () => {
-  if (typeof window === 'undefined') return false;
-  return !!localStorage.getItem('bs_token');
-};
-
-const initialUser = getInitialUser();
-const initialHasToken = hasInitialToken();
-
 export const useAuthStore = create((set, get) => ({
-  user: initialUser,
+  user: null,
   profile: null,
-  loading: initialHasToken && !initialUser,
-  isAuthenticated: !!initialUser || initialHasToken,
+  loading: false,
+  isAuthenticated: false,
 
   setUser: (user) => {
     if (typeof window !== 'undefined') {
@@ -40,6 +22,18 @@ export const useAuthStore = create((set, get) => ({
 
   fetchCurrentUser: async () => {
     try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('bs_user');
+        if (raw) {
+          try {
+            const cachedUser = JSON.parse(raw);
+            if (cachedUser) {
+              set({ user: cachedUser, isAuthenticated: true });
+            }
+          } catch (e) {}
+        }
+      }
+
       if (authService.isAuthenticated()) {
         const res = await authService.getMe();
         if (res.data) {

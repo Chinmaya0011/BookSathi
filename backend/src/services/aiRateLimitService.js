@@ -86,11 +86,11 @@ export async function getAiLimitForUser({ user, profile }) {
 
   // GUEST
   return {
-    limit: 5,
+    limit: 3,
     isUnlimited: false,
     role: 'GUEST',
     plan: 'GUEST',
-    planLabel: 'Guest Visitor (5 msgs/day)',
+    planLabel: 'Guest Visitor (3 msgs/day)',
   };
 }
 
@@ -233,5 +233,5 @@ export function getLimitExceededMessage(limitInfo) {
   if (limitInfo.role === 'PROFESSIONAL' && limitInfo.plan === 'PRO') {
     return 'You have reached your Pro daily limit of **25 AI queries** for today.\n\nYour daily quota will refresh at midnight (IST).';
   }
-  return 'You have reached the daily limit of **5 AI queries** for guest visitors.\n\nPlease log in or create a free account to continue.';
+  return 'You have reached the daily limit of **3 AI queries** for guest visitors.\n\nPlease log in or create a free account to continue.';
 }

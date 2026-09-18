@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 
-export default function DashboardMetrics({ stats, loading }) {
+export default function DashboardMetrics({ stats, loading, isPro = false, onOpenUpgradeModal }) {
   if (loading) {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full font-sans">
@@ -83,17 +83,22 @@ export default function DashboardMetrics({ stats, loading }) {
       badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
     },
     {
-      title: "Today's Revenue",
+      title: isPro ? "Today's Revenue" : "Practice Revenue",
       value: formatINR(
         todaySchedule
           .filter((a) => a.status !== 'CANCELLED' && a.status !== 'REJECTED')
           .reduce((sum, a) => sum + (Number(a.fee) || 0), 0) || 0
       ),
-      subValue: `${stats?.monthRevenue ? formatINR(stats.monthRevenue) : formatINR(stats?.totalRevenue || 0)} this month`,
+      subValue: isPro
+        ? `${stats?.monthRevenue ? formatINR(stats.monthRevenue) : formatINR(stats?.totalRevenue || 0)} this month`
+        : 'Unlock 30d financials with Pro',
       icon: IndianRupee,
       iconBg: 'bg-amber-50 text-amber-600 border-amber-100',
-      badge: 'Est.',
-      badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+      badge: isPro ? 'Est.' : 'PRO ⭐',
+      badgeColor: isPro
+        ? 'bg-amber-50 text-amber-700 border-amber-200'
+        : 'bg-amber-100 text-amber-900 border-amber-300 font-extrabold cursor-pointer',
+      onClick: !isPro ? onOpenUpgradeModal : undefined,
     },
   ];
 
@@ -104,7 +109,10 @@ export default function DashboardMetrics({ stats, loading }) {
         return (
           <div
             key={idx}
-            className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all duration-200 flex flex-col justify-between"
+            onClick={item.onClick}
+            className={`bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all duration-200 flex flex-col justify-between ${
+              item.onClick ? 'cursor-pointer hover:border-amber-300 hover:bg-amber-50/20' : ''
+            }`}
           >
             <div className="flex items-center justify-between gap-1.5">
               <span className="text-xs font-bold text-slate-500 truncate">

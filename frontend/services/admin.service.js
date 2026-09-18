@@ -95,4 +95,10 @@ export const adminService = {
     const res = await api.get('/admin/audit-logs', { params });
     return res.data;
   },
+
+  // Security Login Activity logs & stats
+  async getSecurityLoginActivity(params = {}) {
+    const res = await api.get('/admin/security/login-activity', { params });
+    return res.data;
+  },
 };

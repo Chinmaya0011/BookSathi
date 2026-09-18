@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 import { ProfessionalProfile } from '../models/ProfessionalProfile.js';
 import { Availability } from '../models/Availability.js';
@@ -10,6 +11,7 @@ import {
   sendPasswordResetEmail,
   sendPasswordChangedConfirmationEmail,
 } from './emailService.js';
+import { recordLoginActivity } from './loginActivityService.js';
 
 export const ACCESS_TOKEN_EXPIRES_IN = '15m'; // 15 minutes access token
 export const REFRESH_TOKEN_EXPIRES_DAYS = 7; // 7 days refresh token
@@ -17,18 +19,25 @@ export const MAX_FAILED_LOGIN_ATTEMPTS = 5; // Lock after 5 failed attempts
 export const LOCK_TIME_MS = 15 * 60 * 1000; // 15 minutes lockout
 
 /**
- * Generate 15-minute Access Token
+ * Generate 15-minute Access Token with active Session Identifier
  */
-export const generateAccessToken = (user) => {
+export const generateAccessToken = (user, sessionId = null) => {
   const secret = process.env.JWT_SECRET || 'booksaathi_jwt_super_secret_key_2026_indian_professionals';
   const id = user._id || user.id || user;
   const role = user.role || 'USER';
-  return jwt.sign({ id, role }, secret, { expiresIn: ACCESS_TOKEN_EXPIRES_IN });
+  const activeSession = sessionId || user.activeSessionId || null;
+
+  const payload = { id, role };
+  if (activeSession) {
+    payload.sessionId = activeSession;
+  }
+
+  return jwt.sign(payload, secret, { expiresIn: ACCESS_TOKEN_EXPIRES_IN });
 };
 
 // Backwards compatibility alias
-export const generateToken = (userId, role = 'USER') => {
-  return generateAccessToken({ _id: userId, role });
+export const generateToken = (userId, role = 'USER', sessionId = null) => {
+  return generateAccessToken({ _id: userId, role, activeSessionId: sessionId }, sessionId);
 };
 
 /**
@@ -174,9 +183,14 @@ export const rotateRefreshToken = async (rawRefreshToken, { userAgent = '', ipAd
     ipAddress,
   });
 
+  // Ensure user has active session id
+  if (!user.activeSessionId) {
+    user.activeSessionId = crypto.randomUUID();
+  }
+
   await user.save({ validateBeforeSave: false });
 
-  const accessToken = generateAccessToken(user);
+  const accessToken = generateAccessToken(user, user.activeSessionId);
   const csrfToken = generateCsrfToken();
 
   let profile = null;
@@ -199,6 +213,7 @@ export const rotateRefreshToken = async (rawRefreshToken, { userAgent = '', ipAd
     accessToken,
     refreshToken: newRawRefreshToken,
     token: accessToken, // for backward compatibility
+    sessionId: user.activeSessionId,
     csrfToken,
   };
 };
@@ -216,6 +231,36 @@ export const revokeRefreshToken = async (rawRefreshToken) => {
 };
 
 /**
+ * Comprehensive User Logout: Revokes refresh token, invalidates active session, and logs event
+ */
+export const logoutUser = async (user, rawRefreshToken, { userAgent = '', ipAddress = '', sessionId = '' } = {}) => {
+  if (rawRefreshToken) {
+    await revokeRefreshToken(rawRefreshToken);
+  }
+
+  if (user) {
+    const uId = user._id || user.id || user;
+    const currentSession = sessionId || user.activeSessionId || '';
+
+    // Clear activeSessionId on user document
+    await User.findByIdAndUpdate(uId, { $set: { activeSessionId: null } });
+
+    // Record LOGOUT in LoginActivity
+    await recordLoginActivity({
+      userId: uId,
+      userEmail: user.email || '',
+      userRole: user.role || 'USER',
+      eventType: 'LOGOUT',
+      status: 'success',
+      ipAddress,
+      userAgent,
+      sessionId: currentSession,
+      details: { method: 'user_initiated' },
+    });
+  }
+};
+
+/**
  * Register a Customer / User account
  */
 export const registerCustomer = async (userData, { userAgent = '', ipAddress = '' } = {}) => {
@@ -227,6 +272,8 @@ export const registerCustomer = async (userData, { userAgent = '', ipAddress = '
     throw error;
   }
 
+  const sessionId = crypto.randomUUID();
+
   const user = await User.create({
     name: (userData.name || '').trim(),
     phone: (userData.phone || '').trim(),
@@ -234,11 +281,25 @@ export const registerCustomer = async (userData, { userAgent = '', ipAddress = '
     password: userData.password,
     role: 'USER',
     timezone: userData.timezone || 'Asia/Kolkata',
+    activeSessionId: sessionId,
     failedLoginAttempts: 0,
     lockUntil: null,
   });
 
-  const accessToken = generateAccessToken(user);
+  // Record LOGIN_SUCCESS for registration session
+  await recordLoginActivity({
+    userId: user._id,
+    userEmail: user.email,
+    userRole: user.role,
+    eventType: 'LOGIN_SUCCESS',
+    status: 'success',
+    ipAddress,
+    userAgent,
+    sessionId,
+    details: { registration: true },
+  });
+
+  const accessToken = generateAccessToken(user, sessionId);
   const refreshToken = await generateRefreshToken(user, { userAgent, ipAddress });
   const csrfToken = generateCsrfToken();
 
@@ -255,6 +316,7 @@ export const registerCustomer = async (userData, { userAgent = '', ipAddress = '
     accessToken,
     refreshToken,
     token: accessToken,
+    sessionId,
     csrfToken,
   };
 };
@@ -288,6 +350,8 @@ export const registerProfessional = async (userData, { userAgent = '', ipAddress
     counter++;
   }
 
+  const sessionId = crypto.randomUUID();
+
   // Create User
   const user = await User.create({
     name: userData.name,
@@ -296,6 +360,7 @@ export const registerProfessional = async (userData, { userAgent = '', ipAddress
     password: userData.password,
     role: 'PROFESSIONAL',
     timezone: userData.timezone || 'Asia/Kolkata',
+    activeSessionId: sessionId,
     failedLoginAttempts: 0,
     lockUntil: null,
   });
@@ -357,7 +422,20 @@ export const registerProfessional = async (userData, { userAgent = '', ipAddress
     enabled: true,
   });
 
-  const accessToken = generateAccessToken(user);
+  // Record LOGIN_SUCCESS for professional registration
+  await recordLoginActivity({
+    userId: user._id,
+    userEmail: user.email,
+    userRole: user.role,
+    eventType: 'LOGIN_SUCCESS',
+    status: 'success',
+    ipAddress,
+    userAgent,
+    sessionId,
+    details: { registration: true },
+  });
+
+  const accessToken = generateAccessToken(user, sessionId);
   const refreshToken = await generateRefreshToken(user, { userAgent, ipAddress });
   const csrfToken = generateCsrfToken();
 
@@ -374,16 +452,29 @@ export const registerProfessional = async (userData, { userAgent = '', ipAddress
     accessToken,
     refreshToken,
     token: accessToken,
+    sessionId,
     csrfToken,
   };
 };
 
 /**
- * Universal Login with Account Lockout after N Failed Attempts
+ * Universal Login with Account Lockout after N Failed Attempts and Single Active Session
  */
 export const loginUser = async (email, password, { userAgent = '', ipAddress = '' } = {}) => {
-  const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
+  const cleanEmail = (email || '').toLowerCase().trim();
+  const user = await User.findOne({ email: cleanEmail }).select('+password');
   if (!user) {
+    const dummyId = new mongoose.Types.ObjectId();
+    await recordLoginActivity({
+      userId: dummyId,
+      userEmail: cleanEmail,
+      userRole: 'USER',
+      eventType: 'LOGIN_FAILED',
+      status: 'failed',
+      ipAddress,
+      userAgent,
+      details: { reason: 'User not found' },
+    });
     const error = new Error('Invalid email or password.');
     error.statusCode = 401;
     error.isOperational = true;
@@ -393,6 +484,16 @@ export const loginUser = async (email, password, { userAgent = '', ipAddress = '
   // 1. Check if Account is Locked
   if (user.lockUntil && user.lockUntil > new Date()) {
     const remainingMinutes = Math.max(1, Math.ceil((user.lockUntil.getTime() - Date.now()) / 60000));
+    await recordLoginActivity({
+      userId: user._id,
+      userEmail: user.email,
+      userRole: user.role,
+      eventType: 'LOGIN_FAILED',
+      status: 'failed',
+      ipAddress,
+      userAgent,
+      details: { reason: 'Account temporarily locked', lockUntil: user.lockUntil },
+    });
     const error = new Error(`Account is temporarily locked due to too many failed login attempts. Please try again after ${remainingMinutes} minute(s) or reset your password.`);
     error.statusCode = 423; // 423 Locked
     error.isOperational = true;
@@ -403,6 +504,17 @@ export const loginUser = async (email, password, { userAgent = '', ipAddress = '
   const isMatch = await user.comparePassword(password, user.password);
   if (!isMatch) {
     user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+
+    await recordLoginActivity({
+      userId: user._id,
+      userEmail: user.email,
+      userRole: user.role,
+      eventType: 'LOGIN_FAILED',
+      status: 'failed',
+      ipAddress,
+      userAgent,
+      details: { reason: 'Invalid password', attemptNumber: user.failedLoginAttempts },
+    });
 
     if (user.failedLoginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
       user.lockUntil = new Date(Date.now() + LOCK_TIME_MS);
@@ -425,23 +537,68 @@ export const loginUser = async (email, password, { userAgent = '', ipAddress = '
 
   // 3. Check if Active
   if (!user.isActive) {
+    await recordLoginActivity({
+      userId: user._id,
+      userEmail: user.email,
+      userRole: user.role,
+      eventType: 'LOGIN_FAILED',
+      status: 'failed',
+      ipAddress,
+      userAgent,
+      details: { reason: 'Account deactivated' },
+    });
     const error = new Error('Your account has been deactivated. Please contact support.');
     error.statusCode = 403;
     error.isOperational = true;
     throw error;
   }
 
-  // 4. Successful Login: Reset Lockout and Failed Counters
+  // 4. Single Active Session Replacement
+  const newSessionId = crypto.randomUUID();
+  const oldSessionId = user.activeSessionId;
+
+  if (oldSessionId && oldSessionId !== newSessionId) {
+    // Record SESSION_REPLACED audit log for the superseded session
+    await recordLoginActivity({
+      userId: user._id,
+      userEmail: user.email,
+      userRole: user.role,
+      eventType: 'SESSION_REPLACED',
+      status: 'revoked',
+      ipAddress,
+      userAgent,
+      sessionId: oldSessionId,
+      details: {
+        reason: 'New login detected from another device or browser. Previous session invalidated.',
+        replacedBySessionId: newSessionId,
+      },
+    });
+  }
+
+  // 5. Successful Login: Update Active Session and Reset Lockout/Failed Counters
+  user.activeSessionId = newSessionId;
   user.failedLoginAttempts = 0;
   user.lockUntil = null;
   await user.save({ validateBeforeSave: false });
+
+  // Record LOGIN_SUCCESS for the newly established active session
+  await recordLoginActivity({
+    userId: user._id,
+    userEmail: user.email,
+    userRole: user.role,
+    eventType: 'LOGIN_SUCCESS',
+    status: 'success',
+    ipAddress,
+    userAgent,
+    sessionId: newSessionId,
+  });
 
   let profile = null;
   if (user.role === 'PROFESSIONAL') {
     profile = await ProfessionalProfile.findOne({ userId: user._id });
   }
 
-  const accessToken = generateAccessToken(user);
+  const accessToken = generateAccessToken(user, newSessionId);
   const refreshToken = await generateRefreshToken(user, { userAgent, ipAddress });
   const csrfToken = generateCsrfToken();
 
@@ -460,6 +617,7 @@ export const loginUser = async (email, password, { userAgent = '', ipAddress = '
     accessToken,
     refreshToken,
     token: accessToken, // for backward compatibility
+    sessionId: newSessionId,
     csrfToken,
   };
 };
@@ -653,10 +811,25 @@ export const resetUserPassword = async (rawToken, newPassword, { userAgent = '',
   user.failedLoginAttempts = 0;
   user.lockUntil = null;
 
-  // 3. Security: Invalidate all existing refresh tokens
+  // 3. Security: Invalidate all existing refresh tokens and establish new active session
   user.refreshTokens = [];
+  const sessionId = crypto.randomUUID();
+  user.activeSessionId = sessionId;
 
   await user.save();
+
+  // Record LOGIN_SUCCESS for password reset
+  await recordLoginActivity({
+    userId: user._id,
+    userEmail: user.email,
+    userRole: user.role,
+    eventType: 'LOGIN_SUCCESS',
+    status: 'success',
+    ipAddress,
+    userAgent,
+    sessionId,
+    details: { passwordReset: true },
+  });
 
   // 4. Send Security Confirmation Email
   await sendPasswordChangedConfirmationEmail({
@@ -664,7 +837,7 @@ export const resetUserPassword = async (rawToken, newPassword, { userAgent = '',
     name: user.name,
   }).catch(() => {});
 
-  const accessToken = generateAccessToken(user);
+  const accessToken = generateAccessToken(user, sessionId);
   const refreshToken = await generateRefreshToken(user, { userAgent, ipAddress });
   const profile = await ProfessionalProfile.findOne({ userId: user._id });
   const csrfToken = generateCsrfToken();
@@ -680,6 +853,7 @@ export const resetUserPassword = async (rawToken, newPassword, { userAgent = '',
     accessToken,
     refreshToken,
     token: accessToken,
+    sessionId,
     csrfToken,
   };
 };

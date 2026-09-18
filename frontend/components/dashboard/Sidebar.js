@@ -115,6 +115,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
       {
         title: 'System',
         items: [
+          { label: 'Security Logs', href: '/admin/security', icon: ShieldAlert },
           { label: 'Audit Logs', href: '/admin/audit-logs', icon: ShieldAlert },
           { label: 'Financials', href: '/admin/payments', icon: CreditCard },
           { label: 'Platform Settings', href: '/admin/settings', icon: Settings },

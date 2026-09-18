@@ -101,10 +101,10 @@ export const checkBookingSpamRules = async ({
     throw err;
   }
 
-  // 0b. Time-to-Submit Velocity Heuristic (prevent < 1.2s scripted instant submissions)
+  // 0b. Time-to-Submit Velocity Heuristic (prevent sub-300ms scripted instant submissions)
   if (formLoadTime && typeof formLoadTime === 'number' && formLoadTime > 0) {
     const elapsedMs = now - formLoadTime;
-    if (elapsedMs < 1200 && elapsedMs > 0) {
+    if (elapsedMs < 300 && elapsedMs > 0) {
       const err = new Error('Submission was too fast. Please take a moment and submit again.');
       err.statusCode = 429;
       err.code = 'SUBMISSION_TOO_FAST';

@@ -19,6 +19,7 @@ import {
 import { authService } from '@/services/auth.service';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import LoginActivityCard from '@/components/dashboard/LoginActivityCard';
 
 export default function UserCustomerSettings({ user }) {
   // Password change state
@@ -311,6 +312,9 @@ export default function UserCustomerSettings({ user }) {
           </div>
         </div>
       </div>
+
+      {/* 3. Login Activity & Active Session Card */}
+      <LoginActivityCard />
     </div>
   );
 }

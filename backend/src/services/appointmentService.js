@@ -460,7 +460,6 @@ export const holdPublicSlot = async (slug, holdData) => {
     startTime: selectedSlotTime,
     clientIp: holdData.clientIp,
     website_hp: holdData.website_hp,
-    formLoadTime: holdData.formLoadTime,
   });
 
   const holdDurationMinutes = profile.bookingSettings?.holdDurationMinutes || 3;

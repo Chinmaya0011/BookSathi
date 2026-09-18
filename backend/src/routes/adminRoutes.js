@@ -20,6 +20,7 @@ import {
   updateSystemSettings,
   getSystemAuditLogs,
 } from '../controllers/adminController.js';
+import { getAdminLogs } from '../controllers/loginActivityController.js';
 import { authenticate, requireAdmin } from '../middleware/authMiddleware.js';
 
 const router = Router();
@@ -63,7 +64,9 @@ router.patch('/grievances/:id', updateGrievance);
 router.get('/settings', getSystemSettings);
 router.patch('/settings', updateSystemSettings);
 
-// System Audit Logs
+// System Audit Logs & Security Login Activity
 router.get('/audit-logs', getSystemAuditLogs);
+router.get('/security/login-activity', getAdminLogs);
+router.get('/login-activity', getAdminLogs);
 
 export default router;

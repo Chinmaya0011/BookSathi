@@ -19,9 +19,19 @@ import {
 } from 'recharts';
 import { formatINR, cn } from '@/lib/utils';
 
-export default function DashboardTrendsChart({ weeklyTrend, loading }) {
+import LockedFeaturePaywall from './LockedFeaturePaywall';
+
+export default function DashboardTrendsChart({ weeklyTrend, loading, isPro = false, onOpenUpgradeModal }) {
   const [chartView, setChartView] = useState('appointments'); // 'appointments' | 'revenue'
   const [chartType, setChartType] = useState('area'); // 'area' | 'bar'
+
+  const handleSetChartView = (view) => {
+    if (view === 'revenue' && !isPro) {
+      if (onOpenUpgradeModal) onOpenUpgradeModal();
+      return;
+    }
+    setChartView(view);
+  };
 
   const trendTotalVolume = useMemo(() => {
     if (!weeklyTrend) return 0;
@@ -55,7 +65,7 @@ export default function DashboardTrendsChart({ weeklyTrend, loading }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-3.5 sm:p-4 flex flex-col justify-between min-w-0 w-full overflow-hidden font-sans h-full">
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-3.5 sm:p-4 flex flex-col justify-between min-w-0 w-full overflow-hidden font-sans h-full relative">
       <div className="min-w-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
           <div className="min-w-0">
@@ -78,7 +88,7 @@ export default function DashboardTrendsChart({ weeklyTrend, loading }) {
             <div className="flex items-center p-0.5 bg-slate-100 rounded-lg shrink-0 border border-slate-200/60">
               <button
                 type="button"
-                onClick={() => setChartView('appointments')}
+                onClick={() => handleSetChartView('appointments')}
                 className={cn(
                   'px-2 py-0.5 rounded-md text-xs font-semibold transition-all cursor-pointer',
                   chartView === 'appointments'
@@ -90,15 +100,20 @@ export default function DashboardTrendsChart({ weeklyTrend, loading }) {
               </button>
               <button
                 type="button"
-                onClick={() => setChartView('revenue')}
+                onClick={() => handleSetChartView('revenue')}
                 className={cn(
-                  'px-2 py-0.5 rounded-md text-xs font-semibold transition-all cursor-pointer',
+                  'px-2 py-0.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1',
                   chartView === 'revenue'
                     ? 'bg-white text-indigo-600 shadow-2xs font-bold'
                     : 'text-slate-500 hover:text-slate-900'
                 )}
               >
-                Revenue
+                <span>Revenue</span>
+                {!isPro && (
+                  <span className="px-1 py-0.1 bg-amber-100 text-amber-900 border border-amber-300 rounded text-[9px] font-black">
+                    PRO
+                  </span>
+                )}
               </button>
             </div>
 
