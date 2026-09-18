@@ -19,6 +19,7 @@
     "test:session": "node tests/singleActiveSession.test.js",
     "test:ai": "node tests/aiChat.test.js",
     "test:limits": "node tests/aiRateLimit.test.js",
+    "test:demo": "node tests/adminDemoMode.test.js",
     "test:comprehensive": "node tests/comprehensive.test.js"
   },
   "dependencies": {

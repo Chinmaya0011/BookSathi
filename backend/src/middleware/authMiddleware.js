@@ -128,6 +128,23 @@ export const authenticate = async (req, res, next) => {
     req.user = user;
     req.profile = profile || null;
     req.sessionId = decoded.sessionId || user.activeSessionId || null;
+
+    // Production / Demo Mode Guard: Prevent mutating actions by Admin to protect platform integrity in live demo
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isDemoMode = process.env.DEMO_MODE === 'true' || process.env.ADMIN_READ_ONLY === 'true';
+    const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method.toUpperCase());
+    const isAuthExempt = req.originalUrl?.includes('/api/auth/logout') || req.originalUrl?.includes('/api/auth/refresh');
+
+    if (user.role === 'ADMIN' && (isProduction || isDemoMode) && isMutating && !isAuthExempt) {
+      return errorResponse(
+        res,
+        403,
+        'Demo Mode Active: Administrative modifications (POST, PUT, PATCH, DELETE) are disabled in production demo mode to protect platform integrity.',
+        null,
+        'DEMO_MODE_READ_ONLY'
+      );
+    }
+
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
@@ -168,11 +185,28 @@ export const optionalAuth = async (req, res, next) => {
 
 /**
  * Strict Admin Guard: Requires role ADMIN + isActive
+ * In Production or Demo Mode, rejects mutating operations (POST, PUT, PATCH, DELETE).
  */
 export const requireAdmin = (req, res, next) => {
   if (!req.user || req.user.role !== 'ADMIN' || !req.user.isActive) {
     return errorResponse(res, 403, 'Access denied. Active administrator privileges required.');
   }
+
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isDemoMode = process.env.DEMO_MODE === 'true' || process.env.ADMIN_READ_ONLY === 'true';
+  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method.toUpperCase());
+  const isAuthExempt = req.originalUrl?.includes('/api/auth/logout') || req.originalUrl?.includes('/api/auth/refresh');
+
+  if ((isProduction || isDemoMode) && isMutating && !isAuthExempt) {
+    return errorResponse(
+      res,
+      403,
+      'Demo Mode Active: Administrative modifications (POST, PUT, PATCH, DELETE) are disabled in production demo mode to protect platform integrity.',
+      null,
+      'DEMO_MODE_READ_ONLY'
+    );
+  }
+
   next();
 };
 
