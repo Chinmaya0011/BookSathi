@@ -1,7 +1,7 @@
 /**
  * Generates canonical subdomain-based public booking URL for a professional
  * Development: http://<slug>.localhost:3000
- * Production:  https://<slug>.<NEXT_PUBLIC_APP_DOMAIN>
+ * Production:  https://<slug>.<APP_DOMAIN>
  * 
  * @param {string|object} slugOrProfile
  * @returns {string}
@@ -11,7 +11,7 @@ export function getProfessionalPublicUrl(slugOrProfile) {
   if (!slug) return '';
 
   const cleanSlug = slug.toLowerCase().trim();
-  const envDomain = (process.env.NEXT_PUBLIC_APP_DOMAIN || '').replace(/^https?:\/\//, '').trim();
+  const envDomain = (process.env.APP_DOMAIN || '').replace(/^https?:\/\//, '').trim();
 
   // In browser environment
   if (typeof window !== 'undefined') {

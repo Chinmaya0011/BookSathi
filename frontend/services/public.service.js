@@ -104,7 +104,7 @@ export const publicService = {
   },
 
   getIcsDownloadUrl(slug, appointmentCode) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const baseUrl = process.env.API_URL || 'http://localhost:5000';
     return `${baseUrl}/api/public/${slug}/ics/${appointmentCode}`;
   },
 };

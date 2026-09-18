@@ -10,7 +10,7 @@ export function middleware(req) {
   const port = host.includes(':') ? `:${host.split(':')[1]}` : '';
 
   // Configured Base App Domain
-  const configuredAppDomain = (process.env.NEXT_PUBLIC_APP_DOMAIN || 'localhost').toLowerCase().replace(/^https?:\/\//, '').split(':')[0];
+  const configuredAppDomain = (process.env.APP_DOMAIN || 'localhost').toLowerCase().replace(/^https?:\/\//, '').split(':')[0];
 
   let subdomain = null;
 

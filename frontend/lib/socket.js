@@ -8,7 +8,7 @@ export const getSocket = () => {
 
   if (!socket) {
     const token = localStorage.getItem('bs_token');
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.API_URL || 'http://localhost:5000';
 
     socket = io(apiUrl, {
       auth: { token: token ? `Bearer ${token}` : '' },
