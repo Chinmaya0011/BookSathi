@@ -3,21 +3,9 @@ import { AuthProvider } from '@/hooks/useAuth';
 import { Toaster } from 'sonner';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 import SessionRevokedModal from '@/components/auth/SessionRevokedModal';
+import { constructMetadata } from '@/lib/metadata';
 
-export const metadata = {
-  title: 'BookSaathi — Simple Booking Platform for Indian Professionals',
-  description:
-    'The simplest online appointment booking platform for doctors, CAs, lawyers, consultants, and freelancers in India. Share your custom booking link on WhatsApp.',
-  keywords: [
-    'booking software India',
-    'doctor appointment link',
-    'CA appointment booking',
-    'lawyer consultation scheduler',
-    'WhatsApp booking link',
-    'BookSaathi',
-  ],
-  authors: [{ name: 'BookSaathi' }],
-};
+export const metadata = constructMetadata();
 
 export const viewport = {
   width: 'device-width',

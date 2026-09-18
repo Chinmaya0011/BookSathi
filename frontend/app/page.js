@@ -1,5 +1,3 @@
-'use client';
-
 import Navbar from '@/components/landing/Navbar';
 import HeroSection from '@/components/landing/HeroSection';
 import TrustBar from '@/components/landing/TrustBar';
@@ -13,6 +11,25 @@ import PricingSection from '@/components/landing/PricingSection';
 import FaqSection from '@/components/landing/FaqSection';
 import FinalCta from '@/components/landing/FinalCta';
 import Footer from '@/components/landing/Footer';
+import { constructMetadata } from '@/lib/metadata';
+
+export const metadata = constructMetadata({
+  title: 'BookSaathi — Smart Online Appointment Booking & Live Queue for Indian Professionals',
+  description:
+    'The easiest appointment scheduler for Doctors, Chartered Accountants, Lawyers, and Consultants in India. Share custom booking links on WhatsApp with automated UPI payments and QR standees.',
+  path: '/',
+  keywords: [
+    'online appointment booking India',
+    'doctor clinic scheduler',
+    'CA appointment link',
+    'lawyer consultation scheduling',
+    'WhatsApp booking link',
+    'live queue token system',
+    'QR code standee booking',
+    'UPI payment scheduler India',
+    'BookSaathi',
+  ],
+});
 
 export default function HomePage() {
   return (
