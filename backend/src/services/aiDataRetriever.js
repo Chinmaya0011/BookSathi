@@ -88,7 +88,7 @@ export function analyzeUserQuestion(text) {
   // 4. Extract Doctor/Person Name query (e.g., "Dr. Sen", "Dr. Rajesh", "with Ananya")
   let targetDoctorName = null;
   const docMatch = raw.match(/(?:dr\.?|doctor|with)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)/i);
-  if (docMatch && docMatch[1] && !['the', 'an', 'my', 'any', 'me', 'in', 'near'].includes(docMatch[1].toLowerCase())) {
+  if (docMatch && docMatch[1] && !['the', 'an', 'my', 'any', 'me', 'in', 'near', 'a'].includes(docMatch[1].toLowerCase())) {
     targetDoctorName = docMatch[1].trim();
   }
 
@@ -184,7 +184,7 @@ function isPublicDirectorySearch(text) {
 /**
  * Detect query intent from natural language message
  */
-export function detectQueryIntent(text, role) {
+export function detectQueryIntent(text, role, user = null) {
   const lower = (text || '').toLowerCase().trim();
 
   // 1. Security guard
@@ -250,7 +250,7 @@ export function detectQueryIntent(text, role) {
     if (lower.includes('profile') || lower.includes('my name') || lower.includes('my email') || lower.includes('my phone') || lower.includes('mera naam')) {
       return { type: 'USER_PROFILE' };
     }
-    if (lower.includes('appointment') || lower.includes('booking') || lower.includes('schedule') || lower.includes('consultation') || lower.includes('token') || lower.includes('dikhana') || lower.includes('doctor')) {
+    if (user && (lower.includes('appointment') || lower.includes('booking') || lower.includes('schedule') || lower.includes('consultation') || lower.includes('token') || lower.includes('dikhana') || lower.includes('doctor'))) {
       return { type: 'USER_UPCOMING_APPOINTMENTS' };
     }
   }
@@ -276,15 +276,21 @@ export function detectQueryIntent(text, role) {
       return { type: 'PRO_NEXT_PATIENT' };
     }
     if (hasAvailabilityKeyword(lower)) {
-      return { type: 'PRO_AVAILABILITY' };
+      if (user) {
+        return { type: 'PRO_AVAILABILITY' };
+      }
+      return { type: 'PLATFORM_KNOWLEDGE', topic: 'AVAILABILITY_GUIDE', isPlatformKnowledge: true };
     }
     if (hasServiceKeyword(lower)) {
-      return { type: 'PRO_SERVICES' };
+      if (user) {
+        return { type: 'PRO_SERVICES' };
+      }
+      return { type: 'PLATFORM_KNOWLEDGE', topic: 'PAYMENTS', isPlatformKnowledge: true };
     }
     if (lower.includes('profile') || lower.includes('slug') || lower.includes('link') || lower.includes('clinic')) {
       return { type: 'PRO_PROFILE' };
     }
-    if (lower.includes('appointment') || lower.includes('booking') || lower.includes('schedule') || lower.includes('consultation') || lower.includes('patient') || lower.includes('client')) {
+    if (user && (lower.includes('appointment') || lower.includes('booking') || lower.includes('schedule') || lower.includes('consultation') || lower.includes('patient') || lower.includes('client'))) {
       return { type: 'PRO_UPCOMING_SCHEDULE' };
     }
   }
@@ -381,8 +387,11 @@ function detectPlatformKnowledgeTopic(lower) {
   }
 
   if (
-    (lower.includes('availability') || lower.includes('working hour') || lower.includes('shifts') || lower.includes('set timing')) &&
-    (lower.includes('how to configure') || lower.includes('how to set') || lower.includes('how do i set') || lower.includes('how can i configure'))
+    lower.includes('availability') ||
+    lower.includes('working hour') ||
+    lower.includes('shifts') ||
+    lower.includes('set timing') ||
+    lower.includes('configure availability')
   ) {
     return 'AVAILABILITY_GUIDE';
   }
@@ -468,7 +477,8 @@ export const retrieveDatabaseDataForQuery = async ({
   const text = (message || '').trim();
   const dateCtx = getIndianDateContext();
   const analysis = analyzeUserQuestion(text);
-  const intent = detectQueryIntent(text, role);
+  const intent = detectQueryIntent(text, role, user);
+  const isDbConnected = mongoose.connection && mongoose.connection.readyState === 1;
 
   // 1. Security & Prompt Injection
   if (intent.isUnauthorized) {
@@ -523,6 +533,18 @@ export const retrieveDatabaseDataForQuery = async ({
 
   let contextParts = [];
   let structuredData = null;
+
+  // If DB is disconnected, fallback gracefully without throwing timeout
+  if (!isDbConnected) {
+    return {
+      contextText: '',
+      hasData: false,
+      isGeneral: true,
+      intent: intent.type,
+      structuredData: null,
+      analysis,
+    };
+  }
 
   // ==========================================
   // SPECIFIC APPOINTMENT CODE LOOKUP (ANY ROLE)
