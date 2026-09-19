@@ -52,11 +52,49 @@ export const getProfile = async (req, res, next) => {
 
 export const updateProfile = async (req, res, next) => {
   try {
+    const allowedFields = [
+      'name',
+      'phone',
+      'profession',
+      'specialization',
+      'profileImage',
+      'bio',
+      'businessName',
+      'address',
+      'googleMapUrl',
+      'city',
+      'state',
+      'country',
+      'timezone',
+      'consultationFee',
+      'currency',
+      'languages',
+      'yearsOfExperience',
+      'onlineConsultation',
+      'offlineConsultation',
+      'isPublic',
+      'bookingType',
+      'queueSettings',
+      'bookingSettings',
+    ];
+
+    const safeUpdate = {};
+    for (const key of allowedFields) {
+      if (req.body[key] !== undefined) {
+        safeUpdate[key] = req.body[key];
+      }
+    }
+
     const profile = await ProfessionalProfile.findOneAndUpdate(
       { userId: req.user._id },
-      { $set: req.body },
+      { $set: safeUpdate },
       { new: true, runValidators: true }
     ).lean();
+
+    if (!profile) {
+      return errorResponse(res, 404, 'Professional profile not found');
+    }
+
     return successResponse(res, 200, 'Profile updated successfully', profile);
   } catch (err) {
     next(err);

@@ -36,7 +36,8 @@ app.use(
       // Allow requests with no origin (like mobile apps, curl, Postman, server-to-server)
       if (!origin) return callback(null, true);
 
-      const cleanOrigin = origin.trim().replace(/\/+$/, '');
+      const cleanOrigin = origin.replace(/\/+$/, '');
+      const isProduction = process.env.NODE_ENV === 'production';
       if (
         allowedOrigins.includes(cleanOrigin) ||
         cleanOrigin.endsWith('.vercel.app') ||
@@ -45,7 +46,12 @@ app.use(
       ) {
         return callback(null, true);
       }
-      return callback(null, true); // Permissive for demo environment
+
+      if (isProduction) {
+        return callback(new Error('CORS policy: Origin not allowed'), false);
+      }
+
+      return callback(null, true); // Permissive in local dev only
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],

@@ -70,7 +70,12 @@ export class RazorpayPaymentGateway extends BasePaymentGateway {
 
   async verifyPayment({ orderId, paymentId, signature }) {
     if (!this.isConfigured) {
-      // Mock validation when keys aren't set
+      if (process.env.NODE_ENV === 'production') {
+        const err = new Error('Razorpay gateway keys are not configured in production environment.');
+        err.statusCode = 500;
+        throw err;
+      }
+      // Mock validation only in development/test mode
       return {
         isValid: true,
         status: 'SUCCESS',

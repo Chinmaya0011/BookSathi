@@ -4,6 +4,9 @@ import { Appointment } from '../models/Appointment.js';
 import { ProfessionalProfile } from '../models/ProfessionalProfile.js';
 import { getPaymentGateway } from './payment/index.js';
 import { getDateString } from '../utils/dateHelpers.js';
+import { hashCancelToken } from './appointmentService.js';
+import { otpService } from './otpService.js';
+import { escapeRegex } from '../utils/sanitize.js';
 
 export const generateInvoiceNumber = () => {
   const year = new Date().getFullYear();
@@ -345,8 +348,8 @@ export const getProfessionalPayments = async (professionalId, query = {}) => {
   if (paymentMode) filter.paymentMode = paymentMode;
   if (paymentMethod) filter.paymentMethod = paymentMethod;
 
-  if (search) {
-    const regex = new RegExp(search, 'i');
+  if (search && search.trim()) {
+    const regex = new RegExp(escapeRegex(search), 'i');
     filter.$or = [
       { customerName: regex },
       { customerPhone: regex },
@@ -403,7 +406,7 @@ export const getPaymentStats = async (professionalId, timezone = 'Asia/Kolkata')
     .reduce((sum, p) => sum + (p.refundAmount || p.amount || 0), 0);
 
   const monthCollected = allPayments
-    .filter((p) => p.status === 'SUCCESS' && p.createdAt && new Date(p.createdAt).toISOString().startsWith(monthPrefix))
+    .filter((p) => p.status === 'SUCCESS' && p.createdAt && getDateString(new Date(p.createdAt), timezone).startsWith(monthPrefix))
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 
   const methodBreakdown = {
@@ -441,21 +444,60 @@ export const getPaymentStats = async (professionalId, timezone = 'Asia/Kolkata')
 };
 
 /**
- * Get Formatted Invoice / Receipt Payload
+ * Get Formatted Invoice / Receipt Payload with Ownership / Token Verification
  */
-export const getInvoiceDetails = async (paymentId) => {
+export const getInvoiceDetails = async (paymentId, { user = null, profile = null, cancelToken = '', sessionToken = '' } = {}) => {
   const payment = await Payment.findById(paymentId)
-    .populate('appointmentId')
+    .populate({
+      path: 'appointmentId',
+      select: '+cancelTokenHash',
+    })
     .populate('professionalId');
 
   if (!payment) {
     const err = new Error('Invoice not found');
     err.statusCode = 404;
+    err.isOperational = true;
     throw err;
   }
 
   const appointment = payment.appointmentId;
-  const profile = payment.professionalId;
+  const proProfile = payment.professionalId;
+
+  // Authorization Check:
+  let isAuthorized = false;
+
+  // 1. Doctor / Professional who owns this payment
+  if (profile && payment.professionalId && payment.professionalId._id.toString() === profile._id.toString()) {
+    isAuthorized = true;
+  }
+
+  // 2. User / Admin
+  if (user) {
+    if (user.role === 'ADMIN') isAuthorized = true;
+    if (appointment && appointment.userId && appointment.userId.toString() === user._id.toString()) {
+      isAuthorized = true;
+    }
+    if (payment.customerEmail && user.email && payment.customerEmail.toLowerCase() === user.email.toLowerCase()) {
+      isAuthorized = true;
+    }
+  }
+
+  // 4. Guest access with valid cancelToken or sessionToken
+  if (!isAuthorized && appointment) {
+    if (cancelToken && appointment.cancelTokenHash && hashCancelToken(cancelToken) === appointment.cancelTokenHash) {
+      isAuthorized = true;
+    } else if (sessionToken && otpService.verifyManageSessionToken(sessionToken, appointment.appointmentCode)) {
+      isAuthorized = true;
+    }
+  }
+
+  if (!isAuthorized) {
+    const err = new Error('Access denied. You do not have permission to view this invoice.');
+    err.statusCode = 403;
+    err.isOperational = true;
+    throw err;
+  }
 
   return {
     invoiceNumber: payment.invoiceNumber,

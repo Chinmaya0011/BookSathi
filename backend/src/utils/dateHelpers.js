@@ -207,11 +207,15 @@ export const evaluateArrivalStatus = ({
 };
 
 /**
- * Generate human readable unique booking appointment code (BS-XXXXX)
+ * Generate human readable unique booking appointment code (BS-XXXXXX)
  */
 export const generateAppointmentCode = () => {
-  const num = Math.floor(10000 + Math.random() * 90000);
-  return `BS-${num}`;
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `BS-${code}`;
 };
 
 /**

@@ -27,6 +27,9 @@ import { successResponse, errorResponse } from '../utils/response.js';
  */
 export const callNextQueue = async (req, res, next) => {
   try {
+    if (!req.profile) {
+      return errorResponse(res, 403, 'Access denied. Professional profile required.');
+    }
     const { targetQueueNumber, date, status = 'CALLED' } = req.body;
     const result = await callNextQueueNumberService({
       professionalId: req.profile._id,
@@ -61,6 +64,9 @@ export const getAppointments = async (req, res, next) => {
 
 export const getAppointmentById = async (req, res, next) => {
   try {
+    if (!req.profile) {
+      return errorResponse(res, 403, 'Access denied. Professional profile required.');
+    }
     const { id } = req.params;
     const appointment = await Appointment.findOne({
       _id: id,
@@ -82,6 +88,9 @@ export const getAppointmentById = async (req, res, next) => {
  */
 export const confirmAppointment = async (req, res, next) => {
   try {
+    if (!req.profile) {
+      return errorResponse(res, 403, 'Access denied. Professional profile required.');
+    }
     const { id } = req.params;
     const appointment = await Appointment.findOne({ _id: id, professionalId: req.profile._id });
     if (!appointment) {
@@ -105,6 +114,9 @@ export const confirmAppointment = async (req, res, next) => {
  */
 export const rejectAppointment = async (req, res, next) => {
   try {
+    if (!req.profile) {
+      return errorResponse(res, 403, 'Access denied. Professional profile required.');
+    }
     const { id } = req.params;
     const { reason = '' } = req.body;
     const appointment = await Appointment.findOne({ _id: id, professionalId: req.profile._id });
@@ -129,6 +141,9 @@ export const rejectAppointment = async (req, res, next) => {
  */
 export const cancelAppointment = async (req, res, next) => {
   try {
+    if (!req.profile) {
+      return errorResponse(res, 403, 'Access denied. Professional profile required.');
+    }
     const { id } = req.params;
     const { reason = '' } = req.body;
     const appointment = await Appointment.findOne({ _id: id, professionalId: req.profile._id });
@@ -155,6 +170,9 @@ export const cancelAppointment = async (req, res, next) => {
  */
 export const completeAppointment = async (req, res, next) => {
   try {
+    if (!req.profile) {
+      return errorResponse(res, 403, 'Access denied. Professional profile required.');
+    }
     const { id } = req.params;
     const appointment = await Appointment.findOne({ _id: id, professionalId: req.profile._id });
     if (!appointment) {
@@ -178,6 +196,9 @@ export const completeAppointment = async (req, res, next) => {
  */
 export const reschedule = async (req, res, next) => {
   try {
+    if (!req.profile) {
+      return errorResponse(res, 403, 'Access denied. Professional profile required.');
+    }
     const { id } = req.params;
     const updated = await rescheduleAppointment(req.profile._id, id, req.body);
     await emitAppointmentRescheduled(updated, req.profile);
@@ -192,6 +213,9 @@ export const reschedule = async (req, res, next) => {
  */
 export const changeStatus = async (req, res, next) => {
   try {
+    if (!req.profile) {
+      return errorResponse(res, 403, 'Access denied. Professional profile required.');
+    }
     const { id } = req.params;
     let { status, cancelReason } = req.body;
     
@@ -219,6 +243,9 @@ export const changeStatus = async (req, res, next) => {
 
 export const saveNotes = async (req, res, next) => {
   try {
+    if (!req.profile) {
+      return errorResponse(res, 403, 'Access denied. Professional profile required.');
+    }
     const { id } = req.params;
     const { notes } = req.body;
     const updated = await updateAppointmentNotes(req.profile._id, id, notes, 'PROFESSIONAL');
@@ -230,6 +257,9 @@ export const saveNotes = async (req, res, next) => {
 
 export const createManual = async (req, res, next) => {
   try {
+    if (!req.profile) {
+      return errorResponse(res, 403, 'Access denied. Professional profile required.');
+    }
     const newBooking = await createManualBooking(req.profile._id, req.body);
     await emitAppointmentCreated(newBooking, req.profile);
     return successResponse(res, 201, 'Walk-in booking created successfully', toProfessionalAppointment(newBooking));

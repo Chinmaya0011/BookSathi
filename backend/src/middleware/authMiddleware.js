@@ -129,17 +129,17 @@ export const authenticate = async (req, res, next) => {
     req.profile = profile || null;
     req.sessionId = decoded.sessionId || user.activeSessionId || null;
 
-    // Production / Demo Mode Guard: Prevent mutating actions by Admin to protect platform integrity in live demo
-    const isProduction = process.env.NODE_ENV === 'production';
+    // Demo Mode Guard: Prevent mutating actions by Admin only when DEMO_MODE is explicitly enabled
     const isDemoMode = process.env.DEMO_MODE === 'true' || process.env.ADMIN_READ_ONLY === 'true';
-    const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method.toUpperCase());
+    const reqMethod = (req.method || 'GET').toUpperCase();
+    const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(reqMethod);
     const isAuthExempt = req.originalUrl?.includes('/api/auth/logout') || req.originalUrl?.includes('/api/auth/refresh');
 
-    if (user.role === 'ADMIN' && (isProduction || isDemoMode) && isMutating && !isAuthExempt) {
+    if (user.role === 'ADMIN' && isDemoMode && isMutating && !isAuthExempt) {
       return errorResponse(
         res,
         403,
-        'Demo Mode Active: Administrative modifications (POST, PUT, PATCH, DELETE) are disabled in production demo mode to protect platform integrity.',
+        'Demo Mode Active: Administrative modifications (POST, PUT, PATCH, DELETE) are disabled in live demo mode to protect platform integrity.',
         null,
         'DEMO_MODE_READ_ONLY'
       );
@@ -192,16 +192,16 @@ export const requireAdmin = (req, res, next) => {
     return errorResponse(res, 403, 'Access denied. Active administrator privileges required.');
   }
 
-  const isProduction = process.env.NODE_ENV === 'production';
   const isDemoMode = process.env.DEMO_MODE === 'true' || process.env.ADMIN_READ_ONLY === 'true';
-  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method.toUpperCase());
+  const reqMethod = (req.method || 'GET').toUpperCase();
+  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(reqMethod);
   const isAuthExempt = req.originalUrl?.includes('/api/auth/logout') || req.originalUrl?.includes('/api/auth/refresh');
 
-  if ((isProduction || isDemoMode) && isMutating && !isAuthExempt) {
+  if (isDemoMode && isMutating && !isAuthExempt) {
     return errorResponse(
       res,
       403,
-      'Demo Mode Active: Administrative modifications (POST, PUT, PATCH, DELETE) are disabled in production demo mode to protect platform integrity.',
+      'Demo Mode Active: Administrative modifications (POST, PUT, PATCH, DELETE) are disabled in live demo mode to protect platform integrity.',
       null,
       'DEMO_MODE_READ_ONLY'
     );
@@ -211,6 +211,19 @@ export const requireAdmin = (req, res, next) => {
 };
 
 export const requireSuperAdmin = requireAdmin;
+
+/**
+ * Guard requiring an active professional profile
+ */
+export const requireProfessionalProfile = (req, res, next) => {
+  if (!req.user) {
+    return errorResponse(res, 401, 'Authentication required.');
+  }
+  if (!req.profile) {
+    return errorResponse(res, 403, 'Access denied. Professional profile not found. Please complete professional profile setup.');
+  }
+  next();
+};
 
 /**
  * CSRF Protection Middleware for Cookie-based Authentication

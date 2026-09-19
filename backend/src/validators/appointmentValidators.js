@@ -48,16 +48,22 @@ export const publicBookingSchema = z
 export const updateAppointmentStatusSchema = z.object({
   status: z.enum([
     'PENDING',
+    'HOLD',
     'HELD',
     'CONFIRMED',
+    'BOOKED',
     'ARRIVED',
     'WAITING',
+    'CALLED',
     'IN_PROGRESS',
     'COMPLETED',
+    'DONE',
+    'REJECTED',
     'CANCELLED',
     'NO_SHOW',
     'RESCHEDULED',
     'EXPIRED',
+    'RESCHEDULE_REQUESTED',
   ]),
   cancelReason: z.string().max(300).optional(),
 });

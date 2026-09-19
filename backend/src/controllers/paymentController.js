@@ -135,7 +135,14 @@ export const getAnalytics = async (req, res, next) => {
 export const getInvoice = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const result = await getInvoiceDetails(id);
+    const cancelToken = req.query.token || req.headers['x-cancel-token'] || '';
+    const sessionToken = req.query.sessionToken || req.headers['x-session-token'] || '';
+    const result = await getInvoiceDetails(id, {
+      user: req.user,
+      profile: req.profile,
+      cancelToken,
+      sessionToken,
+    });
     return successResponse(res, 200, 'Invoice details retrieved', result);
   } catch (err) {
     next(err);

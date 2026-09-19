@@ -24,6 +24,7 @@ import { toPublicAppointment } from '../serializers/appointmentSerializer.js';
 import { otpService } from '../services/otpService.js';
 import { createIcsCalendarEvent } from '../services/icsService.js';
 import { successResponse, errorResponse } from '../utils/response.js';
+import { escapeRegex } from '../utils/sanitize.js';
 
 /**
  * List / Browse All Verified Public Professionals with Search & Filters
@@ -35,11 +36,11 @@ export const listProfessionals = async (req, res, next) => {
     const filter = { isPublic: { $ne: false } };
 
     if (profession && profession !== 'ALL') {
-      filter.profession = new RegExp(profession, 'i');
+      filter.profession = new RegExp(escapeRegex(profession), 'i');
     }
 
     if (city && city !== 'ALL') {
-      filter.city = new RegExp(city, 'i');
+      filter.city = new RegExp(escapeRegex(city), 'i');
     }
 
     if (minFee || maxFee) {
@@ -48,8 +49,8 @@ export const listProfessionals = async (req, res, next) => {
       if (maxFee) filter.consultationFee.$lte = Number(maxFee);
     }
 
-    if (search) {
-      const regex = new RegExp(search, 'i');
+    if (search && search.trim()) {
+      const regex = new RegExp(escapeRegex(search), 'i');
       filter.$or = [
         { name: regex },
         { profession: regex },

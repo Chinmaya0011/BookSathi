@@ -9,7 +9,7 @@ import {
   getInvoice,
   simulateWebhook,
 } from '../controllers/paymentController.js';
-import { authenticate } from '../middleware/authMiddleware.js';
+import { authenticate, optionalAuth } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validateMiddleware.js';
 import {
   createOrderSchema,
@@ -23,7 +23,7 @@ const router = Router();
 // --- Public / Checkout Endpoints ---
 router.post('/create-order', validate(createOrderSchema), createOrder);
 router.post('/verify', validate(verifyPaymentSchema), verifyPayment);
-router.get('/:id/invoice', getInvoice);
+router.get('/:id/invoice', optionalAuth, getInvoice);
 router.post('/webhook/simulate', simulateWebhook);
 
 // --- Protected Doctor Dashboard Endpoints ---

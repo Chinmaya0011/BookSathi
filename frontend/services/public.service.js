@@ -103,6 +103,42 @@ export const publicService = {
     return res.data;
   },
 
+  // Direct Booking Management API methods (Challenge, OTP, Cancel, Reschedule)
+  async getBookingChallenge(appointmentCode, { token, sessionToken } = {}) {
+    const res = await api.get(`/public/booking/${appointmentCode}/challenge`, {
+      params: { token, sessionToken },
+    });
+    return res.data;
+  },
+
+  async sendBookingOtp(appointmentCode) {
+    const res = await api.post(`/public/booking/${appointmentCode}/otp`);
+    return res.data;
+  },
+
+  async verifyBookingOtp(appointmentCode, otp) {
+    const res = await api.post(`/public/booking/${appointmentCode}/verify-otp`, { otp });
+    return res.data;
+  },
+
+  async cancelBooking(appointmentCode, { token, sessionToken, reason } = {}) {
+    const res = await api.post(
+      `/public/booking/${appointmentCode}/cancel`,
+      { reason },
+      { params: { token, sessionToken } }
+    );
+    return res.data;
+  },
+
+  async requestReschedule(appointmentCode, { token, sessionToken, requestedDate, requestedTime, reason } = {}) {
+    const res = await api.post(
+      `/public/booking/${appointmentCode}/reschedule-request`,
+      { requestedDate, requestedTime, reason },
+      { params: { token, sessionToken } }
+    );
+    return res.data;
+  },
+
   getIcsDownloadUrl(slug, appointmentCode) {
     const rawUrl = (process.env.API_URL || 'http://localhost:5000').trim().replace(/\/+$/, '');
     const baseUrl = rawUrl.endsWith('/api') ? rawUrl.slice(0, -4) : rawUrl;

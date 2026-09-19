@@ -150,7 +150,7 @@ async function runPaymentTests() {
 
   // TEST 6: Get Invoice Details
   console.log('\n--- Test 6: getInvoiceDetails ---');
-  const invoice = await getInvoiceDetails(manualResult.payment._id);
+  const invoice = await getInvoiceDetails(manualResult.payment._id, { profile });
   if (!invoice.invoiceNumber || !invoice.customer?.name) {
     throw new Error('Test 6 Failed: Invoice details incomplete');
   }

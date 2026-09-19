@@ -20,9 +20,10 @@ export const createAppointmentType = async (req, res, next) => {
     if (!req.profile) {
       return errorResponse(res, 400, 'Professional profile not found. Please complete profile setup.');
     }
+    const { professionalId: _pid, _id, ...bodyData } = req.body;
     const newType = await AppointmentType.create({
+      ...bodyData,
       professionalId: req.profile._id,
-      ...req.body,
     });
     return successResponse(res, 201, 'Appointment type created', newType);
   } catch (err) {
@@ -32,10 +33,14 @@ export const createAppointmentType = async (req, res, next) => {
 
 export const updateAppointmentType = async (req, res, next) => {
   try {
+    if (!req.profile) {
+      return errorResponse(res, 400, 'Professional profile not found. Please complete profile setup.');
+    }
     const { id } = req.params;
+    const { professionalId: _pid, _id, ...updateFields } = req.body;
     const updated = await AppointmentType.findOneAndUpdate(
       { _id: id, professionalId: req.profile._id },
-      { $set: req.body },
+      { $set: updateFields },
       { new: true, runValidators: true }
     );
     if (!updated) {
@@ -49,6 +54,9 @@ export const updateAppointmentType = async (req, res, next) => {
 
 export const deleteAppointmentType = async (req, res, next) => {
   try {
+    if (!req.profile) {
+      return errorResponse(res, 400, 'Professional profile not found. Please complete profile setup.');
+    }
     const { id } = req.params;
     const deleted = await AppointmentType.findOneAndDelete({
       _id: id,

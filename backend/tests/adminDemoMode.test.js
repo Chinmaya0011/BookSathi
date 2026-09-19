@@ -36,23 +36,27 @@ requireAdmin(devReq, devRes, () => {
 });
 assert(devPassed === true, 'In NODE_ENV=development, Admin can perform POST/PUT/PATCH/DELETE');
 
-// 2. Production Mode Test (NODE_ENV=production) - GET allowed
+// 2. Production Mode without DEMO_MODE (Standard Production) - mutations allowed
 process.env.NODE_ENV = 'production';
-const prodGetReq = {
-  method: 'GET',
-  originalUrl: '/api/admin/overview',
+delete process.env.DEMO_MODE;
+delete process.env.ADMIN_READ_ONLY;
+
+const prodReq = {
+  method: 'POST',
+  originalUrl: '/api/admin/users/123',
   user: { role: 'ADMIN', isActive: true },
 };
-let prodGetPassed = false;
-requireAdmin(prodGetReq, devRes, () => {
-  prodGetPassed = true;
+let prodPassed = false;
+requireAdmin(prodReq, devRes, () => {
+  prodPassed = true;
 });
-assert(prodGetPassed === true, 'In NODE_ENV=production, Admin CAN perform GET / view all data');
+assert(prodPassed === true, 'In NODE_ENV=production without DEMO_MODE, Admin can perform mutating actions');
 
-// 3. Production Mode Test (NODE_ENV=production) - POST/PATCH/DELETE blocked
+// 3. DEMO_MODE=true explicit override - mutations blocked, GET allowed
+process.env.DEMO_MODE = 'true';
 const mutatingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
 mutatingMethods.forEach((method) => {
-  const prodMutateReq = {
+  const demoMutateReq = {
     method,
     originalUrl: '/api/admin/users/123',
     user: { role: 'ADMIN', isActive: true },
@@ -67,34 +71,24 @@ mutatingMethods.forEach((method) => {
       },
     }),
   };
-  requireAdmin(prodMutateReq, mockRes, () => {});
+  requireAdmin(demoMutateReq, mockRes, () => {});
   assert(
     blockedCode === 403 && blockedMessage?.includes('Demo Mode Active'),
-    `In NODE_ENV=production, Admin ${method} is blocked with 403 Demo Mode notice`
+    `When DEMO_MODE=true, Admin ${method} is blocked with 403 Demo Mode notice`
   );
 });
 
-// 4. DEMO_MODE=true explicit override
-process.env.NODE_ENV = 'development';
-process.env.DEMO_MODE = 'true';
-const demoModeReq = {
-  method: 'DELETE',
-  originalUrl: '/api/admin/professionals/999',
+// 4. DEMO_MODE=true - GET requests remain allowed
+const demoGetReq = {
+  method: 'GET',
+  originalUrl: '/api/admin/overview',
   user: { role: 'ADMIN', isActive: true },
 };
-let demoBlockedCode = null;
-const demoRes = {
-  status: (code) => ({
-    json: (body) => {
-      demoBlockedCode = code;
-    },
-  }),
-};
-requireAdmin(demoModeReq, demoRes, () => {});
-assert(
-  demoBlockedCode === 403,
-  'When DEMO_MODE=true, Admin mutations are blocked even if NODE_ENV=development'
-);
+let demoGetPassed = false;
+requireAdmin(demoGetReq, devRes, () => {
+  demoGetPassed = true;
+});
+assert(demoGetPassed === true, 'When DEMO_MODE=true, Admin CAN perform GET / view data');
 
 console.log('\n======================================================');
 console.log(`📊 TEST RESULTS: ${passed} PASSED, ${failed} FAILED`);

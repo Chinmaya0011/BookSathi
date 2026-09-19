@@ -35,6 +35,12 @@ export const RESERVED_SLUGS = new Set([
   'public',
   'health',
   'webhook',
+  'manage',
+  'lookup',
+  'book-again',
+  'reschedule',
+  'invoice',
+  'receipt',
 ]);
 
 /**

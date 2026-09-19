@@ -105,10 +105,15 @@ export const getMyAppointments = async (req, res, next) => {
       }
     }
 
-    // Auto-link any matching unlinked appointments to user account
+    // Auto-link matching unlinked appointments for this verified user
     if (userOr.length > 1) {
       Appointment.updateMany(
-        { $or: userOr.slice(1), $or: [{ userId: { $exists: false } }, { userId: null }] },
+        {
+          $and: [
+            { $or: userOr.slice(1) },
+            { $or: [{ userId: { $exists: false } }, { userId: null }] },
+          ],
+        },
         { $set: { userId } }
       ).catch(() => {});
     }

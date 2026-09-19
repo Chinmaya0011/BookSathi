@@ -12,6 +12,7 @@ import { Grievance } from '../models/Grievance.js';
 import { SystemSetting } from '../models/SystemSetting.js';
 import { getDateString } from '../utils/dateHelpers.js';
 import { toAdminAppointment } from '../serializers/appointmentSerializer.js';
+import { escapeRegex } from '../utils/sanitize.js';
 
 /**
  * Helper to record Super Admin actions
@@ -48,13 +49,19 @@ export const getSystemOverviewStats = async () => {
   const [year, month] = todayString.split('-');
   const monthPrefix = `${year}-${month}`;
 
+  const startOfMonth = new Date(Date.UTC(Number(year), Number(month) - 1, 1));
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 8);
+
   const [
     totalUsers,
     totalProfessionals,
     activeProfessionals,
     totalAppointments,
     todayAppointments,
-    allPayments,
+    totalVolumeAgg,
+    monthVolumeAgg,
+    recentPayments,
     totalQrOrders,
     pendingQrOrders,
     totalGrievances,
@@ -67,7 +74,17 @@ export const getSystemOverviewStats = async () => {
     ProfessionalProfile.countDocuments({ isPublic: true, status: 'ACTIVE' }),
     Appointment.countDocuments(),
     Appointment.countDocuments({ dateString: todayString }),
-    Payment.find({ status: 'SUCCESS' }).select('amount createdAt paymentMethod paymentMode').lean(),
+    Payment.aggregate([
+      { $match: { status: 'SUCCESS' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]),
+    Payment.aggregate([
+      { $match: { status: 'SUCCESS', createdAt: { $gte: startOfMonth } } },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]),
+    Payment.find({ status: 'SUCCESS', createdAt: { $gte: sevenDaysAgo } })
+      .select('amount createdAt paymentMethod paymentMode')
+      .lean(),
     QrBannerOrder.countDocuments(),
     QrBannerOrder.countDocuments({ orderStatus: { $in: ['PAYMENT_PENDING', 'ORDER_PLACED', 'IN_PRINTING'] } }),
     Grievance.countDocuments(),
@@ -76,13 +93,11 @@ export const getSystemOverviewStats = async () => {
     SystemAuditLog.find().sort({ createdAt: -1 }).limit(10).lean(),
   ]);
 
-  // Financial aggregation
-  const totalVolume = allPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-  const monthVolume = allPayments
-    .filter((p) => p.createdAt && new Date(p.createdAt).toISOString().startsWith(monthPrefix))
-    .reduce((sum, p) => sum + (p.amount || 0), 0);
+  // Financial totals
+  const totalVolume = totalVolumeAgg[0]?.total || 0;
+  const monthVolume = monthVolumeAgg[0]?.total || 0;
 
-  const todayVolume = allPayments
+  const todayVolume = recentPayments
     .filter((p) => p.createdAt && getDateString(new Date(p.createdAt), 'Asia/Kolkata') === todayString)
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 
@@ -106,7 +121,7 @@ export const getSystemOverviewStats = async () => {
     const dayName = daysOfWeek[d.getDay()];
 
     const dayAppts = await Appointment.countDocuments({ dateString: dateStr });
-    const dayPayments = allPayments.filter(
+    const dayPayments = recentPayments.filter(
       (p) => p.createdAt && getDateString(new Date(p.createdAt), 'Asia/Kolkata') === dateStr
     );
     const dayRevenue = dayPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -171,7 +186,7 @@ export const getAllProfessionals = async (query = {}) => {
   if (isVerified !== undefined) filter.isVerified = isVerified === 'true' || isVerified === true;
 
   if (search) {
-    const regex = new RegExp(search, 'i');
+    const regex = new RegExp(escapeRegex(search), 'i');
     filter.$or = [
       { name: regex },
       { email: regex },
@@ -249,7 +264,7 @@ export const getAllAppointmentsAdmin = async (query = {}) => {
   if (date) filter.dateString = date;
 
   if (search) {
-    const regex = new RegExp(search, 'i');
+    const regex = new RegExp(escapeRegex(search), 'i');
     filter.$or = [
       { customerName: regex },
       { customerPhone: regex },
@@ -396,7 +411,7 @@ export const getAllPaymentsAdmin = async (query = {}) => {
   if (paymentMethod) filter.paymentMethod = paymentMethod;
 
   if (search) {
-    const regex = new RegExp(search, 'i');
+    const regex = new RegExp(escapeRegex(search), 'i');
     filter.$or = [
       { customerName: regex },
       { customerPhone: regex },
@@ -441,7 +456,7 @@ export const getAllUsersAdmin = async (query = {}) => {
   if (isActive !== undefined) filter.isActive = isActive === 'true' || isActive === true;
 
   if (search) {
-    const regex = new RegExp(search, 'i');
+    const regex = new RegExp(escapeRegex(search), 'i');
     filter.email = regex;
   }
 
@@ -642,7 +657,7 @@ export const getAllQrOrdersAdmin = async (query = {}) => {
   if (paymentStatus) filter.paymentStatus = paymentStatus;
 
   if (search) {
-    const regex = new RegExp(search, 'i');
+    const regex = new RegExp(escapeRegex(search), 'i');
     filter.$or = [
       { orderCode: regex },
       { 'shippingAddress.recipientName': regex },
@@ -786,7 +801,7 @@ export const getAllGrievancesAdmin = async (query = {}) => {
   if (category) filter.category = category;
 
   if (search) {
-    const regex = new RegExp(search, 'i');
+    const regex = new RegExp(escapeRegex(search), 'i');
     filter.$or = [
       { ticketId: regex },
       { name: regex },

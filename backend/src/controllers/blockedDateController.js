@@ -18,6 +18,9 @@ export const getBlockedDates = async (req, res, next) => {
 
 export const createBlockedDate = async (req, res, next) => {
   try {
+    if (!req.profile) {
+      return errorResponse(res, 400, 'Professional profile not found. Please complete profile setup.');
+    }
     const { date, allDay, startTime, endTime, reason } = req.body;
 
     const existing = await BlockedDate.findOne({
@@ -47,6 +50,9 @@ export const createBlockedDate = async (req, res, next) => {
 
 export const deleteBlockedDate = async (req, res, next) => {
   try {
+    if (!req.profile) {
+      return errorResponse(res, 400, 'Professional profile not found.');
+    }
     const { id } = req.params;
     const deleted = await BlockedDate.findOneAndDelete({
       _id: id,
