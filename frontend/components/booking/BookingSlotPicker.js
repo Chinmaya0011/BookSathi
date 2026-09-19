@@ -216,7 +216,7 @@ export default function BookingSlotPicker({
 
         {/* Quick 7-Day Horizontal Strip */}
         {!showFullCalendar ? (
-          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 overflow-x-auto pb-1">
+          <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar touch-pan-x sm:grid sm:grid-cols-7">
             {next7Days.map((day) => {
               const isSelected = selectedDate === day.dateStr;
 
@@ -226,7 +226,7 @@ export default function BookingSlotPicker({
                   type="button"
                   onClick={() => onDateSelect(day.dateStr)}
                   className={cn(
-                    'p-2.5 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-center relative cursor-pointer active:scale-95 shadow-2xs',
+                    'p-2.5 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-center relative cursor-pointer active:scale-95 shadow-2xs shrink-0 min-w-[68px] sm:min-w-0',
                     isSelected
                       ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/25 ring-2 ring-indigo-600/30 scale-[1.02]'
                       : 'bg-white border-slate-200 text-slate-700 hover:border-indigo-300 hover:bg-slate-50'
@@ -308,9 +308,9 @@ export default function BookingSlotPicker({
         ) : totalSlotsCount === 0 ? (
           <div className="p-8 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-2">
             <Sun className="w-8 h-8 text-amber-600 mx-auto stroke-[1.5]" />
-            <h4 className="text-xs sm:text-sm font-bold text-amber-950">No Consultation Slots on this Date</h4>
-            <p className="text-[11px] text-amber-900/80 max-w-xs mx-auto">
-              The practitioner has no active schedule or is on leave for {formatDisplayDate(selectedDate)}. Please choose another date above.
+            <h4 className="text-sm font-bold text-amber-900">No Open Slots on this Date</h4>
+            <p className="text-xs text-amber-700 max-w-sm mx-auto">
+              All booking slots for this day are either reserved or outside clinic hours. Please select another date from the strip above.
             </p>
           </div>
         ) : (
@@ -323,7 +323,7 @@ export default function BookingSlotPicker({
                   <span>Morning Slots</span>
                   <span className="text-[10px] text-slate-400 font-medium">({groupedSlots.morning.length})</span>
                 </div>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                   {groupedSlots.morning.map((slot) => (
                     <SlotButton key={slot.time} slot={slot} onSelect={onSlotSelect} />
                   ))}
@@ -339,7 +339,7 @@ export default function BookingSlotPicker({
                   <span>Afternoon Slots</span>
                   <span className="text-[10px] text-slate-400 font-medium">({groupedSlots.afternoon.length})</span>
                 </div>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                   {groupedSlots.afternoon.map((slot) => (
                     <SlotButton key={slot.time} slot={slot} onSelect={onSlotSelect} />
                   ))}
@@ -355,7 +355,7 @@ export default function BookingSlotPicker({
                   <span>Evening Slots</span>
                   <span className="text-[10px] text-slate-400 font-medium">({groupedSlots.evening.length})</span>
                 </div>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                   {groupedSlots.evening.map((slot) => (
                     <SlotButton key={slot.time} slot={slot} onSelect={onSlotSelect} />
                   ))}

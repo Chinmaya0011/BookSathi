@@ -190,6 +190,15 @@ export default function BookingLookupPage() {
                             </a>
                           )}
 
+                          {/* Manage Booking Button */}
+                          <Link
+                            href={`/book/manage?code=${appt.appointmentCode}`}
+                            className="p-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all inline-flex items-center gap-1.5"
+                          >
+                            <CalendarCheck className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Manage</span>
+                          </Link>
+
                           {/* 1-Tap Book Again */}
                           {pro.bookingSlug && (
                             <Link
