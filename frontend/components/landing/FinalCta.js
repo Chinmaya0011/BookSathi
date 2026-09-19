@@ -1,14 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Search, Sparkles, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Search, Sparkles, ShieldCheck, Check } from 'lucide-react';
 
 export default function FinalCta() {
   return (
-    <section className="py-20 sm:py-28 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-white relative overflow-hidden">
+    <section className="py-20 sm:py-28 bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-950 text-white relative overflow-hidden border-t border-slate-800">
       {/* Background Ambient Glows */}
       <div className="absolute inset-0 pointer-events-none opacity-25">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-indigo-500 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-indigo-500 rounded-full blur-[140px]" />
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-7">
@@ -26,7 +26,7 @@ export default function FinalCta() {
 
         {/* Supporting text */}
         <p className="text-sm sm:text-base lg:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
-          Create your booking link in under 2 minutes and let customers book when you're available.
+          Create your branded booking page in under 2 minutes and let clients book verified slots when you're available.
         </p>
 
         {/* CTA Buttons */}
@@ -50,9 +50,11 @@ export default function FinalCta() {
 
         {/* Value Subline */}
         <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400 pt-3">
-          <span className="text-slate-300 font-semibold">0% commission</span>
+          <span className="text-emerald-400 font-semibold flex items-center gap-1">
+            <Check className="w-3.5 h-3.5 stroke-[3]" /> 0% platform commission
+          </span>
           <span>•</span>
-          <span className="text-slate-300 font-semibold">Free forever plan</span>
+          <span className="text-slate-300 font-semibold">Free forever tier</span>
           <span>•</span>
           <span>No credit card required</span>
         </div>

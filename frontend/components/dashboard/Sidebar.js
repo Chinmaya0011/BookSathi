@@ -123,44 +123,33 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
       },
     ];
   } else {
-    // PROFESSIONAL role
+    // PROFESSIONAL role (Simplified Task-First Architecture)
     navGroups = [
       {
-        title: 'Practice',
+        title: 'Daily Practice',
         items: [
-          { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, exact: true },
-          { label: 'Appointments', href: '/dashboard/appointments', icon: Calendar },
-          { label: 'Queue', href: '/dashboard/appointments?tab=queue', icon: ListOrdered },
-          { label: 'Customers', href: '/dashboard/appointments?tab=patients', icon: Users },
-          { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },
+          { label: 'Home', href: '/dashboard', icon: LayoutDashboard, exact: true },
+          { label: 'Bookings', href: '/dashboard/appointments', icon: Calendar },
+          { label: 'Clients', href: '/dashboard/clients', icon: Users },
+          { label: 'Setup', href: '/dashboard/setup', icon: Settings },
         ],
       },
       {
-        title: 'Schedule & Services',
+        title: 'Tools & Growth',
         items: [
-          { label: 'Services', href: '/dashboard/services', icon: Briefcase },
-          { label: 'Availability', href: '/dashboard/availability', icon: Clock },
-          { label: 'Blocked Dates', href: '/dashboard/blocked-dates', icon: Ban },
-          { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
-        ],
-      },
-      {
-        title: 'Setup & Brand',
-        items: [
-          { label: 'Profile', href: '/dashboard/profile', icon: User },
           {
-            label: 'Booking Link & Plan',
+            label: 'Share Booking',
             href: '/dashboard/booking-link',
             icon: Sparkles,
             badge: profile?.plan === 'PRO' ? 'PRO' : undefined,
           },
+          { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },
         ],
       },
       {
-        title: 'Preferences',
+        title: 'Support',
         items: [
-          { label: 'Settings', href: '/dashboard/settings', icon: Settings },
-          { label: 'Support Desk', href: '/dashboard/grievance', icon: LifeBuoy },
+          { label: 'Help & Support', href: '/dashboard/grievance', icon: LifeBuoy },
         ],
       },
     ];
@@ -195,8 +184,8 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
           isCollapsed ? 'md:w-[70px]' : 'md:w-64'
         )}
       >
-        {/* Brand Header */}
-        <div className="h-15 px-4 border-b border-slate-800/60 shrink-0 flex items-center justify-between">
+        {/* Brand Header with Top Clearance & Margin */}
+        <div className="h-16 px-4 pt-2 pb-1 border-b border-slate-800/60 shrink-0 flex items-center justify-between">
           {!isCollapsed ? (
             <>
               <Link
@@ -204,15 +193,15 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
                 onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-2.5 min-w-0 flex-1 group"
               >
-                <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shadow-xs shrink-0 transition-transform group-hover:scale-105">
-                  <CalendarCheck className="w-4 h-4" />
+                <div className="w-8.5 h-8.5 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-600/30 shrink-0 transition-transform group-hover:scale-105">
+                  <CalendarCheck className="w-4.5 h-4.5" />
                 </div>
                 <div className="overflow-hidden min-w-0 flex items-center gap-2">
-                  <span className="text-[15px] font-bold text-white tracking-tight">
+                  <span className="text-[15px] font-black text-white tracking-tight">
                     Book<span className="text-indigo-400">Saathi</span>
                   </span>
-                  <span className="text-[10px] font-semibold text-slate-400 bg-slate-800/80 border border-slate-700/60 px-1.5 py-0.5 rounded">
-                    {role === 'ADMIN' ? 'Admin' : role === 'USER' ? 'Customer' : 'Pro'}
+                  <span className="text-[10px] font-bold text-slate-300 bg-slate-800/90 border border-slate-700/80 px-1.5 py-0.5 rounded-md">
+                    {role === 'ADMIN' ? 'Admin' : role === 'USER' ? 'Client' : 'Pro'}
                   </span>
                 </div>
               </Link>
@@ -221,7 +210,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
               <button
                 type="button"
                 onClick={toggleCollapse}
-                className="p-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800/70 transition-colors hidden md:inline-flex shrink-0 cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-colors hidden md:inline-flex shrink-0 cursor-pointer"
                 title="Collapse sidebar"
                 aria-label="Collapse sidebar"
               >
@@ -232,7 +221,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
-                className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 md:hidden shrink-0 cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 md:hidden shrink-0 cursor-pointer"
                 aria-label="Close sidebar"
               >
                 <X className="w-5 h-5" />
@@ -244,34 +233,34 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
               <button
                 type="button"
                 onClick={toggleCollapse}
-                className="w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white transition-transform active:scale-95 cursor-pointer shadow-xs"
+                className="w-8.5 h-8.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white transition-transform active:scale-95 cursor-pointer shadow-md shadow-indigo-600/30"
                 title="Expand sidebar"
                 aria-label="Expand sidebar"
               >
-                <PanelLeftOpen className="w-4 h-4" />
+                <PanelLeftOpen className="w-4.5 h-4.5" />
               </button>
             </div>
           )}
         </div>
 
-        {/* Navigation Groups */}
+        {/* Navigation Groups with Generous Margin Gaps */}
         <nav
           className={cn(
-            'flex-1 overflow-y-auto overscroll-contain no-scrollbar transition-all py-3',
-            isCollapsed ? 'px-2 space-y-4' : 'px-3 space-y-4'
+            'flex-1 overflow-y-auto overscroll-contain no-scrollbar transition-all py-4',
+            isCollapsed ? 'px-2 space-y-4' : 'px-3 space-y-5'
           )}
         >
           {navGroups.map((group, gIdx) => (
-            <div key={gIdx} className="space-y-1">
+            <div key={gIdx} className="space-y-1.5">
               {!isCollapsed ? (
-                <div className="px-2.5 pb-1 text-[11px] font-medium text-slate-400 tracking-wider">
+                <div className="px-3 pb-1 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">
                   {group.title}
                 </div>
               ) : (
                 gIdx > 0 && <div className="my-2 border-t border-slate-800/60 mx-1" />
               )}
 
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const [itemBase, itemQuery] = item.href.split('?');
@@ -301,11 +290,11 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
                       onClick={() => setMobileOpen(false)}
                       title={isCollapsed ? item.label : undefined}
                       className={cn(
-                        'group flex items-center rounded-lg text-[13px] font-medium transition-all duration-150 cursor-pointer',
-                        isCollapsed ? 'justify-center p-2' : 'justify-between px-2.5 py-1.5',
+                        'group flex items-center rounded-xl text-[13px] font-semibold transition-all duration-150 cursor-pointer',
+                        isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2',
                         isActive
-                          ? 'bg-indigo-600/15 text-indigo-400 font-semibold'
-                          : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/50'
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold'
+                          : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
                       )}
                     >
                       <div
@@ -318,7 +307,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
                           className={cn(
                             'w-4 h-4 shrink-0 transition-colors',
                             isActive
-                              ? 'text-indigo-400'
+                              ? 'text-white stroke-[2.5]'
                               : 'text-slate-400 group-hover:text-slate-200'
                           )}
                         />
@@ -326,7 +315,12 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
                       </div>
 
                       {!isCollapsed && item.badge && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-400/15 text-amber-300 border border-amber-400/30">
+                        <span className={cn(
+                          'text-[10px] font-black px-1.5 py-0.2 rounded-md border uppercase',
+                          isActive 
+                            ? 'bg-white/20 text-white border-white/30' 
+                            : 'bg-amber-400/15 text-amber-300 border-amber-400/30'
+                        )}>
                           {item.badge}
                         </span>
                       )}
@@ -338,18 +332,18 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
           ))}
         </nav>
 
-        {/* Profile Card & Signout Footer */}
+        {/* Profile Card & Signout Footer with Margin Clearance */}
         <div
           className={cn(
-            'border-t border-slate-800/60 shrink-0 bg-[#0a0e17] transition-all',
-            isCollapsed ? 'p-2 space-y-2' : 'p-3 space-y-2'
+            'border-t border-slate-800/60 shrink-0 bg-[#090d16] transition-all',
+            isCollapsed ? 'p-2 space-y-2' : 'p-3.5 space-y-2.5'
           )}
         >
-          {/* User Preview */}
+          {/* User Preview Container */}
           <div
             className={cn(
-              'flex items-center rounded-lg bg-slate-900/50 border border-slate-800/50 transition-colors',
-              isCollapsed ? 'p-1.5 justify-center' : 'p-2 gap-2.5'
+              'flex items-center rounded-xl bg-slate-900/60 border border-slate-800/70 transition-colors',
+              isCollapsed ? 'p-1.5 justify-center' : 'p-2.5 gap-2.5'
             )}
             title={`${displayName} • ${displayRole}`}
           >
@@ -358,30 +352,30 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
                 <img
                   src={profile?.profileImage || user?.avatar}
                   alt={displayName}
-                  className="w-7 h-7 rounded-md object-cover border border-slate-700"
+                  className="w-8 h-8 rounded-lg object-cover border border-slate-700"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}
                 />
               ) : (
-                <div className="w-7 h-7 rounded-md bg-slate-800 border border-slate-700 text-slate-200 flex items-center justify-center font-bold text-xs">
+                <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 flex items-center justify-center font-black text-xs">
                   {displayName.charAt(0).toUpperCase()}
                 </div>
               )}
-              <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-1 ring-[#0a0e17]" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#090d16]" />
             </div>
 
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1">
-                  <span className="text-xs font-semibold text-slate-200 truncate leading-tight">
+                  <span className="text-xs font-bold text-slate-200 truncate leading-tight">
                     {displayName}
                   </span>
                   {profile?.isVerified && (
-                    <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                   )}
                 </div>
-                <span className="text-[11px] text-slate-400 truncate block leading-tight">
+                <span className="text-[11px] text-slate-400 truncate block leading-tight mt-0.5">
                   {displayRole}
                 </span>
               </div>
@@ -394,8 +388,8 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
             onClick={logout}
             title={isCollapsed ? 'Sign Out' : undefined}
             className={cn(
-              'w-full flex items-center justify-center rounded-lg text-xs font-medium text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors cursor-pointer',
-              isCollapsed ? 'p-1.5' : 'gap-2 px-2.5 py-1.5'
+              'w-full flex items-center justify-center rounded-xl text-xs font-bold text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors cursor-pointer',
+              isCollapsed ? 'p-2' : 'gap-2 px-3 py-2'
             )}
           >
             <LogOut className="w-3.5 h-3.5 shrink-0" />

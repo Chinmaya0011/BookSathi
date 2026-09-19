@@ -30,100 +30,114 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? 'bg-white/95 backdrop-blur-md shadow-xs border-b border-slate-200/80 py-3'
-          : 'bg-transparent py-4 sm:py-5'
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="fixed top-2 sm:top-4 inset-x-0 z-50 flex justify-center px-3 sm:px-6 pointer-events-none">
+      <div
+        className={`pointer-events-auto w-full max-w-6xl rounded-full transition-all duration-300 ${
+          scrolled
+            ? 'bg-slate-950 border border-slate-700/80 shadow-2xl shadow-black/80 ring-1 ring-white/15 py-2 sm:py-2.5 px-4 sm:px-6'
+            : 'bg-slate-900 border border-slate-700/70 shadow-2xl shadow-black/50 ring-1 ring-white/10 py-2.5 sm:py-3 px-4 sm:px-6'
+        }`}
+      >
         <div className="flex items-center justify-between">
           
-          {/* Brand Logo & Professional OS Tag */}
+          {/* Brand Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/20 group-hover:scale-105 transition-transform">
-              <CalendarCheck className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-600/40 group-hover:scale-105 transition-transform shrink-0">
+              <CalendarCheck className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg font-black tracking-tight text-slate-950 font-sans">
-                  BookSaathi
-                </span>
-                <span className="px-1.5 py-0.5 text-[10px] font-extrabold bg-indigo-50 text-indigo-700 rounded-md border border-indigo-100/80">
-                  Practice OS
-                </span>
-              </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-base sm:text-lg font-black tracking-tight text-white font-sans">
+                Book<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-sky-300 to-indigo-300">Saathi</span>
+              </span>
+              <span className="hidden sm:inline-flex px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-300 rounded-full border border-indigo-400/30">
+                Practice OS
+              </span>
             </div>
           </Link>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-slate-600">
-            <a href="#how-it-works" className="hover:text-indigo-600 transition-colors">
+          {/* Center Navigation Links (Desktop) */}
+          <nav className="hidden md:flex items-center gap-1 bg-slate-950/80 p-1 rounded-full border border-slate-800">
+            <a
+              href="#how-it-works"
+              className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
+            >
               How It Works
             </a>
-            <a href="#dashboard-preview" className="hover:text-indigo-600 transition-colors">
+            <a
+              href="#dashboard-preview"
+              className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
+            >
               Today Queue
             </a>
-            <a href="#for-professionals" className="hover:text-indigo-600 transition-colors">
-              For Your Practice
+            <a
+              href="#for-professionals"
+              className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
+            >
+              For Practice
             </a>
-            <a href="#pricing" className="hover:text-indigo-600 transition-colors">
+            <a
+              href="#pricing"
+              className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
+            >
               Pricing
             </a>
-            <a href="#faq" className="hover:text-indigo-600 transition-colors">
+            <a
+              href="#faq"
+              className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
+            >
               FAQ
             </a>
           </nav>
 
-          {/* Right Action CTAs */}
-          <div className="hidden sm:flex items-center gap-3">
+          {/* Right Actions */}
+          <div className="hidden sm:flex items-center gap-2">
             <Link
               href="/lookup"
-              className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-2 rounded-xl hover:bg-slate-100 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-full hover:bg-white/10 transition-all"
             >
-              Client Pass Lookup
+              <Search className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Find Booking</span>
             </Link>
 
             {mounted && user ? (
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all active:scale-95"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md transition-all active:scale-95"
               >
                 <LayoutDashboard className="w-3.5 h-3.5" />
-                <span>My Dashboard</span>
+                <span>Dashboard</span>
               </Link>
             ) : (
               <>
                 <Link
                   href="/login"
-                  className="text-xs font-bold text-slate-700 hover:text-slate-950 px-3.5 py-2 rounded-xl hover:bg-slate-100 transition-colors"
+                  className="text-xs font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-full hover:bg-white/10 transition-all"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/register"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/30 transition-all active:scale-95"
+                  className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white text-xs font-extrabold shadow-lg shadow-indigo-600/30 transition-all active:scale-95 cursor-pointer"
                 >
                   <span>Create Free Link</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
                 </Link>
               </>
             )}
           </div>
 
-          {/* Mobile Hamburger Button */}
+          {/* Mobile Hamburger & Fast Action */}
           <div className="flex items-center gap-2 sm:hidden">
             <Link
               href="/register"
-              className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-xs"
+              className="px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white text-xs font-bold rounded-full shadow-xs"
             >
               Start Free
             </Link>
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
+              className="p-2 rounded-full text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -131,86 +145,62 @@ export default function Navbar() {
           </div>
 
         </div>
-      </div>
 
-      {/* Mobile Drawer */}
-      {mobileMenuOpen && (
-        <div className="sm:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-6 space-y-3 shadow-xl animate-in fade-in slide-in-from-top-3 duration-200">
-          <nav className="flex flex-col space-y-2.5 text-sm font-semibold text-slate-700">
+        {/* Mobile Dropdown Panel */}
+        {mobileMenuOpen && (
+          <div className="mt-3 pt-3 pb-2 border-t border-white/10 space-y-2 text-sm font-semibold text-slate-200 animate-in fade-in slide-in-from-top-2 duration-200">
             <a
               href="#how-it-works"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-50"
+              className="block px-3 py-2 rounded-xl hover:bg-white/10"
             >
               How It Works
             </a>
             <a
               href="#dashboard-preview"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-50"
+              className="block px-3 py-2 rounded-xl hover:bg-white/10"
             >
               Today Queue
             </a>
             <a
               href="#for-professionals"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-50"
+              className="block px-3 py-2 rounded-xl hover:bg-white/10"
             >
-              For Your Practice
+              For Practice
             </a>
             <a
               href="#pricing"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-50"
+              className="block px-3 py-2 rounded-xl hover:bg-white/10"
             >
               Pricing
             </a>
             <a
               href="#faq"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-50"
+              className="block px-3 py-2 rounded-xl hover:bg-white/10"
             >
               FAQ
             </a>
             <Link
               href="/lookup"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-50 text-xs"
+              className="block px-3 py-2 rounded-xl hover:bg-white/10 text-indigo-300 font-bold"
             >
-              🔍 Client Booking Lookup
+              🔍 Client Pass Lookup
             </Link>
-          </nav>
-
-          <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
-            {mounted && user ? (
-              <Link
-                href="/dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold"
-              >
-                Go to Dashboard
-              </Link>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center py-2.5 bg-slate-100 text-slate-800 rounded-xl text-xs font-bold"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/20"
-                >
-                  Create Free Booking Link
-                </Link>
-              </>
-            )}
+            <Link
+              href="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-xl hover:bg-white/10 font-bold"
+            >
+              Sign In
+            </Link>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </header>
   );
 }

@@ -139,7 +139,7 @@ export default function MobileBottomNav({ onOpenManualModal }) {
     ];
   }
 
-  // Quick Action Options for Center "+" Create FAB
+  // Quick Action Options for Center "+" Create FAB (3 Clear Daily Operations)
   const proQuickActions = [
     {
       id: 'walkin',
@@ -157,29 +157,20 @@ export default function MobileBottomNav({ onOpenManualModal }) {
     },
     {
       id: 'appointment',
-      title: 'New Scheduled Slot',
-      subtitle: 'Open calendar to schedule a future visit',
+      title: 'New Scheduled Booking',
+      subtitle: 'Schedule an upcoming client slot',
       icon: Calendar,
       iconColor: 'bg-sky-600 text-white shadow-sky-600/30',
       href: '/dashboard/appointments',
       action: () => setCreateSheetOpen(false),
     },
     {
-      id: 'customer',
-      title: 'Add Customer Record',
-      subtitle: 'Register client profile & notes',
+      id: 'client',
+      title: 'Add Client Record',
+      subtitle: 'Register client profile, history & notes',
       icon: UserPlus,
       iconColor: 'bg-emerald-600 text-white shadow-emerald-600/30',
-      href: '/dashboard/appointments?tab=patients',
-      action: () => setCreateSheetOpen(false),
-    },
-    {
-      id: 'payment',
-      title: 'Collect Payment / Bill',
-      subtitle: 'Issue invoice or record fee settlement',
-      icon: IndianRupee,
-      iconColor: 'bg-amber-600 text-white shadow-amber-600/30',
-      href: '/dashboard/payments',
+      href: '/dashboard/clients',
       action: () => setCreateSheetOpen(false),
     },
   ];
@@ -187,33 +178,23 @@ export default function MobileBottomNav({ onOpenManualModal }) {
   // More Drawer Categorized Sections for Professional
   const proMoreSections = [
     {
-      title: 'PRACTICE',
-      items: [
-        { label: 'Customers Directory', href: '/dashboard/appointments?tab=patients', icon: Users, desc: 'Client profiles & history' },
-        { label: 'Payments & Revenue', href: '/dashboard/payments', icon: CreditCard, desc: 'Earnings & settlements' },
-        { label: 'Direct Messages', href: '/dashboard/messages', icon: MessageSquare, desc: 'Client inquiries' },
-      ],
-    },
-    {
-      title: 'MANAGE',
-      items: [
-        { label: 'Services & Tariffs', href: '/dashboard/services', icon: Briefcase, desc: 'Tariffs, fees & duration' },
-        { label: 'Weekly Availability', href: '/dashboard/availability', icon: Clock, desc: 'Shifts & working hours' },
-        { label: 'Blocked Dates', href: '/dashboard/blocked-dates', icon: Ban, desc: 'Leaves & clinic holidays' },
-      ],
-    },
-    {
       title: 'PRACTICE SETUP',
       items: [
-        { label: 'Professional Profile', href: '/dashboard/profile', icon: User, desc: 'Doctor/CA bio & details' },
-        { label: 'Booking Link & Plan', href: '/dashboard/booking-link', icon: Sparkles, desc: 'Link, QR code & Pro tier' },
+        { label: 'Setup Hub', href: '/dashboard/setup', icon: Settings, desc: 'Profile, services, hours & policies' },
+        { label: 'Share Booking & QR', href: '/dashboard/booking-link', icon: Sparkles, desc: 'Public URL, QR & WhatsApp' },
       ],
     },
     {
-      title: 'PREFERENCES',
+      title: 'GROWTH & REVENUE',
       items: [
-        { label: 'Practice Settings', href: '/dashboard/settings', icon: Settings, desc: 'Notifications & security' },
-        { label: 'Help & Support Desk', href: '/dashboard/grievance', icon: LifeBuoy, desc: 'Tickets & dispute triage' },
+        { label: 'Payments & Revenue', href: '/dashboard/payments', icon: CreditCard, desc: 'Earnings, receipts & ledger' },
+        { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare, desc: 'Client chat & inquiries' },
+      ],
+    },
+    {
+      title: 'SUPPORT',
+      items: [
+        { label: 'Help & Support', href: '/dashboard/grievance', icon: LifeBuoy, desc: 'Guides, FAQs & ticket triage' },
       ],
     },
   ];

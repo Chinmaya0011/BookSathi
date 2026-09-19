@@ -4,35 +4,28 @@ import {
   CalendarCheck,
   Clock,
   CheckCircle2,
-  IndianRupee,
   Users,
-  TrendingUp,
-  Activity,
+  ArrowUpRight,
 } from 'lucide-react';
-import { formatINR } from '@/lib/utils';
+import Link from 'next/link';
 
-export default function DashboardMetrics({ stats, loading, isPro = false, onOpenUpgradeModal }) {
+export default function DashboardMetrics({ stats, loading }) {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full font-sans">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full font-sans">
+        {[1, 2].map((i) => (
           <div
             key={i}
-            className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs animate-pulse space-y-2.5"
+            className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs animate-pulse space-y-2.5"
           >
-            <div className="flex items-center justify-between">
-              <div className="h-3 w-20 bg-slate-100 rounded" />
-              <div className="w-7 h-7 rounded-xl bg-slate-100" />
-            </div>
-            <div className="h-6 w-20 bg-slate-200 rounded" />
-            <div className="h-2.5 w-24 bg-slate-100 rounded" />
+            <div className="h-4 w-28 bg-slate-100 rounded" />
+            <div className="h-8 w-20 bg-slate-200 rounded" />
           </div>
         ))}
       </div>
     );
   }
 
-  // Calculate today completed and pending count accurately
   const todaySchedule = stats?.todaySchedule || [];
   const completedToday = todaySchedule.filter(
     (a) => a.status === 'COMPLETED' || a.status === 'DONE'
@@ -51,96 +44,70 @@ export default function DashboardMetrics({ stats, loading, isPro = false, onOpen
     (a) => a.status !== 'CANCELLED' && a.status !== 'REJECTED'
   ).length;
 
-  const metrics = [
-    {
-      title: "Today's Total",
-      value: totalTodayActive || stats?.todayCount || 0,
-      subValue: `${pendingToday} waiting in queue`,
-      icon: CalendarCheck,
-      iconBg: 'bg-indigo-50 text-indigo-600 border-indigo-100',
-      badge: 'Live',
-      badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    },
-    {
-      title: 'Completed',
-      value: completedToday,
-      subValue:
-        totalTodayActive > 0
-          ? `${Math.round((completedToday / totalTodayActive) * 100)}% done today`
-          : 'Consultations done',
-      icon: CheckCircle2,
-      iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-      badge: 'Visits',
-      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    },
-    {
-      title: 'Upcoming',
-      value: stats?.upcomingCount || 0,
-      subValue: 'Confirmed future slots',
-      icon: Clock,
-      iconBg: 'bg-sky-50 text-sky-600 border-sky-100',
-      badge: 'Pipeline',
-      badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
-    },
-    {
-      title: isPro ? "Today's Revenue" : "Practice Revenue",
-      value: formatINR(
-        todaySchedule
-          .filter((a) => a.status !== 'CANCELLED' && a.status !== 'REJECTED')
-          .reduce((sum, a) => sum + (Number(a.fee) || 0), 0) || 0
-      ),
-      subValue: isPro
-        ? `${stats?.monthRevenue ? formatINR(stats.monthRevenue) : formatINR(stats?.totalRevenue || 0)} this month`
-        : 'Unlock 30d financials with Pro',
-      icon: IndianRupee,
-      iconBg: 'bg-amber-50 text-amber-600 border-amber-100',
-      badge: isPro ? 'Est.' : 'PRO ⭐',
-      badgeColor: isPro
-        ? 'bg-amber-50 text-amber-700 border-amber-200'
-        : 'bg-amber-100 text-amber-900 border-amber-300 font-extrabold cursor-pointer',
-      onClick: !isPro ? onOpenUpgradeModal : undefined,
-    },
-  ];
-
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 w-full font-sans">
-      {metrics.map((item, idx) => {
-        const Icon = item.icon;
-        return (
-          <div
-            key={idx}
-            onClick={item.onClick}
-            className={`bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all duration-200 flex flex-col justify-between ${
-              item.onClick ? 'cursor-pointer hover:border-amber-300 hover:bg-amber-50/20' : ''
-            }`}
+    <div className="grid grid-cols-2 gap-2.5 sm:gap-4 w-full font-sans">
+      {/* 1. Today's Bookings */}
+      <div className="bg-white p-3 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+        <div className="flex items-start justify-between gap-1.5 mb-2">
+          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1 sm:gap-1.5 truncate">
+            <CalendarCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600 shrink-0" />
+            <span className="truncate">Today's Bookings</span>
+          </span>
+          <Link
+            href="/dashboard/appointments"
+            className="p-1 sm:p-1.5 rounded-lg bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 border border-slate-200/80 transition-colors shrink-0"
+            title="View all bookings"
           >
-            <div className="flex items-center justify-between gap-1.5">
-              <span className="text-xs font-bold text-slate-500 truncate">
-                {item.title}
-              </span>
-              <div
-                className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border ${item.iconBg} shadow-2xs`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-              </div>
-            </div>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
 
-            <div className="mt-2">
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight block">
-                  {item.value}
-                </span>
-                <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md border ${item.badgeColor}`}>
-                  {item.badge}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 mt-0.5 truncate font-medium">
-                {item.subValue}
-              </p>
-            </div>
+        <div className="space-y-1">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              {totalTodayActive || stats?.todayCount || 0}
+            </span>
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-500">
+              slots
+            </span>
           </div>
-        );
-      })}
+          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
+            {completedToday} done · {Math.max(0, totalTodayActive - completedToday)} left
+          </p>
+        </div>
+      </div>
+
+      {/* 2. Waiting in Queue */}
+      <div className="bg-white p-3 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+        <div className="flex items-start justify-between gap-1.5 mb-2">
+          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1 sm:gap-1.5 truncate">
+            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 shrink-0" />
+            <span className="truncate">Waiting Queue</span>
+          </span>
+          <Link
+            href="/dashboard/appointments?tab=today"
+            className="p-1 sm:p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 transition-colors shrink-0"
+            title="View live queue"
+          >
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              {pendingToday}
+            </span>
+            <span className="text-[9px] sm:text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">
+              In Line
+            </span>
+          </div>
+          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
+            {pendingToday > 0 ? 'Ready for consult' : 'All clear right now'}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
+

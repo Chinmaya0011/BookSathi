@@ -11,7 +11,9 @@ import { appointmentTypeService } from '@/services/appointmentType.service';
 import DashboardHero from '@/components/dashboard/DashboardHero';
 import ProfileCompletionCard from '@/components/dashboard/ProfileCompletionCard';
 import DashboardMetrics from '@/components/dashboard/DashboardMetrics';
+import NextPatientSpotlight from '@/components/dashboard/NextPatientSpotlight';
 import DashboardTodaySchedule from '@/components/dashboard/DashboardTodaySchedule';
+import QuickActionsStrip from '@/components/dashboard/QuickActionsStrip';
 import DashboardQuickShortcuts from '@/components/dashboard/DashboardQuickShortcuts';
 import DashboardTrendsChart from '@/components/dashboard/DashboardTrendsChart';
 import DashboardServiceDistribution from '@/components/dashboard/DashboardServiceDistribution';
@@ -388,8 +390,8 @@ export default function DashboardOverviewPage() {
   }
 
   return (
-    <div className="space-y-3.5 sm:space-y-4 w-full font-sans animate-in fade-in duration-300">
-      {/* 0. Urgent Free Tier Quota & Upgrade Banner (Free Tier Only) */}
+    <div className="space-y-3 sm:space-y-3.5 w-full font-sans animate-in fade-in duration-300">
+      {/* 0. Free Tier Limit Notice Banner if approaching limit */}
       {!isPro && (
         <FreeTierLimitBanner
           usedCount={usedMonthlyBookings}
@@ -398,10 +400,7 @@ export default function DashboardOverviewPage() {
         />
       )}
 
-      {/* 1. Setup Checklist (Collapsible / Non-Intrusive) */}
-      <ProfileCompletionCard />
-
-      {/* 2. Top Hero Welcome & Quick Command Actions */}
+      {/* 1. Top Hero Welcome & Quick Command Header */}
       <DashboardHero
         profile={profile}
         loading={loading}
@@ -413,145 +412,42 @@ export default function DashboardOverviewPage() {
         onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
       />
 
-      {/* 3. High-Priority KPI Metrics at a Glance */}
-      <DashboardMetrics
-        stats={stats}
-        loading={loading}
-        isPro={isPro}
-        onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
+      {/* 2. Focused 2-Number Snapshot (Today's Bookings & Waiting in Queue) */}
+      <DashboardMetrics stats={stats} loading={loading} />
+
+      {/* 3. ⭐ PROMINENT "CALL NEXT" SPOTLIGHT HERO */}
+      <NextPatientSpotlight
+        nextCustomer={nextCustomer}
+        activeQueueCount={activeQueueCount}
+        onCallNext={handleCallNextQueue}
+        callingNext={callingNext}
+        onQuickStatusUpdate={handleQuickStatusUpdate}
+        updatingStatusId={updatingStatusId}
+        profile={profile}
       />
 
-      {/* 4. ⭐ PRIMARY OPERATIONAL CENTERPIECE: Today's Live Schedule (Left 2 cols) + Next Spotlight & Shortcuts (Right 1 col) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 sm:gap-4 items-stretch">
-        {/* Left 2 Cols: Main Today's Appointments Timeline & Queue Actions */}
-        <div className="lg:col-span-2 flex flex-col h-full">
-          <DashboardTodaySchedule
-            todaySchedule={stats?.todaySchedule}
-            loading={loading}
-            profile={profile}
-            onOpenManualModal={handleOpenManualModal}
-            onQuickStatusUpdate={handleQuickStatusUpdate}
-            updatingStatusId={updatingStatusId}
-            onCallNextQueue={handleCallNextQueue}
-            callingNext={callingNext}
-            isPro={isPro}
-            onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
-            onOpenReceiptModal={(appt) => setReceiptModalAppt(appt)}
-            onOpenNotesModal={(appt) => setNotesModalAppt(appt)}
-          />
-        </div>
-
-        {/* Right 1 Col: Next Customer Spotlight + Quick Operational Shortcuts */}
-        <div className="space-y-3.5 sm:space-y-4">
-          {/* Next Up Live Queue Spotlight Card */}
-          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 sm:p-4.5 text-white shadow-xs relative overflow-hidden flex flex-col justify-between border border-indigo-900/50">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
-
-            <div className="space-y-2.5 relative">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  Live Queue Spotlight
-                </span>
-                <span className="text-[11px] text-indigo-200/90 font-medium px-2 py-0.2 rounded-full bg-white/10">
-                  {activeQueueCount} in line
-                </span>
-              </div>
-
-              {nextCustomer ? (
-                <div className="space-y-2 pt-0.5">
-                  <p className="text-[11px] text-indigo-300/80 font-medium">Next In-Line Consultation:</p>
-                  <div>
-                    <h3 className="text-base sm:text-lg font-black text-white tracking-tight truncate">
-                      {nextCustomer.customerName}
-                    </h3>
-                    <div className="flex items-center gap-1.5 text-xs text-indigo-200 mt-0.5">
-                      <span className="inline-flex items-center gap-1 bg-white/15 px-1.5 py-0.2 rounded-md font-bold text-white text-[11px]">
-                        <Clock className="w-3 h-3 text-indigo-300" />
-                        {format12Hour(nextCustomer.startTime)}
-                      </span>
-                      <span>•</span>
-                      <span className="truncate text-indigo-200 font-medium text-[11px]">
-                        {nextCustomer.appointmentTypeName || 'Consultation'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {nextCustomer.customerPhone && (
-                    <div className="pt-1.5 flex items-center gap-1.5">
-                      <a
-                        href={`https://wa.me/91${nextCustomer.customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                          `Hello ${nextCustomer.customerName}, Dr./Pro ${profile?.name || ''} here regarding your appointment today at ${format12Hour(nextCustomer.startTime)}.`
-                        )}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors shadow-2xs"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        <span>WhatsApp</span>
-                      </a>
-                      <a
-                        href={`tel:${nextCustomer.customerPhone}`}
-                        className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-                        title="Call customer"
-                      >
-                        <Phone className="w-3.5 h-3.5" />
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => handleQuickStatusUpdate(nextCustomer._id, 'DONE')}
-                        className="ml-auto px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-colors cursor-pointer"
-                        title="Mark Done"
-                      >
-                        Done
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="py-4 text-center space-y-1 text-indigo-200/80">
-                  <CalendarCheck className="w-6 h-6 mx-auto text-indigo-400 mb-0.5" />
-                  <p className="text-xs font-bold text-white">No active queue right now</p>
-                  <p className="text-[11px] text-indigo-300/70">
-                    All scheduled customers for today have been seen.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-2.5 border-t border-white/10 mt-3 flex items-center justify-between text-xs text-indigo-200">
-              <button
-                type="button"
-                onClick={handleOpenManualModal}
-                className="hover:text-white font-bold flex items-center gap-1 transition-colors cursor-pointer text-xs"
-              >
-                <span>+ Walk-In</span>
-              </button>
-              <Link
-                href="/dashboard/appointments"
-                className="hover:text-white font-bold flex items-center gap-1 transition-colors text-xs"
-              >
-                <span>Full Ledger</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-
-          {/* Quick Operational Shortcuts */}
-          <DashboardQuickShortcuts
-            isPro={isPro}
-            onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
-          />
-        </div>
+      {/* 4. TODAY'S LIVE QUEUE & SCHEDULE STREAM */}
+      <div className="w-full">
+        <DashboardTodaySchedule
+          todaySchedule={stats?.todaySchedule}
+          loading={loading}
+          profile={profile}
+          onOpenManualModal={handleOpenManualModal}
+          onQuickStatusUpdate={handleQuickStatusUpdate}
+          updatingStatusId={updatingStatusId}
+          onCallNextQueue={handleCallNextQueue}
+          callingNext={callingNext}
+          isPro={isPro}
+          onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
+          onOpenReceiptModal={(appt) => setReceiptModalAppt(appt)}
+          onOpenNotesModal={(appt) => setNotesModalAppt(appt)}
+        />
       </div>
 
-      {/* 5. Pro Practice Operating Suite Grid (8 Real Features & Free Locks) */}
-      <ProFeaturesHub
-        isPro={isPro}
-        onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
-        onOpenBatchWhatsApp={() => setBatchWhatsAppOpen(true)}
-        onExportCSV={handleExportCSV}
-        onOpenEmergencyNotice={() => setEmergencyNoticeOpen(true)}
+      {/* 5. 1-TAP QUICK ACTIONS STRIP */}
+      <QuickActionsStrip
+        onOpenWalkIn={handleOpenManualModal}
+        onOpenEmergencyAlert={() => setEmergencyNoticeOpen(true)}
         onOpenReceipt={() => {
           const firstAppt =
             todaySchedule.find((a) => a.status === 'DONE' || a.status === 'COMPLETED') ||
@@ -562,58 +458,7 @@ export default function DashboardOverviewPage() {
             toast.info('No appointments scheduled yet today to print receipts for.');
           }
         }}
-        onOpenNotes={() => {
-          const firstAppt = todaySchedule[0];
-          if (firstAppt) {
-            setNotesModalAppt(firstAppt);
-          } else {
-            toast.info('Add or select an appointment to attach case notes.');
-          }
-        }}
-        todaySchedule={todaySchedule}
       />
-      {/* 6. PRACTICE ANALYTICS & INSIGHTS: Balanced 2:1 Grid (Trends 2 cols + Distribution & Peak 1 col) */}
-      <div className="space-y-2 pt-1">
-        <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5 px-0.5">
-          <div>
-            <h2 className="text-sm font-bold text-slate-800">
-              Practice Analytics & Demand Insights
-            </h2>
-            <p className="text-[11px] text-slate-400">
-              Historical trends, peak appointment hours, and treatment breakdown
-            </p>
-          </div>
-          {!isPro && (
-            <button
-              type="button"
-              onClick={() => setUpgradeModalOpen(true)}
-              className="text-xs font-extrabold text-amber-600 hover:text-amber-700 inline-flex items-center gap-1 cursor-pointer"
-            >
-              <span>⚡ Unlock 30-Day Pro Reports</span>
-            </button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 sm:gap-4 items-stretch">
-          <div className="lg:col-span-2">
-            <DashboardTrendsChart
-              weeklyTrend={stats?.weeklyTrend}
-              loading={loading}
-              isPro={isPro}
-              onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
-            />
-          </div>
-          <div className="lg:col-span-1">
-            <DashboardServiceDistribution
-              serviceDistribution={stats?.serviceDistribution}
-              hourlyDistribution={stats?.hourlyDistribution}
-              loading={loading}
-              isPro={isPro}
-              onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
-            />
-          </div>
-        </div>
-      </div>
 
       {/* 6. Manual Walk-In / Phone Booking Modal */}
       <ManualBookingModal
@@ -635,7 +480,7 @@ export default function DashboardOverviewPage() {
         onUpgradeSuccess={() => loadDashboardData(true)}
       />
 
-      {/* 8. Consultation Receipt Modal (Pro) */}
+      {/* 8. Consultation Receipt Modal */}
       <ConsultationReceiptModal
         isOpen={!!receiptModalAppt}
         onClose={() => setReceiptModalAppt(null)}
@@ -643,7 +488,7 @@ export default function DashboardOverviewPage() {
         profile={profile}
       />
 
-      {/* 9. Batch WhatsApp Broadcast Modal (Pro) */}
+      {/* 9. Batch WhatsApp Broadcast Modal */}
       <BatchWhatsAppModal
         isOpen={batchWhatsAppOpen}
         onClose={() => setBatchWhatsAppOpen(false)}
@@ -651,14 +496,14 @@ export default function DashboardOverviewPage() {
         profile={profile}
       />
 
-      {/* 10. Emergency Notice Modal (Pro) */}
+      {/* 10. Emergency Notice Modal */}
       <EmergencyNoticeModal
         isOpen={emergencyNoticeOpen}
         onClose={() => setEmergencyNoticeOpen(false)}
         profile={profile}
       />
 
-      {/* 11. Private Case Notes Modal (Pro) */}
+      {/* 11. Private Case Notes Modal */}
       <PrivateNotesModal
         isOpen={!!notesModalAppt}
         onClose={() => setNotesModalAppt(null)}

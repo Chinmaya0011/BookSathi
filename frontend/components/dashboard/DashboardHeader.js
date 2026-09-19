@@ -34,17 +34,19 @@ import { cn } from '@/lib/utils';
 import { getProfessionalPublicUrl } from '@/lib/urlHelpers';
 
 const SUBPAGE_METADATA = {
-  '/dashboard/appointments': { title: 'Appointments & Queue', back: '/dashboard' },
-  '/dashboard/services': { title: 'Services & Tariffs', back: '/dashboard' },
-  '/dashboard/availability': { title: 'Weekly Availability', back: '/dashboard' },
-  '/dashboard/blocked-dates': { title: 'Blocked Dates', back: '/dashboard' },
-  '/dashboard/booking-link': { title: 'Booking Link & Plan', back: '/dashboard' },
-  '/dashboard/subscription': { title: 'Booking Link & Plan', back: '/dashboard' },
-  '/dashboard/messages': { title: 'Messages', back: '/dashboard' },
+  '/dashboard/appointments': { title: 'Bookings & Queue', back: '/dashboard' },
+  '/dashboard/clients': { title: 'Clients Directory', back: '/dashboard' },
+  '/dashboard/setup': { title: 'Practice Setup', back: '/dashboard' },
+  '/dashboard/services': { title: 'Services & Tariffs', back: '/dashboard/setup' },
+  '/dashboard/availability': { title: 'Weekly Availability', back: '/dashboard/setup' },
+  '/dashboard/blocked-dates': { title: 'Blocked Dates', back: '/dashboard/setup' },
+  '/dashboard/booking-link': { title: 'Share Booking & QR', back: '/dashboard' },
+  '/dashboard/subscription': { title: 'Subscription & Plan', back: '/dashboard/setup' },
+  '/dashboard/messages': { title: 'Messages Hub', back: '/dashboard' },
   '/dashboard/notifications': { title: 'Notifications', back: '/dashboard' },
-  '/dashboard/grievance': { title: 'Support Desk', back: '/dashboard' },
-  '/dashboard/profile': { title: 'Profile Settings', back: '/dashboard' },
-  '/dashboard/settings': { title: 'Account Settings', back: '/dashboard' },
+  '/dashboard/grievance': { title: 'Help & Support', back: '/dashboard' },
+  '/dashboard/profile': { title: 'Profile Settings', back: '/dashboard/setup' },
+  '/dashboard/settings': { title: 'Account Settings', back: '/dashboard/setup' },
   '/dashboard/payments': { title: 'Payments & Revenue', back: '/dashboard' },
 };
 

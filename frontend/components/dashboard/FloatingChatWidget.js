@@ -235,7 +235,7 @@ export default function FloatingChatWidget() {
             'fixed z-50 bg-white shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden font-sans transition-all duration-200 animate-in fade-in zoom-in-95',
             isFullScreen
               ? 'inset-3 sm:inset-6 md:inset-10 sm:max-w-4xl sm:mx-auto rounded-2xl'
-              : 'bottom-20 right-4 sm:bottom-24 sm:right-6 md:right-8 w-[calc(100vw-32px)] sm:w-[420px] h-[580px] sm:h-[630px] max-h-[82vh] rounded-2xl'
+              : 'bottom-[76px] right-3 left-3 sm:left-auto sm:right-6 sm:bottom-24 w-auto sm:w-[420px] h-[540px] sm:h-[630px] max-h-[calc(100dvh-92px)] rounded-2xl'
           )}
         >
           {/* Header */}
@@ -291,9 +291,9 @@ export default function FloatingChatWidget() {
         </div>
       )}
 
-      {/* 3. Fixed AI Squircle Button (Bottom Right) */}
+      {/* 3. Fixed AI Squircle Button (Bottom Right - safely above mobile bottom nav) */}
       {!isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 font-sans flex items-center gap-2 select-none pointer-events-auto">
+        <div className="fixed bottom-20 right-3.5 sm:bottom-6 sm:right-6 z-40 font-sans flex items-center gap-2 select-none pointer-events-auto">
           {/* Desktop Hover Tooltip */}
           {isTooltipVisible && (
             <div className="hidden sm:flex items-center px-2.5 py-1.5 rounded-lg bg-slate-900 text-white text-[11px] font-medium shadow-md border border-slate-700/60 animate-in fade-in slide-in-from-right-1 duration-150 whitespace-nowrap">
@@ -312,16 +312,16 @@ export default function FloatingChatWidget() {
             onMouseLeave={() => setIsTooltipVisible(false)}
             title="BookSaathi AI (⌘K)"
             aria-label="Open BookSaathi AI Assistant"
-            className="group relative flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 border border-indigo-500/40 transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+            className="group relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 border border-indigo-500/40 transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer shrink-0"
           >
             <div className="relative flex items-center justify-center">
-              <AiCopilotIcon className="w-6 h-6" glowing={false} />
+              <AiCopilotIcon className="w-5 h-5 sm:w-6 sm:h-6" glowing={false} />
             </div>
 
             {/* Subtle Active Indicator Dot */}
-            <span className="absolute top-2.5 right-2.5 flex h-2.5 w-2.5">
+            <span className="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 flex h-2 sm:h-2.5 w-2 sm:w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-80" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 border border-indigo-600" />
+              <span className="relative inline-flex rounded-full h-full w-full bg-emerald-400 border border-indigo-600" />
             </span>
           </button>
         </div>

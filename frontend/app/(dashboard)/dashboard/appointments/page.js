@@ -43,11 +43,12 @@ import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import ManualBookingModal from '@/components/dashboard/ManualBookingModal';
 import UserAppointmentsView from '@/components/dashboard/UserAppointmentsView';
+import ClientDetailDrawer from '@/components/dashboard/ClientDetailDrawer';
 import { connectSocket } from '@/lib/socket';
 import { invalidateQuery } from '@/lib/queryCache';
 
 export default function AppointmentsPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const isProfessional = (user?.role || '').toUpperCase() === 'PROFESSIONAL';
 
   // If not a professional, render dedicated customer appointments view
@@ -58,6 +59,7 @@ export default function AppointmentsPage() {
   const searchParams = useSearchParams();
   const urlTab = searchParams ? searchParams.get('tab') : null;
   const [tab, setTab] = useState(urlTab || 'today');
+  const [drawerClient, setDrawerClient] = useState(null);
 
   useEffect(() => {
     if (urlTab) {
@@ -793,9 +795,23 @@ export default function AppointmentsPage() {
                           {/* Client Info & Services */}
                           <div className="space-y-1.5 flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-black text-slate-900 text-base">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDrawerClient({
+                                    name: appt.customerName,
+                                    phone: appt.customerPhone,
+                                    email: appt.customerEmail,
+                                    notes: appt.privateNotes || appt.notes || '',
+                                    lastVisit: appt.dateString,
+                                    totalVisits: 1,
+                                  })
+                                }
+                                className="font-black text-slate-900 hover:text-indigo-600 text-base text-left transition-colors cursor-pointer"
+                                title="View client profile & clinical notes"
+                              >
                                 {appt.customerName}
-                              </span>
+                              </button>
 
                               {/* Appointment Code */}
                               <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
@@ -1271,6 +1287,23 @@ export default function AppointmentsPage() {
         onServiceChange={onServiceChange}
         onSubmit={handleCreateManualBooking}
         creatingManual={creatingManual}
+      />
+
+      {/* 👥 Client Details Slide-Over Drawer */}
+      <ClientDetailDrawer
+        client={drawerClient}
+        isOpen={!!drawerClient}
+        onClose={() => setDrawerClient(null)}
+        profile={profile}
+        onBookAgain={(c) => {
+          setManualForm((prev) => ({
+            ...prev,
+            customerName: c.name,
+            customerPhone: c.phone,
+            customerEmail: c.email || '',
+          }));
+          setManualModalOpen(true);
+        }}
       />
     </div>
   );
