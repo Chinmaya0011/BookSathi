@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ShieldAlert, LogIn, Laptop2, ArrowRight } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
 export default function SessionRevokedModal() {
   const router = useRouter();
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState(
     'Your account was signed in from another device or browser. For your security, this session has been logged out.'
@@ -14,6 +15,16 @@ export default function SessionRevokedModal() {
 
   useEffect(() => {
     const handleRevoked = (event) => {
+      // Never show session revoked modal on public routes like home page
+      const isPublicRoute =
+        pathname === '/' ||
+        pathname?.startsWith('/book/') ||
+        pathname?.startsWith('/lookup') ||
+        pathname?.startsWith('/login') ||
+        pathname?.startsWith('/register');
+
+      if (isPublicRoute) return;
+
       if (event.detail?.message) {
         setMessage(event.detail.message);
       }
@@ -24,7 +35,7 @@ export default function SessionRevokedModal() {
     return () => {
       window.removeEventListener('booksaathi:session_revoked', handleRevoked);
     };
-  }, []);
+  }, [pathname]);
 
   const handleLoginRedirect = () => {
     setIsOpen(false);

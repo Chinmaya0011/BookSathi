@@ -37,23 +37,23 @@ api.interceptors.response.use(
       localStorage.removeItem('bs_token');
       localStorage.removeItem('bs_user');
 
-      // Dispatch global session revoked event for modal notification
-      window.dispatchEvent(
-        new CustomEvent('booksaathi:session_revoked', {
-          detail: {
-            isRevoked: isSessionRevoked,
-            message: errorMessage,
-          },
-        })
-      );
-
-      // If on protected dashboard/admin/onboarding routes and not already on /login, redirect
       const isProtectedRoute =
         window.location.pathname.startsWith('/dashboard') ||
         window.location.pathname.startsWith('/admin') ||
         window.location.pathname.startsWith('/onboarding');
 
-      if (isProtectedRoute && !window.location.pathname.startsWith('/login') && !isSessionRevoked) {
+      // Only dispatch session revoked modal if explicitly revoked on a protected route
+      if (isSessionRevoked && isProtectedRoute) {
+        window.dispatchEvent(
+          new CustomEvent('booksaathi:session_revoked', {
+            detail: {
+              isRevoked: true,
+              message: errorMessage,
+            },
+          })
+        );
+      } else if (isProtectedRoute && !window.location.pathname.startsWith('/login')) {
+        // If simply expired on protected route, redirect to login
         window.location.href = '/login';
       }
     }
