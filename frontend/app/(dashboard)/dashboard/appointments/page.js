@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -36,6 +36,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { appointmentService } from '@/services/appointment.service';
 import { appointmentTypeService } from '@/services/appointmentType.service';
+import { availabilityService, blockedDateService } from '@/services/availability.service';
 import { format12Hour, formatDisplayDate, formatINR } from '@/lib/utils';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -44,6 +45,7 @@ import Input from '@/components/ui/Input';
 import ManualBookingModal from '@/components/dashboard/ManualBookingModal';
 import UserAppointmentsView from '@/components/dashboard/UserAppointmentsView';
 import ClientDetailDrawer from '@/components/dashboard/ClientDetailDrawer';
+import AppointmentCalendarView from '@/components/dashboard/AppointmentCalendarView';
 import { connectSocket } from '@/lib/socket';
 import { invalidateQuery } from '@/lib/queryCache';
 
@@ -70,7 +72,17 @@ export default function AppointmentsPage() {
   const [search, setSearch] = useState('');
   const [selectedServiceFilter, setSelectedServiceFilter] = useState('ALL');
   const [selectedDateFilter, setSelectedDateFilter] = useState('');
-  const [viewMode, setViewMode] = useState('grouped'); // 'grouped' | 'table'
+  const [viewMode, setViewMode] = useState('calendar'); // 'calendar' | 'grouped' | 'table'
+  const [calendarRange, setCalendarRange] = useState({ startDate: '', endDate: '' });
+
+  const handleCalendarRangeChange = useCallback((startDate, endDate) => {
+    setCalendarRange((prev) => {
+      if (prev.startDate === startDate && prev.endDate === endDate) {
+        return prev;
+      }
+      return { startDate, endDate };
+    });
+  }, []);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -97,6 +109,8 @@ export default function AppointmentsPage() {
   // Walk-In Modal
   const [manualModalOpen, setManualModalOpen] = useState(false);
   const [services, setServices] = useState([]);
+  const [availability, setAvailability] = useState([]);
+  const [blockedDates, setBlockedDates] = useState([]);
   const [manualForm, setManualForm] = useState({
     customerName: '',
     customerPhone: '',
@@ -112,9 +126,20 @@ export default function AppointmentsPage() {
   });
   const [creatingManual, setCreatingManual] = useState(false);
 
+  const handleOpenManualModal = useCallback((presetDate, presetTime) => {
+    if (presetDate || presetTime) {
+      setManualForm((prev) => ({
+        ...prev,
+        date: presetDate || prev.date,
+        time: presetTime || prev.time,
+      }));
+    }
+    setManualModalOpen(true);
+  }, []);
+
   useEffect(() => {
-    fetchAppointments();
     loadServices();
+    loadAvailabilityAndBlocked();
 
     const socket = connectSocket();
     if (socket) {
@@ -138,7 +163,7 @@ export default function AppointmentsPage() {
         socket.off('appointment:completed', handleSocketUpdate);
       };
     }
-  }, [tab]);
+  }, []);
 
   const loadServices = async () => {
     try {
@@ -155,10 +180,36 @@ export default function AppointmentsPage() {
     } catch (e) {}
   };
 
-  const fetchAppointments = async () => {
+  const loadAvailabilityAndBlocked = async () => {
+    try {
+      const [availRes, blockedRes] = await Promise.all([
+        availabilityService.getWeeklyAvailability(),
+        blockedDateService.getBlockedDates(),
+      ]);
+      setAvailability(availRes.data || []);
+      setBlockedDates(blockedRes.data || []);
+    } catch (e) {
+      console.error('Error loading schedule settings:', e);
+    }
+  };
+
+  const fetchAppointments = async (overrideRange) => {
     setLoading(true);
     try {
-      const res = await appointmentService.getAppointments({ tab, search });
+      let params = {};
+      const activeRange = overrideRange || calendarRange;
+      if (viewMode === 'calendar' && activeRange.startDate && activeRange.endDate) {
+        params = {
+          startDate: activeRange.startDate,
+          endDate: activeRange.endDate,
+          search,
+          limit: 250,
+          sortOrder: 'asc',
+        };
+      } else {
+        params = { tab, search, limit: 100 };
+      }
+      const res = await appointmentService.getAppointments(params);
       setAppointments(res.data?.appointments || []);
     } catch (e) {
       console.error('Error fetching appointments:', e);
@@ -167,6 +218,10 @@ export default function AppointmentsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [tab, viewMode, calendarRange.startDate, calendarRange.endDate]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -567,8 +622,19 @@ export default function AppointmentsPage() {
             ))}
           </div>
 
-          {/* View Mode Toggle: Timeline vs Table */}
+          {/* View Mode Toggle: Calendar vs Timeline vs Table */}
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl self-end lg:self-auto shrink-0">
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                viewMode === 'calendar'
+                  ? 'bg-white text-indigo-700 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Calendar</span>
+            </button>
             <button
               onClick={() => setViewMode('grouped')}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -649,7 +715,22 @@ export default function AppointmentsPage() {
       </div>
 
       {/* 📅 Main Appointments Content Area */}
-      {loading ? (
+      {viewMode === 'calendar' ? (
+        <AppointmentCalendarView
+          appointments={appointments}
+          loading={loading}
+          services={services}
+          availability={availability}
+          blockedDates={blockedDates}
+          onDateRangeChange={handleCalendarRangeChange}
+          onStatusChange={handleStatusChange}
+          onOpenReschedule={openRescheduleModal}
+          onOpenNotes={openNotesModal}
+          onOpenCancel={openCancelModal}
+          onOpenManualModal={handleOpenManualModal}
+          onOpenClientDrawer={setDrawerClient}
+        />
+      ) : loading ? (
         <div className="bg-white rounded-3xl border border-slate-200/80 p-20 flex flex-col items-center justify-center gap-3 text-slate-400 shadow-xs">
           <RefreshCw className="w-8 h-8 animate-spin text-indigo-600" />
           <p className="text-sm font-bold text-slate-700">Syncing appointment ledger...</p>

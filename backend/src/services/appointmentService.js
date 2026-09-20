@@ -1940,8 +1940,12 @@ export const getProfessionalAppointments = async (professionalId, queryParams = 
   const {
     status,
     date,
+    startDate,
+    endDate,
     search,
     type,
+    tab,
+    sortOrder,
     page = 1,
     limit = 50,
   } = queryParams;
@@ -1960,7 +1964,13 @@ export const getProfessionalAppointments = async (professionalId, queryParams = 
     }
   }
 
-  if (date) {
+  if (startDate && endDate) {
+    filter.dateString = { $gte: startDate, $lte: endDate };
+  } else if (startDate) {
+    filter.dateString = { $gte: startDate };
+  } else if (endDate) {
+    filter.dateString = { $lte: endDate };
+  } else if (date) {
     filter.dateString = date;
   }
 
@@ -1980,11 +1990,14 @@ export const getProfessionalAppointments = async (professionalId, queryParams = 
   }
 
   const skip = (Number(page) - 1) * Number(limit);
+  const sort = sortOrder === 'asc'
+    ? { dateString: 1, startTime: 1, queueNumber: 1 }
+    : { dateString: -1, queueNumber: 1, startTime: 1 };
 
   const [rawAppointments, total, profile] = await Promise.all([
     Appointment.find(filter)
       .select('+notes')
-      .sort({ dateString: -1, queueNumber: 1, startTime: 1 })
+      .sort(sort)
       .skip(skip)
       .limit(Number(limit))
       .lean(),

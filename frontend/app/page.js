@@ -1,5 +1,6 @@
 import Navbar from '@/components/landing/Navbar';
 import HeroSection from '@/components/landing/HeroSection';
+import ProductSuiteShowcase from '@/components/landing/ProductSuiteShowcase';
 import HowItWorks from '@/components/landing/HowItWorks';
 import FeatureBento from '@/components/landing/FeatureBento';
 import ProfessionalCategories from '@/components/landing/ProfessionalCategories';
@@ -36,6 +37,9 @@ export default function HomePage() {
       <main className="flex-1">
         {/* Modern Hero Section with Interactive Preview */}
         <HeroSection />
+
+        {/* 🌟 3-Pillar Interactive Mock Showcase: Dashboard, Booking Page & PDF */}
+        <ProductSuiteShowcase />
 
         {/* 3-Step Simple How It Works */}
         <HowItWorks />

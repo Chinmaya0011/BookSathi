@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Clock,
@@ -24,15 +26,15 @@ import {
   ShieldCheck,
   Layers,
   X,
+  Palmtree,
+  Ticket,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { availabilityService } from '@/services/availability.service';
 import { professionalService } from '@/services/professional.service';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { cn } from '@/lib/utils';
-import { Ticket } from 'lucide-react';
 
 const DAYS = [
   { index: 1, name: 'Monday', short: 'Mon' },
@@ -545,9 +547,19 @@ export default function AvailabilityPage() {
           </p>
         </div>
 
-        <Button size="sm" loading={saving} onClick={handleSave}>
-          <Save className="w-3.5 h-3.5 mr-1" /> Save All Settings
-        </Button>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <Link
+            href="/dashboard/blocked-dates"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 shadow-2xs transition-colors"
+          >
+            <Palmtree className="w-3.5 h-3.5 text-amber-600" />
+            <span>Holidays & Leaves</span>
+          </Link>
+
+          <Button size="sm" loading={saving} onClick={handleSave}>
+            <Save className="w-3.5 h-3.5 mr-1" /> Save All Settings
+          </Button>
+        </div>
       </div>
 
       {/* 0. PRIMARY BOOKING MODE SELECTOR */}

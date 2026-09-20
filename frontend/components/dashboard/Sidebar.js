@@ -124,15 +124,25 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
       },
     ];
   } else {
-    // PROFESSIONAL role (Clean 4-Tab Simplified Architecture)
+    // PROFESSIONAL role (Comprehensive & Modular Navigation)
     navGroups = [
       {
         title: 'Daily Practice',
         items: [
           { label: 'Today & Queue', href: '/dashboard', icon: LayoutDashboard, exact: true },
           { label: 'Appointments', href: '/dashboard/appointments', icon: Calendar },
+          { label: 'Availability & Shifts', href: '/dashboard/availability', icon: Clock },
+          { label: 'Services & Fees', href: '/dashboard/services', icon: Briefcase },
           { label: 'My Link & QR', href: '/dashboard/booking-link', icon: QrCode },
-          { label: 'Practice Setup', href: '/dashboard/setup', icon: Settings },
+          { label: 'Clients / Patients', href: '/dashboard/clients', icon: Users },
+        ],
+      },
+      {
+        title: 'Settings & Setup',
+        items: [
+          { label: 'Business Profile', href: '/dashboard/setup', icon: User },
+          { label: 'Booking Rules & Security', href: '/dashboard/settings', icon: Settings },
+          { label: 'Payments & Slips', href: '/dashboard/payments', icon: CreditCard },
         ],
       },
     ];
