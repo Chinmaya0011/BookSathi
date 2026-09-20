@@ -251,11 +251,10 @@ const professionalProfileSchema = new mongoose.Schema(
 );
 
 // Auto-normalize compound/custom profession labels to canonical enum before validation
-professionalProfileSchema.pre('validate', function (next) {
+professionalProfileSchema.pre('validate', function () {
   if (this.profession) {
     this.profession = normalizeProfession(this.profession);
   }
-  next();
 });
 
 export const ProfessionalProfile = mongoose.model('ProfessionalProfile', professionalProfileSchema);

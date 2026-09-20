@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 const proxySafeValidate = {
   xForwardedForHeader: false,
   default: true,
+  keyGeneratorIpFallback: false,
 };
 
 // Standard general API rate limiter (15 minutes, 300 requests)

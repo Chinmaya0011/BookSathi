@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isReservedSlug } from './lib/reservedSlugs';
 
-export function middleware(req) {
+export function proxy(req) {
   const url = req.nextUrl;
   const host = req.headers.get('host') || '';
 

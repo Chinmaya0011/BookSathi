@@ -1,12 +1,8 @@
 import Navbar from '@/components/landing/Navbar';
 import HeroSection from '@/components/landing/HeroSection';
-import TrustBar from '@/components/landing/TrustBar';
-import ProductDashboard from '@/components/landing/ProductDashboard';
 import HowItWorks from '@/components/landing/HowItWorks';
-import CustomerExperience from '@/components/landing/CustomerExperience';
-import ProfessionalCategories from '@/components/landing/ProfessionalCategories';
-import BookingLinkPreview from '@/components/landing/BookingLinkPreview';
 import FeatureBento from '@/components/landing/FeatureBento';
+import ProfessionalCategories from '@/components/landing/ProfessionalCategories';
 import PricingSection from '@/components/landing/PricingSection';
 import FaqSection from '@/components/landing/FaqSection';
 import FinalCta from '@/components/landing/FinalCta';
@@ -33,46 +29,34 @@ export const metadata = constructMetadata({
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white text-slate-900 selection:bg-indigo-600 selection:text-white flex flex-col no-scrollbar">
-      {/* 1. Minimal Sticky Navbar */}
+    <div className="min-h-screen bg-white text-slate-900 selection:bg-indigo-600 selection:text-white flex flex-col">
+      {/* Modern Fixed Navbar */}
       <Navbar />
 
       <main className="flex-1">
-        {/* 2. SaaS Hero Section with Interactive Slot Picker & Booking Confirmation Preview */}
+        {/* Modern Hero Section with Interactive Preview */}
         <HeroSection />
 
-        {/* 3. Compact 4-Metric Trust / Value Strip */}
-        <TrustBar />
-
-        {/* 4. Product-First Today Dashboard Centerpiece with Feature Cards */}
-        <ProductDashboard />
-
-        {/* 5. 3-Step Simple Flow (Share -> Book -> Manage) */}
+        {/* 3-Step Simple How It Works */}
         <HowItWorks />
 
-        {/* 6. Zero-Login Customer Experience with Mobile Phone Pass */}
-        <CustomerExperience />
-
-        {/* 7. Built for Real Indian Professionals (Doctors, CAs, Lawyers, Tutors, Consultants) */}
-        <ProfessionalCategories />
-
-        {/* 8. Branded Booking Page Preview with Multi-Channel Share Strip */}
-        <BookingLinkPreview />
-
-        {/* 9. Feature Bento Grid */}
+        {/* 6-Card Core Features Grid */}
         <FeatureBento />
 
-        {/* 10. Clean 2-Tier Pricing (Free & Pro) with Billing Interval Toggle */}
+        {/* Tailored For Indian Professional Practices */}
+        <ProfessionalCategories />
+
+        {/* Simple & Transparent 2-Tier Pricing */}
         <PricingSection />
 
-        {/* 11. 10-Question Accordion FAQ */}
+        {/* Frequently Asked Questions */}
         <FaqSection />
 
-        {/* 12. High-Conversion Final CTA */}
+        {/* High-Conversion Final Call-to-Action */}
         <FinalCta />
       </main>
 
-      {/* 13. Professional SaaS Footer */}
+      {/* Modern SaaS Footer */}
       <Footer />
     </div>
   );

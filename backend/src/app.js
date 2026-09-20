@@ -101,7 +101,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api', routes);
 
 // Handle 404 Not Found
-app.use('*', (req, res) => {
+app.use((req, res) => {
   return errorResponse(res, 404, `Cannot ${req.method} ${req.originalUrl}`);
 });
 

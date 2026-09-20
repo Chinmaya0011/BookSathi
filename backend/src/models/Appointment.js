@@ -273,7 +273,7 @@ const appointmentSchema = new mongoose.Schema(
 );
 
 // Pre-validate hook to calculate integer minutes and UTC timestamps
-appointmentSchema.pre('validate', function (next) {
+appointmentSchema.pre('validate', function () {
   if (this.startTime && (this.startMinutes === undefined || this.startMinutes === null)) {
     this.startMinutes = timeToMinutes(this.startTime);
   }
@@ -296,7 +296,6 @@ appointmentSchema.pre('validate', function (next) {
   if ((this.status === 'HOLD' || this.status === 'HELD') && !this.holdExpiresAt) {
     this.holdExpiresAt = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes default TTL
   }
-  next();
 });
 
 // Indexes for high performance querying & overlap lookups
