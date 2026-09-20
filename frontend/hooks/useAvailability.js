@@ -4,8 +4,48 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { availabilityService } from '@/services/availability.service';
 
+export const DEFAULT_WEEKLY_SCHEDULE = [
+  { dayOfWeek: 1, enabled: true, timeRanges: [{ startTime: '09:00', endTime: '18:00' }] }, // Monday
+  { dayOfWeek: 2, enabled: true, timeRanges: [{ startTime: '09:00', endTime: '18:00' }] }, // Tuesday
+  { dayOfWeek: 3, enabled: true, timeRanges: [{ startTime: '09:00', endTime: '18:00' }] }, // Wednesday
+  { dayOfWeek: 4, enabled: true, timeRanges: [{ startTime: '09:00', endTime: '18:00' }] }, // Thursday
+  { dayOfWeek: 5, enabled: true, timeRanges: [{ startTime: '09:00', endTime: '18:00' }] }, // Friday
+  { dayOfWeek: 6, enabled: true, timeRanges: [{ startTime: '09:00', endTime: '14:00' }] }, // Saturday
+  { dayOfWeek: 0, enabled: false, timeRanges: [{ startTime: '09:00', endTime: '14:00' }] }, // Sunday
+];
+
+function normalizeSchedule(fetchedList) {
+  const map = new Map();
+  if (Array.isArray(fetchedList)) {
+    fetchedList.forEach((d) => {
+      if (typeof d?.dayOfWeek === 'number') {
+        map.set(d.dayOfWeek, d);
+      }
+    });
+  }
+
+  // Display Order: Monday through Saturday, then Sunday
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  return order.map((dow) => {
+    const existing = map.get(dow);
+    if (existing) {
+      return {
+        ...existing,
+        dayOfWeek: dow,
+        enabled: existing.enabled !== false,
+        timeRanges:
+          Array.isArray(existing.timeRanges) && existing.timeRanges.length > 0
+            ? existing.timeRanges
+            : [{ startTime: '09:00', endTime: dow === 6 || dow === 0 ? '14:00' : '18:00' }],
+      };
+    }
+    const def = DEFAULT_WEEKLY_SCHEDULE.find((d) => d.dayOfWeek === dow);
+    return JSON.parse(JSON.stringify(def));
+  });
+}
+
 export function useAvailability() {
-  const [availability, setAvailability] = useState([]);
+  const [availability, setAvailability] = useState(() => normalizeSchedule([]));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -14,11 +54,12 @@ export function useAvailability() {
     setLoading(true);
     try {
       const res = await availabilityService.getWeeklyAvailability();
-      if (res.data?.availability) {
-        setAvailability(res.data.availability);
-      }
+      const rawList = res?.data?.availability || res?.data || res || [];
+      const normalized = normalizeSchedule(Array.isArray(rawList) ? rawList : []);
+      setAvailability(normalized);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to load availability');
+      console.warn('Using default availability fallback:', err?.message);
+      setAvailability(normalizeSchedule([]));
     } finally {
       setLoading(false);
     }
@@ -36,9 +77,10 @@ export function useAvailability() {
           return {
             ...day,
             enabled: nextEnabled,
-            timeRanges: nextEnabled && (!day.timeRanges || day.timeRanges.length === 0)
-              ? [{ startTime: '09:00', endTime: '17:00' }]
-              : day.timeRanges,
+            timeRanges:
+              nextEnabled && (!day.timeRanges || day.timeRanges.length === 0)
+                ? [{ startTime: '09:00', endTime: dayOfWeek === 6 || dayOfWeek === 0 ? '14:00' : '18:00' }]
+                : day.timeRanges,
           };
         }
         return day;
@@ -52,7 +94,7 @@ export function useAvailability() {
       prev.map((day) => {
         if (day.dayOfWeek === dayOfWeek) {
           const lastRange = day.timeRanges?.[day.timeRanges.length - 1];
-          const newStart = lastRange ? lastRange.endTime : '09:00';
+          const newStart = lastRange ? lastRange.endTime : '14:00';
           return {
             ...day,
             timeRanges: [...(day.timeRanges || []), { startTime: newStart, endTime: '18:00' }],
@@ -115,7 +157,7 @@ export function useAvailability() {
       })
     );
     setHasChanges(true);
-    toast.success('Copied Monday schedule to Tuesday - Saturday');
+    toast.success('Copied Monday timings to Tuesday through Saturday!');
   };
 
   const saveAvailability = async () => {

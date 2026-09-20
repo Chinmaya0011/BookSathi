@@ -105,36 +105,39 @@ export default function MobileBottomNav({ onOpenManualModal }) {
         icon: Settings,
       },
     ];
-  } else {
-    // PROFESSIONAL role (Exact: Home, Queue, + Create, Schedule, More)
+    // PROFESSIONAL role (Today, Bookings, + Walk-in, Link & QR, Settings)
     navItems = [
       {
-        label: 'Home',
+        label: 'Today',
         href: '/dashboard',
         icon: LayoutDashboard,
         exact: true,
       },
       {
-        label: 'Queue',
-        href: '/dashboard/appointments?tab=queue',
-        icon: ListOrdered,
-      },
-      {
-        isFab: true,
-        label: 'Create',
-        action: () => setCreateSheetOpen(true),
-        icon: Plus,
-      },
-      {
-        label: 'Schedule',
+        label: 'Bookings',
         href: '/dashboard/appointments',
         icon: Calendar,
       },
       {
-        label: 'More',
-        isAction: true,
-        action: () => setMoreMenuOpen(true),
-        icon: Menu,
+        isFab: true,
+        label: 'Walk-in',
+        action: () => {
+          if (onOpenManualModal) onOpenManualModal();
+          else if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('open-manual-booking-modal'));
+          }
+        },
+        icon: Plus,
+      },
+      {
+        label: 'Link & QR',
+        href: '/dashboard/booking-link',
+        icon: QrCode,
+      },
+      {
+        label: 'Setup',
+        href: '/dashboard/setup',
+        icon: Settings,
       },
     ];
   }

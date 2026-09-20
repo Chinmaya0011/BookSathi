@@ -499,34 +499,15 @@ export function usePublicBooking(slug) {
     if (e) e.preventDefault();
 
     if (!patientName.trim()) {
-      toast.error('Please enter customer full name');
+      toast.error('Please enter your full name');
       return;
     }
     if (!patientPhone.trim() || patientPhone.replace(/\D/g, '').length < 10) {
-      toast.error('Please enter a valid 10-digit mobile number');
+      toast.error('Please enter a valid 10-digit WhatsApp mobile number');
       return;
     }
 
-    // If patient entered an email, send OTP verification code first
-    if (patientEmail && patientEmail.includes('@')) {
-      setSendingBookingOtp(true);
-      setOtpModalError(null);
-      try {
-        await publicService.sendEmailOtp(slug, {
-          email: patientEmail.trim(),
-          customerName: patientName.trim(),
-        });
-        setShowOtpModal(true);
-        toast.info(`Verification code sent to ${patientEmail}`);
-      } catch (err) {
-        toast.error(err.response?.data?.message || 'Could not send verification code');
-      } finally {
-        setSendingBookingOtp(false);
-      }
-      return;
-    }
-
-    // Direct booking if no email provided
+    // Fast, frictionless direct booking for Indian mobile users
     await executeBooking();
   };
 

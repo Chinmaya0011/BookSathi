@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import {
   Save,
   CheckCircle2,
   Globe,
   Sliders,
   Shield,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -118,6 +120,28 @@ export default function SettingsPage() {
             <span>Login Activity</span>
           </button>
         </div>
+      </div>
+
+      {/* Practice Setup Quick Link Banner */}
+      <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
+        <div className="flex items-center gap-2.5 text-indigo-950">
+          <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <strong className="font-bold block text-slate-900">Looking for Complete Practice Setup?</strong>
+            <span className="text-slate-600 text-[11px]">
+              Manage your profession, services & pricing, scheduled slot durations, buffer gaps, and counter QR standees in one place.
+            </span>
+          </div>
+        </div>
+        <Link
+          href="/dashboard/setup"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shrink-0 shadow-xs transition-colors"
+        >
+          <span>Open Practice Setup Hub</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
       </div>
 
       {activeTab === 'security' ? (

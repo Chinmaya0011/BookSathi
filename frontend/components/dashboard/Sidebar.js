@@ -27,6 +27,7 @@ import {
   MessageSquare,
   ListOrdered,
   ExternalLink,
+  QrCode,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useQrBannerStore } from '@/stores/useQrBannerStore';
@@ -123,33 +124,15 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
       },
     ];
   } else {
-    // PROFESSIONAL role (Simplified Task-First Architecture)
+    // PROFESSIONAL role (Clean 4-Tab Simplified Architecture)
     navGroups = [
       {
         title: 'Daily Practice',
         items: [
-          { label: 'Home', href: '/dashboard', icon: LayoutDashboard, exact: true },
-          { label: 'Bookings', href: '/dashboard/appointments', icon: Calendar },
-          { label: 'Clients', href: '/dashboard/clients', icon: Users },
-          { label: 'Setup', href: '/dashboard/setup', icon: Settings },
-        ],
-      },
-      {
-        title: 'Tools & Growth',
-        items: [
-          {
-            label: 'Share Booking',
-            href: '/dashboard/booking-link',
-            icon: Sparkles,
-            badge: profile?.plan === 'PRO' ? 'PRO' : undefined,
-          },
-          { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },
-        ],
-      },
-      {
-        title: 'Support',
-        items: [
-          { label: 'Help & Support', href: '/dashboard/grievance', icon: LifeBuoy },
+          { label: 'Today & Queue', href: '/dashboard', icon: LayoutDashboard, exact: true },
+          { label: 'Appointments', href: '/dashboard/appointments', icon: Calendar },
+          { label: 'My Link & QR', href: '/dashboard/booking-link', icon: QrCode },
+          { label: 'Practice Setup', href: '/dashboard/setup', icon: Settings },
         ],
       },
     ];
