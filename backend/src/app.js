@@ -28,6 +28,7 @@ const allowedOrigins = [
   'https://book-sathi-three.vercel.app',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
+  'https://www.headerguards.online'
 ].filter(Boolean);
 
 app.use(
