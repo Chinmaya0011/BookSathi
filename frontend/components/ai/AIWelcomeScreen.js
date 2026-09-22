@@ -147,7 +147,7 @@ export function AIWelcomeScreen({ role = 'GUEST', userName = '', onSelectPrompt 
 
       {/* Greeting & Headline */}
       <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-        {userName ? `Namaste, ${userName} 🙏` : 'BookSaathi AI Copilot'}
+        {userName ? `Namaste, ${userName}` : 'BookSaathi AI Copilot'}
       </h2>
       <p className="text-xs text-slate-600 max-w-[280px] sm:max-w-xs mt-1 leading-relaxed">
         How can I help you today? Ask about your appointments, practice queue, or doctor directory.

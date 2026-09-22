@@ -17,6 +17,8 @@ import {
   Printer,
   Copy,
   Check,
+  Lock,
+  Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -84,7 +86,7 @@ export default function BookingLinkPreview() {
               </div>
 
               <div className="px-4 py-1 rounded-xl bg-slate-900 border border-slate-700 text-xs font-mono text-slate-300 font-bold flex items-center gap-2 shadow-2xs">
-                <span className="text-emerald-400">🔒</span>
+                <Lock className="w-3.5 h-3.5 text-emerald-400" />
                 <span>https://booksaathi.in/book/dr-rajesh</span>
               </div>
 
@@ -218,7 +220,9 @@ export default function BookingLinkPreview() {
 
                 <div className="pt-1 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-500 font-mono">
                   <span>booksaathi.in/dr-rajesh</span>
-                  <span className="text-indigo-600 font-bold">⚡ Instant</span>
+                  <span className="text-indigo-600 font-bold inline-flex items-center gap-0.5">
+                    <Zap className="w-2.5 h-2.5" /> Instant
+                  </span>
                 </div>
               </div>
 

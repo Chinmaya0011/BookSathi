@@ -35,7 +35,7 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgradeSuccess }) {
         billingCycle,
       });
       await refreshProfile();
-      toast.success('🎉 Welcome to BookSaathi Pro! All premium practice limits have been unlocked.');
+      toast.success('Welcome to BookSaathi Pro! All premium practice limits have been unlocked.');
       if (onUpgradeSuccess) onUpgradeSuccess();
       onClose();
     } catch (err) {

@@ -19,6 +19,9 @@ import {
   User,
   IndianRupee,
   ChevronRight,
+  Zap,
+  MousePointer,
+  Stethoscope,
 } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 
@@ -100,9 +103,10 @@ export default function ProductVideoWalkthrough() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setPlaybackSpeed((s) => (s === 1 ? 0.5 : 1))}
-            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-indigo-300 border border-slate-700 transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-indigo-300 border border-slate-700 transition-colors"
           >
-            {playbackSpeed === 0.5 ? '🐌 0.5x Slow Motion' : '⚡ 1.0x Speed'}
+            <Zap className="w-3 h-3 text-indigo-400" />
+            <span>{playbackSpeed === 0.5 ? '0.5x Slow Motion' : '1.0x Normal Speed'}</span>
           </button>
           <button
             onClick={() => setIsPlaying(!isPlaying)}
@@ -144,7 +148,7 @@ export default function ProductVideoWalkthrough() {
               {/* WhatsApp Mockup Header */}
               <div className="flex items-center gap-3 pb-3 border-b border-slate-700/60">
                 <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold">
-                  👨‍⚕️
+                  <Stethoscope className="w-5 h-5" />
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-white">Dr. Rajesh Sharma (Clinic)</h4>
@@ -186,7 +190,7 @@ export default function ProductVideoWalkthrough() {
                 transition={{ delay: 2.2, duration: 0.4 }}
                 className="flex items-center justify-center gap-2 pt-2 text-xs text-indigo-300 font-semibold"
               >
-                <span className="animate-bounce">👆</span>
+                <MousePointer className="w-4 h-4 text-indigo-400 animate-bounce" />
                 <span>Patient taps link • Opens in 0.4s without app installation</span>
               </motion.div>
             </motion.div>

@@ -28,6 +28,7 @@ import {
   X,
   Palmtree,
   Ticket,
+  Zap,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { availabilityService } from '@/services/availability.service';
@@ -668,7 +669,7 @@ export default function AvailabilityPage() {
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2.5">
               <span className="w-7 h-7 rounded-xl bg-violet-600 text-white flex items-center justify-center text-xs font-black shadow-sm shadow-violet-600/30">
-                ⚡
+                <Zap className="w-4 h-4 text-white" />
               </span>
               <div>
                 <h3 className="text-sm sm:text-base font-bold text-slate-900">
@@ -875,23 +876,26 @@ export default function AvailabilityPage() {
             <button
               type="button"
               onClick={() => handleDaysPreset('WEEKDAYS')}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
             >
-              📅 Mon – Fri (Weekdays)
+              <Calendar className="w-3.5 h-3.5 text-slate-500" />
+              <span>Mon – Fri (Weekdays)</span>
             </button>
             <button
               type="button"
               onClick={() => handleDaysPreset('MON_SAT')}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
             >
-              📅 Mon – Sat (6 Days)
+              <Calendar className="w-3.5 h-3.5 text-slate-500" />
+              <span>Mon – Sat (6 Days)</span>
             </button>
             <button
               type="button"
               onClick={() => handleDaysPreset('ALL')}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
             >
-              📅 All 7 Days
+              <Calendar className="w-3.5 h-3.5 text-slate-500" />
+              <span>All 7 Days</span>
             </button>
           </div>
         </div>
@@ -950,7 +954,7 @@ export default function AvailabilityPage() {
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 transition-all cursor-pointer"
           >
             <Sliders className="w-3.5 h-3.5 text-indigo-600" />
-            <span>⚙️ Custom Time Popup...</span>
+            <span>Custom Time Popup...</span>
           </button>
         </div>
 
@@ -1000,7 +1004,7 @@ export default function AvailabilityPage() {
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
                 <Sliders className="w-4 h-4 text-indigo-600" />
-                <span className="text-xs font-black text-indigo-950">⚙️ Custom Shift Times...</span>
+                <span className="text-xs font-black text-indigo-950">Custom Shift Times...</span>
               </div>
               <span className="text-[11px] text-indigo-700/80 block font-medium">
                 Add custom start/end times & lunch breaks in popup

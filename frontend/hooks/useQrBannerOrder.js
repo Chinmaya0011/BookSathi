@@ -135,7 +135,7 @@ export function useQrBannerOrder() {
         setOrderOptimistic(confirmedOrder);
         setCheckoutModalOpen(false);
         setPendingCreatedOrder(null);
-        toast.success('🎉 QR & Banner Order Confirmed! Printing queue started.');
+        toast.success('QR & Banner Order Confirmed! Printing queue started.');
         try {
           confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
         } catch {}

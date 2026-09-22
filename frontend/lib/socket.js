@@ -35,7 +35,7 @@ export const getSocket = () => {
     });
 
     socket.on('appointment:confirmed', (data) => {
-      toast.success('Appointment Confirmed! 🎉', {
+      toast.success('Appointment Confirmed!', {
         description: `Your appointment with ${data.professional?.name || 'the professional'} is confirmed.`,
         duration: 5000,
       });
@@ -56,14 +56,14 @@ export const getSocket = () => {
     });
 
     socket.on('appointment:rescheduled', (data) => {
-      toast.info('Appointment Rescheduled 📅', {
+      toast.info('Appointment Rescheduled', {
         description: `New time: ${data.appointment?.dateString} at ${data.appointment?.startTime}`,
         duration: 5000,
       });
     });
 
     socket.on('appointment:completed', (data) => {
-      toast.success('Consultation Completed ✨', {
+      toast.success('Consultation Completed', {
         description: 'Thank you for using BookSaathi!',
         duration: 5000,
       });

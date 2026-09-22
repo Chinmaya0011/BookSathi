@@ -8,7 +8,22 @@ const DEFAULT_TITLE = 'BookSaathi — Simple Booking Platform for Indian Profess
 const DEFAULT_DESCRIPTION =
   'India’s most streamlined appointment booking and live queue management system for Doctors, CAs, Lawyers, and Consultants. Share custom booking links on WhatsApp with automated UPI payments and QR standees.';
 
-const APP_URL = process.env.APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+function getValidBaseUrl(raw) {
+  let urlStr = (raw || process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://www.headerguards.online').trim();
+  if (!/^https?:\/\//i.test(urlStr)) {
+    urlStr = `https://${urlStr}`;
+  }
+  // Strip trailing slashes
+  urlStr = urlStr.replace(/\/+$/, '');
+  try {
+    return new URL(urlStr);
+  } catch {
+    return new URL('https://www.headerguards.online');
+  }
+}
+
+const DEFAULT_BASE_URL = getValidBaseUrl(process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://www.headerguards.online');
+const APP_URL = DEFAULT_BASE_URL.origin;
 
 export function constructMetadata({
   title = DEFAULT_TITLE,
@@ -41,7 +56,7 @@ export function constructMetadata({
     authors: [{ name: SITE_NAME, url: APP_URL }],
     creator: SITE_NAME,
     publisher: SITE_NAME,
-    metadataBase: new URL(APP_URL),
+    metadataBase: DEFAULT_BASE_URL,
     alternates: {
       canonical: url,
     },

@@ -679,7 +679,10 @@ export default function ProductSuiteShowcase() {
                   </div>
 
                   <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-center gap-2">
-                    <span>⚡ Instant Digital Token</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Zap className="w-3 h-3 text-indigo-500" />
+                      Instant Digital Token
+                    </span>
                     <span>•</span>
                     <span>Direct UPI Payment</span>
                   </div>
