@@ -200,15 +200,10 @@ export default function FloatingChatWidget() {
     toast.info('Conversation history cleared');
   };
 
-  // Only render on dashboard/admin routes or main application pages
-  const isDashboardPage =
-    pathname === '/dashboard' ||
-    pathname?.startsWith('/dashboard') ||
-    pathname === '/admin' ||
-    pathname?.startsWith('/admin') ||
-    pathname === '/lookup';
+  // Allow AI assistant widget site-wide across all pages
+  const isExcludedPage = pathname?.startsWith('/(auth)') && (pathname === '/login' || pathname === '/register');
 
-  if (!mounted || !isDashboardPage) {
+  if (!mounted || isExcludedPage) {
     return null;
   }
 

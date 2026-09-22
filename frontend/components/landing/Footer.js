@@ -22,7 +22,7 @@ export default function Footer() {
                   Book<span className="text-indigo-400">Saathi</span>
                 </span>
                 <span className="px-2 py-0.5 text-[10px] font-bold bg-indigo-950 text-indigo-300 rounded-full border border-indigo-800/80">
-                  🇮🇳 India
+                  India
                 </span>
               </div>
             </Link>
@@ -68,6 +68,11 @@ export default function Footer() {
                 <a href="#features" className="hover:text-white transition-colors">
                   Concurrency & Buffer Engine
                 </a>
+              </li>
+              <li>
+                <Link href="/blog" className="hover:text-white transition-colors text-indigo-400 font-semibold">
+                  Blog & Practice Guides
+                </Link>
               </li>
               <li>
                 <a href="#pricing" className="hover:text-white transition-colors">

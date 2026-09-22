@@ -399,7 +399,10 @@ export default function HeroSection() {
                     </div>
 
                     <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/70 text-[11px] text-slate-600 flex items-center justify-between">
-                      <span className="truncate">📲 WhatsApp Pass sent to +91 {clientPhone}</span>
+                      <span className="truncate flex items-center gap-1.5">
+                        <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>WhatsApp Pass sent to +91 {clientPhone}</span>
+                      </span>
                       <span className="text-[10px] font-bold text-indigo-600 shrink-0">Delivered</span>
                     </div>
                   </div>

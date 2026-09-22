@@ -29,7 +29,7 @@ export default function HowItWorks() {
             </span>
           </div>
           <div className="bg-white p-2 rounded-lg border border-slate-200 text-[11px] font-mono text-indigo-600 font-bold truncate flex items-center gap-1.5">
-            <span>🔗</span>
+            <LinkIcon className="w-3.5 h-3.5 text-indigo-500" />
             <span>booksaathi.in/book/dr-rajesh</span>
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
@@ -55,8 +55,9 @@ export default function HowItWorks() {
             <span className="font-semibold">Rahul Varma</span>
             <span className="text-emerald-600 font-bold text-[11px]">✓ ₹500 UPI Paid</span>
           </div>
-          <div className="text-[10px] text-slate-400">
-            📲 WhatsApp Pass generated with Google Maps pin
+          <div className="text-[10px] text-slate-500 flex items-center gap-1">
+            <Smartphone className="w-3 h-3 text-emerald-600" />
+            <span>WhatsApp Pass generated with Google Maps pin</span>
           </div>
         </div>
       ),

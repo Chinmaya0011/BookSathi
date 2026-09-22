@@ -404,7 +404,10 @@ export default function ProductSuiteShowcase() {
                             </span>
                           </div>
                           <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
-                            <span>🕒 {item.time}</span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-slate-400" />
+                              <span>{item.time}</span>
+                            </span>
                             <span>•</span>
                             <span>{item.phone}</span>
                           </div>
@@ -758,31 +761,46 @@ export default function ProductSuiteShowcase() {
                   </div>
 
                   {/* Message Bubble */}
-                  <div className="p-3.5 rounded-2xl bg-[#202c33] text-xs text-slate-200 space-y-2 shadow-xs">
-                    <p className="font-bold text-white">
-                      ✅ Appointment Confirmed with Dr. Rajesh Sharma!
+                  <div className="p-3.5 rounded-2xl bg-[#202c33] text-xs text-slate-200 space-y-2.5 shadow-xs">
+                    <p className="font-bold text-white flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Appointment Confirmed with Dr. Rajesh Sharma</span>
                     </p>
                     <p className="text-[11px] text-slate-300">
                       Hi Rahul, your consultation is confirmed for today.
                     </p>
 
-                    <div className="p-2.5 rounded-xl bg-[#111b21] border border-slate-700/60 text-[11px] space-y-1">
-                      <div>🎟️ <strong>Token Number:</strong> #08</div>
-                      <div>🕒 <strong>Time Slot:</strong> 11:00 AM (Today)</div>
-                      <div>📍 <strong>Location:</strong> Apollo Clinic, Bhubaneswar</div>
-                      <div>💳 <strong>Payment:</strong> ₹500 (Paid via UPI)</div>
+                    <div className="p-2.5 rounded-xl bg-[#111b21] border border-slate-700/60 text-[11px] space-y-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-indigo-400 font-bold">Token Number:</span>
+                        <span className="font-mono font-bold text-white">#08</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        <span><strong>Time Slot:</strong> 11:00 AM (Today)</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="w-3 h-3 text-slate-400" />
+                        <span><strong>Location:</strong> Apollo Clinic, Bhubaneswar</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <CreditCard className="w-3 h-3 text-emerald-400" />
+                        <span><strong>Payment:</strong> ₹500 (Paid via UPI)</span>
+                      </div>
                     </div>
 
                     <div className="pt-1 flex flex-col gap-1.5">
-                      <div className="py-1.5 px-3 rounded-lg bg-[#00a884] text-slate-950 font-bold text-[11px] text-center">
-                        📍 Open Clinic in Google Maps
+                      <div className="py-2 px-3 rounded-lg bg-[#00a884] text-slate-950 font-bold text-[11px] text-center flex items-center justify-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>Open Clinic in Google Maps</span>
                       </div>
-                      <div className="py-1.5 px-3 rounded-lg bg-slate-700/60 text-white font-medium text-[11px] text-center">
-                        🗓️ Add to Google / Apple Calendar (.ics)
+                      <div className="py-2 px-3 rounded-lg bg-slate-700/60 text-white font-medium text-[11px] text-center flex items-center justify-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-indigo-300" />
+                        <span>Add to Google / Apple Calendar (.ics)</span>
                       </div>
                     </div>
 
-                    <div className="text-[9px] text-right text-slate-400">
+                    <div className="text-[9px] text-right text-slate-400 pt-1">
                       9:42 AM • Delivered
                     </div>
                   </div>

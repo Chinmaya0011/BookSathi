@@ -53,18 +53,21 @@ export const generateAiResponse = async ({
 }) => {
   const apiKey = process.env.GEMINI_API_KEY;
 
-  if (!apiKey || apiKey === 'your_gemini_api_key_here' || apiKey.startsWith('AQ.')) {
+  if (!apiKey || apiKey === 'your_gemini_api_key_here') {
     return generateLocalFallbackResponse({ userMessage, databaseContext, userRole, structuredData });
   }
 
-  // Model hierarchy for fallback resilience (Google Gemini API models)
+  // Model hierarchy prioritizing reliable Google Gemini 3.x and 2.5 models
   const candidateModels = [
-    process.env.GEMINI_MODEL || 'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
-    'gemini-2.0-flash-lite',
+    process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+    'gemini-3.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-3.7-flash',
+    'gemini-3.6-flash',
+    'gemini-flash-latest',
   ];
 
+  const uniqueModels = [...new Set(candidateModels)];
   const nowIST = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' });
 
   // Construct prompt text
@@ -107,7 +110,7 @@ Please process this request strictly following the BookSaathi JSON schema and ru
 
   let lastError = null;
 
-  for (const model of candidateModels) {
+  for (const model of uniqueModels) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
@@ -123,8 +126,8 @@ Please process this request strictly following the BookSaathi JSON schema and ru
           },
           contents,
           generationConfig: {
-            temperature: 0.15,
-            topP: 0.8,
+            temperature: 0.2,
+            topP: 0.85,
             maxOutputTokens: 2048,
             responseMimeType: 'application/json',
           },
@@ -135,14 +138,24 @@ Please process this request strictly following the BookSaathi JSON schema and ru
         const errBody = await response.text();
         console.warn(`Gemini model ${model} returned ${response.status}: ${errBody}`);
         lastError = new Error(`Gemini API error (${response.status})`);
-        continue; // Try next model
+        continue; // Try next fallback model
       }
 
       const data = await response.json();
       const candidate = data.candidates?.[0];
-      const text = candidate?.content?.parts?.[0]?.text;
+      
+      // Extract all text parts safely (handling thinking tokens/multi-part outputs)
+      const parts = candidate?.content?.parts;
+      let text = '';
+      if (Array.isArray(parts)) {
+        text = parts
+          .map((p) => (typeof p === 'string' ? p : p.text || ''))
+          .filter(Boolean)
+          .join('\n')
+          .trim();
+      }
 
-      if (text && typeof text === 'string') {
+      if (text) {
         const parsed = parseStructuredJsonResponse(text);
         if (parsed) {
           return parsed;
@@ -154,7 +167,7 @@ Please process this request strictly following the BookSaathi JSON schema and ru
     }
   }
 
-  // Fallback to local rule-based structured synthesizer if Gemini API is unreachable
+  // Fallback to local rule-based structured synthesizer if all Gemini API models are unreachable
   return generateLocalFallbackResponse({ userMessage, databaseContext, userRole, structuredData });
 };
 
@@ -385,4 +398,3 @@ function isGreetingMessage(text) {
   const trimmed = (text || '').trim().replace(/[?!.,]/g, '');
   return greetings.includes(trimmed);
 }
-
