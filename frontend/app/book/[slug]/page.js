@@ -13,7 +13,19 @@ import BookingCheckoutModal from '@/components/booking/BookingCheckoutModal';
 import BookingOtpModal from '@/components/booking/BookingOtpModal';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
-import { AlertCircle, ShieldCheck, Lock, Sparkles, CheckCircle2, CalendarX2, Settings, Search, ArrowLeft } from 'lucide-react';
+import {
+  AlertCircle,
+  ShieldCheck,
+  Lock,
+  Sparkles,
+  CheckCircle2,
+  CalendarX2,
+  Settings,
+  Search,
+  ArrowLeft,
+  CalendarCheck,
+  CheckCheck,
+} from 'lucide-react';
 import { getProfessionalPublicUrl } from '@/lib/urlHelpers';
 import { useAuthStore } from '@/stores/useAuthStore';
 import Link from 'next/link';
@@ -86,26 +98,45 @@ export default function PublicBookingPage() {
 
   if (loadingProfile) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="w-14 h-14 rounded-2xl bg-indigo-600/10 border border-indigo-200 flex items-center justify-center mb-4 text-indigo-600 shadow-lg shadow-indigo-500/10 relative z-10">
-          <Sparkles className="w-7 h-7 animate-pulse text-indigo-600" />
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-900/30 via-slate-950 to-slate-950" />
+        <div className="flex flex-col items-center gap-4 text-center relative z-10">
+          <div className="w-16 h-16 rounded-3xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shadow-2xl shadow-indigo-600/20">
+            <Sparkles className="w-8 h-8 animate-pulse text-indigo-400" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-white">Loading Consultation Calendar</h3>
+            <p className="text-xs text-slate-400">Verifying live slots and practitioner availability...</p>
+          </div>
         </div>
-        <Spinner size="lg" label="Loading practitioner booking calendar..." className="text-slate-800 relative z-10" />
       </div>
     );
   }
 
   if (error || !profile) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
-        <EmptyState
-          icon={AlertCircle}
-          title="Practitioner Not Found"
-          description={error || 'The requested practitioner profile or booking link is inactive or does not exist.'}
-          className="max-w-md w-full bg-white border-slate-200/90 text-slate-900 shadow-xl rounded-3xl relative z-10"
-        />
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 relative overflow-hidden font-sans">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-rose-900/20 via-slate-950 to-slate-950" />
+        <div className="max-w-md w-full bg-slate-900/90 border border-slate-800 rounded-3xl p-8 sm:p-10 text-center space-y-6 shadow-2xl backdrop-blur-xl relative z-10">
+          <div className="w-16 h-16 rounded-3xl bg-rose-500/10 text-rose-400 flex items-center justify-center mx-auto text-2xl font-bold border border-rose-500/20">
+            !
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-black text-white tracking-tight">Practitioner Not Found</h2>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              {error || 'The requested practitioner profile or booking link is inactive or does not exist.'}
+            </p>
+          </div>
+          <div className="pt-2">
+            <Link
+              href="/"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md active:scale-95"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Home</span>
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -116,9 +147,10 @@ export default function PublicBookingPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-indigo-50/20 to-slate-100/80 text-slate-900 flex flex-col justify-between py-4 sm:py-8 px-3.5 sm:px-6 selection:bg-indigo-600 selection:text-white relative overflow-hidden">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col justify-between py-4 sm:py-8 px-3.5 sm:px-6 selection:bg-indigo-600 selection:text-white relative overflow-hidden font-sans">
+      
       {/* Dynamic ambient backdrop decoration */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-96 bg-gradient-to-b from-indigo-100/50 via-violet-50/40 to-transparent blur-3xl pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-96 bg-gradient-to-b from-indigo-100/60 via-violet-50/40 to-transparent blur-3xl pointer-events-none" />
       <div className="absolute -top-24 -right-24 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -133,15 +165,15 @@ export default function PublicBookingPage() {
       {/* Top Navigation Header */}
       <header className="max-w-2xl w-full mx-auto mb-4 flex items-center justify-between text-xs px-2 relative z-10">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center font-black text-sm shadow-md shadow-indigo-600/25 group-hover:scale-105 transition-transform">
-            B
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center font-black text-sm shadow-md shadow-indigo-600/25 group-hover:scale-105 transition-transform">
+            <CalendarCheck className="w-4.5 h-4.5" />
           </div>
-          <span className="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight">
+          <span className="font-black text-slate-900 text-sm sm:text-base tracking-tight">
             Book<span className="text-indigo-600">Saathi</span>
           </span>
         </Link>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200/80 text-slate-700 text-[11px] font-semibold shadow-xs backdrop-blur-md">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 border border-slate-200/90 text-slate-700 text-[11px] font-bold shadow-xs backdrop-blur-md">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <Lock className="w-3 h-3 text-emerald-600" />
           <span>256-Bit SSL Secured</span>
@@ -149,12 +181,13 @@ export default function PublicBookingPage() {
       </header>
 
       {/* Main Booking Card Container */}
-      <main className="max-w-2xl w-full mx-auto bg-white rounded-3xl sm:rounded-[32px] shadow-xl shadow-slate-200/60 border border-slate-200/90 overflow-hidden text-slate-900 relative z-10 transition-all duration-300">
+      <main className="max-w-2xl w-full mx-auto bg-white rounded-3xl sm:rounded-[32px] shadow-xl shadow-slate-900/5 border border-slate-200/90 overflow-hidden text-slate-900 relative z-10 transition-all duration-300">
+        
         {/* Doctor Hero Card with Step Indicator */}
         <div className="border-b border-slate-100 bg-white">
           <BookingDoctorHero profile={profile} />
           {hasServices && !isQueueMode && (
-            <div className="px-5 sm:px-7 pb-4 bg-slate-50/60 border-t border-slate-100">
+            <div className="px-5 sm:px-7 pb-4 bg-slate-50/70 border-t border-slate-100">
               <BookingStepIndicator currentStep={currentStep} />
             </div>
           )}
@@ -162,15 +195,15 @@ export default function PublicBookingPage() {
 
         {!hasServices ? (
           <div className="p-8 sm:p-12 text-center flex flex-col items-center justify-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center">
               <CalendarX2 className="w-8 h-8 stroke-[1.5]" />
             </div>
             <div className="space-y-1.5 max-w-md">
-              <h2 className="text-lg sm:text-xl font-black text-slate-900">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
                 No Consultation Services Configured Yet
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                {profile.name} has not published any consultation services or active booking slots yet. Please check back soon or explore other verified professionals.
+                {profile.name} has not published any active consultation services or booking hours yet. Please check back soon.
               </p>
             </div>
 
@@ -342,11 +375,11 @@ export default function PublicBookingPage() {
           </span>
           <span className="flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Zero Convenience Fees</span>
+            <span>0% Extra Commission</span>
           </span>
           <span className="flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Instant WhatsApp & Calendar Sync</span>
+            <span>Instant WhatsApp & Pass Sync</span>
           </span>
         </div>
 
@@ -356,13 +389,13 @@ export default function PublicBookingPage() {
             className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
           >
             <Search className="w-3.5 h-3.5" />
-            <span>Already booked? Find your appointment with your phone number</span>
+            <span>Already booked? Find your appointment pass with your phone number</span>
           </Link>
         </div>
 
         <p className="text-xs text-slate-400">
           Powered by{' '}
-          <span className="font-bold text-slate-700">BookSaathi</span> Scheduling Network (India)
+          <span className="font-bold text-slate-700">BookSaathi</span> Scheduling Network
         </p>
       </footer>
     </div>

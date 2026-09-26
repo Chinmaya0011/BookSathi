@@ -13,19 +13,16 @@ export function getProfessionalPublicUrl(slugOrProfile) {
 
   const cleanSlug = slug.toLowerCase().trim();
   const envDomain = (process.env.APP_DOMAIN || '').replace(/^https?:\/\//, '').trim();
+  const allowWildcards = process.env.ENABLE_WILDCARD_SUBDOMAINS === 'true';
 
   // In browser environment
   if (typeof window !== 'undefined') {
-    const currentHost = window.location.host; // e.g. "book-sathi-three.vercel.app", "localhost:3000", or "booksaathi.in"
+    const currentHost = window.location.host; // e.g. "headerguards.online", "localhost:3000"
     const currentProtocol = window.location.protocol; // "http:" or "https:"
 
-    // 1. Vercel deployment (*.vercel.app) -> Vercel does NOT support wildcard subdomains on .vercel.app
-    if (currentHost.includes('vercel.app')) {
-      return `${currentProtocol}//${currentHost}/book/${cleanSlug}`;
-    }
-
-    // 2. Custom Domain configured (e.g. booksaathi.in) with wildcard DNS
+    // 1. Explicitly enabled Wildcard Subdomains on custom domain (e.g. *.headerguards.online)
     if (
+      allowWildcards &&
       envDomain &&
       !envDomain.includes('localhost') &&
       !envDomain.includes('127.0.0.1') &&
@@ -34,23 +31,18 @@ export function getProfessionalPublicUrl(slugOrProfile) {
       return `https://${cleanSlug}.${envDomain}`;
     }
 
-    // 3. Localhost or loopback
-    if (currentHost.includes('localhost') || currentHost.includes('127.0.0.1')) {
-      const port = currentHost.includes(':') ? `:${currentHost.split(':')[1]}` : ':3000';
-      return `${currentProtocol}//${cleanSlug}.localhost${port}`;
-    }
-
-    // 4. Fallback path-based routing
+    // 2. Standard direct path-based routing (Works 100% reliably on all hosts, domains & SSL)
     return `${currentProtocol}//${currentHost}/book/${cleanSlug}`;
   }
 
   // Server-side execution
   const appUrl = (process.env.APP_URL || '').replace(/\/+$/, '');
-  if (appUrl && appUrl.includes('vercel.app')) {
+  if (appUrl) {
     return `${appUrl}/book/${cleanSlug}`;
   }
 
   if (
+    allowWildcards &&
     envDomain &&
     !envDomain.includes('localhost') &&
     !envDomain.includes('127.0.0.1') &&
@@ -59,7 +51,7 @@ export function getProfessionalPublicUrl(slugOrProfile) {
     return `https://${cleanSlug}.${envDomain}`;
   }
 
-  return `http://${cleanSlug}.localhost:3000`;
+  return `/book/${cleanSlug}`;
 }
 
 /**

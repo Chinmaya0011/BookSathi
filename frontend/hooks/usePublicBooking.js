@@ -135,10 +135,21 @@ export function usePublicBooking(slug) {
     const now = new Date();
     const weeklyAvailability = profile?.weeklyAvailability || [];
     const hasWeeklyConfig = weeklyAvailability.length > 0;
-    const weeklyMap = new Map(weeklyAvailability.map((w) => [w.dayOfWeek, w]));
+    
+    // Support both numeric dayOfWeek (0-6) and string dayOfWeek ("Monday", etc.)
+    const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const weeklyMap = new Map();
+    weeklyAvailability.forEach((w) => {
+      if (typeof w?.dayOfWeek === 'number') {
+        weeklyMap.set(w.dayOfWeek, w);
+      } else if (typeof w?.dayOfWeek === 'string') {
+        const idx = DAY_NAMES.indexOf(w.dayOfWeek);
+        if (idx !== -1) weeklyMap.set(idx, w);
+      }
+    });
 
     for (let i = 0; i < 14; i++) {
-      const d = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
       const dateStr = formatDateYYYYMMDD(d, timezone);
       const dayName = d.toLocaleDateString('en-IN', { weekday: 'short', timeZone: timezone });
       const dayNum = d.toLocaleDateString('en-IN', { day: 'numeric', timeZone: timezone });
@@ -151,7 +162,7 @@ export function usePublicBooking(slug) {
       let isClosed = false;
       if (hasWeeklyConfig) {
         const config = weeklyMap.get(dayOfWeek);
-        isClosed = !config || !config.enabled || !config.timeRanges?.length;
+        isClosed = !config || config.enabled === false;
       } else {
         // Default: Sunday is closed
         isClosed = dayOfWeek === 0;
@@ -166,17 +177,17 @@ export function usePublicBooking(slug) {
         isClosed,
         isToday: i === 0,
         isTomorrow: i === 1,
+        label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : dayName,
       });
     }
     return days;
   }, [timezone, profile?.weeklyAvailability]);
 
-  // Set default selected date to first open working day once days are computed
+  // Set default selected date ONLY on initial load when selectedDate is empty
   useEffect(() => {
-    if (availableDays.length > 0) {
-      const currentSelectedObj = availableDays.find((d) => d.dateStr === selectedDate);
-      if (!currentSelectedObj || (currentSelectedObj.isClosed && availableDays.some((d) => !d.isClosed))) {
-        const firstOpenDay = availableDays.find((d) => !d.isClosed) || availableDays[0];
+    if (availableDays.length > 0 && !selectedDate) {
+      const firstOpenDay = availableDays.find((d) => !d.isClosed) || availableDays[0];
+      if (firstOpenDay) {
         setSelectedDate(firstOpenDay.dateStr);
       }
     }

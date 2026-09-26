@@ -105,6 +105,7 @@ export default function MobileBottomNav({ onOpenManualModal }) {
         icon: Settings,
       },
     ];
+  } else {
     // PROFESSIONAL role (Today, Bookings, + Walk-in, Link & QR, Settings)
     navItems = [
       {

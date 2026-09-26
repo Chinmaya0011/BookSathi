@@ -83,25 +83,28 @@ export function proxy(req) {
     if (url.pathname === `/book/${subdomain}` || url.pathname === `/book/${subdomain}/`) {
       return NextResponse.redirect(new URL('/', req.url));
     }
+
+    // If client visits /profile/:subdomain on their subdomain, redirect cleanly to /profile
+    if (url.pathname === `/profile/${subdomain}` || url.pathname === `/profile/${subdomain}/`) {
+      return NextResponse.redirect(new URL('/profile', req.url));
+    }
   }
 
   // 3. For apex domain /book/:slug
-  // On localhost or Vercel deployments (*.vercel.app), serve /book/:slug directly!
-  // ONLY redirect to subdomain if running on a custom domain with wildcard DNS (e.g., booksaathi.in).
+  // Serve /book/:slug directly!
+  // ONLY redirect to subdomain if wildcard subdomains are explicitly enabled in environment.
   if (!subdomain && url.pathname.startsWith('/book/')) {
     const pathSlug = url.pathname.replace(/^\/book\//, '').split('/')[0]?.trim().toLowerCase();
+    const allowWildcards = process.env.ENABLE_WILDCARD_SUBDOMAINS === 'true';
     
     if (pathSlug && !isReservedSlug(pathSlug)) {
-      const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
-      const isVercel = hostname.includes('.vercel.app') || configuredAppDomain.includes('vercel.app');
-
-      // Always allow path-based booking on localhost and Vercel
-      if (isLocal || isVercel) {
-        return NextResponse.next();
-      }
-
-      // Only redirect on custom domain that is NOT vercel and NOT localhost
-      if (configuredAppDomain && !configuredAppDomain.includes('localhost') && !configuredAppDomain.includes('vercel.app')) {
+      // Only redirect if explicitly configured for wildcard subdomains
+      if (
+        allowWildcards &&
+        configuredAppDomain &&
+        !configuredAppDomain.includes('localhost') &&
+        !configuredAppDomain.includes('vercel.app')
+      ) {
         const protocol = req.headers.get('x-forwarded-proto') || 'https';
         const targetHost = `${pathSlug}.${configuredAppDomain}${port}`;
         return NextResponse.redirect(`${protocol}://${targetHost}/`, 308);
