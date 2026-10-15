@@ -309,6 +309,10 @@ async function runAuthHardeningTests() {
     await authenticate(reqNext, resSuspendedMock, () => {});
     assert(suspendedRejected, 'Suspended professional JWT immediately rejected on next request with 403 (Active/Status Verified)');
 
+    // Restore professional status back to ACTIVE to preserve development environment
+    doctorProfile.status = 'ACTIVE';
+    await doctorProfile.save();
+
     // --- TEST 7: Rate Limits Preservation ---
     console.log('\n--- TEST 7: Rate Limits (Auth 20/15min, Booking 15/15min) ---');
     assert(authLimiter !== undefined, 'authLimiter is configured');

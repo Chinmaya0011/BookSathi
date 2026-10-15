@@ -67,9 +67,13 @@ const qrBannerOrderSchema = new mongoose.Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ['PENDING', 'PAID', 'FAILED', 'REFUNDED'],
+      enum: ['PENDING', 'PAID', 'FAILED', 'REFUNDED', 'DEMO_PAID'],
       default: 'PENDING',
       index: true,
+    },
+    isDemo: {
+      type: Boolean,
+      default: false,
     },
     orderStatus: {
       type: String,
@@ -85,6 +89,15 @@ const qrBannerOrderSchema = new mongoose.Schema(
       index: true,
     },
     paymentId: {
+      type: String,
+      default: '',
+    },
+    cashfreeOrderId: {
+      type: String,
+      default: '',
+      index: true,
+    },
+    paymentSessionId: {
       type: String,
       default: '',
     },

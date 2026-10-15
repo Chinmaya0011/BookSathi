@@ -1,6 +1,8 @@
 import {
   createPaymentOrder,
   verifyAndConfirmPayment,
+  getPaymentStatusByOrderId,
+  handleCashfreeWebhook,
   recordManualPayment,
   processPaymentRefund,
   getProfessionalPayments,
@@ -11,6 +13,7 @@ import { successResponse, errorResponse } from '../utils/response.js';
 
 /**
  * Create Payment Order (Public or Authenticated)
+ * Returns non-sensitive checkout information (paymentSessionId, orderId, amount, currency)
  */
 export const createOrder = async (req, res, next) => {
   try {
@@ -23,13 +26,28 @@ export const createOrder = async (req, res, next) => {
 };
 
 /**
- * Verify & Confirm Payment (Public checkout callback / webhook simulation)
+ * Get Payment / Order Status by Order ID or Payment ID
+ */
+export const getOrderStatus = async (req, res, next) => {
+  try {
+    const orderId = req.params.orderId || req.params.id;
+    const result = await getPaymentStatusByOrderId(orderId);
+    return successResponse(res, 200, 'Payment status retrieved successfully', result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Verify & Confirm Payment (Public checkout callback / modal completion)
  */
 export const verifyPayment = async (req, res, next) => {
   try {
     const {
       paymentId,
+      orderId,
       gatewayOrderId,
+      cashfreeOrderId,
       gatewayPaymentId,
       gatewaySignature,
       paymentMethod,
@@ -39,7 +57,8 @@ export const verifyPayment = async (req, res, next) => {
 
     const result = await verifyAndConfirmPayment({
       paymentId,
-      gatewayOrderId,
+      gatewayOrderId: gatewayOrderId || orderId,
+      cashfreeOrderId: cashfreeOrderId || orderId,
       gatewayPaymentId,
       gatewaySignature,
       paymentMethod,
@@ -54,12 +73,32 @@ export const verifyPayment = async (req, res, next) => {
 };
 
 /**
+ * Official Cashfree Webhook Handler (HMAC-SHA256 signature verified)
+ */
+export const handleWebhook = async (req, res, next) => {
+  try {
+    const result = await handleCashfreeWebhook({
+      rawBody: req.rawBody,
+      headers: req.headers,
+      body: req.body,
+    });
+    return successResponse(res, 200, 'Cashfree webhook processed successfully', result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Record Manual Offline / Cash Payment (Doctor Dashboard)
  */
 export const recordManual = async (req, res, next) => {
   try {
     const { appointmentId, amount, paymentMethod, notes } = req.body;
-    const result = await recordManualPayment(req.profile._id, {
+    const proId = req.profile?._id || req.user?._id;
+    if (!proId) {
+      return errorResponse(res, 403, 'Professional profile required to record manual payment');
+    }
+    const result = await recordManualPayment(proId, {
       appointmentId,
       amount,
       paymentMethod,
@@ -72,14 +111,15 @@ export const recordManual = async (req, res, next) => {
 };
 
 /**
- * Process Refund (Doctor Dashboard)
+ * Process Refund (Doctor Dashboard or Authorized Admin)
  */
 export const processRefund = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const id = req.params.orderId || req.params.id;
     const { amount, reason } = req.body;
-    const result = await processPaymentRefund(req.profile._id, {
+    const result = await processPaymentRefund(req.profile?._id, {
       paymentId: id,
+      orderId: id,
       amount,
       reason,
     });
@@ -150,12 +190,11 @@ export const getInvoice = async (req, res, next) => {
 };
 
 /**
- * Webhook Simulation for testing external async webhooks
+ * Webhook Simulation for testing external async webhooks in Sandbox
  */
 export const simulateWebhook = async (req, res, next) => {
   try {
     const { event, payload } = req.body;
-    // In production, signature validation happens here based on provider
     if (event === 'payment.captured' && payload?.paymentId) {
       const result = await verifyAndConfirmPayment({
         paymentId: payload.paymentId,

@@ -80,12 +80,12 @@ async function runPaymentTests() {
 
   console.log(' Test profile & appointments created successfully');
 
-  // TEST 1: Create Online Payment Order (Adapter Gateway)
-  console.log('\n--- Test 1: createPaymentOrder (Online Simulation) ---');
+  // TEST 1: Create Online Payment Order (Cashfree PG)
+  console.log('\n--- Test 1: createPaymentOrder (Cashfree Demo Mode) ---');
   const orderResult = await createPaymentOrder({
     appointmentId: appt1._id,
     paymentMode: 'ONLINE',
-    gatewayProvider: 'SIMULATED',
+    gatewayProvider: 'CASHFREE',
   });
 
   if (!orderResult.payment || !orderResult.gatewayOrder?.orderId) {
@@ -93,23 +93,23 @@ async function runPaymentTests() {
   }
   console.log(` Order Created: ${orderResult.gatewayOrder.orderId} for Payment: ${orderResult.payment.paymentCode}`);
 
-  // TEST 2: Verify and Confirm Payment
-  console.log('\n--- Test 2: verifyAndConfirmPayment ---');
+  // TEST 2: Verify and Confirm Payment (Demo Mode)
+  console.log('\n--- Test 2: verifyAndConfirmPayment (Cashfree Demo Mode) ---');
   const confirmResult = await verifyAndConfirmPayment({
     paymentId: orderResult.payment._id,
     gatewayOrderId: orderResult.gatewayOrder.orderId,
-    paymentMethod: 'UPI',
+    paymentMethod: 'CASHFREE_DEMO',
   });
 
-  if (confirmResult.payment.status !== 'SUCCESS') {
-    throw new Error(`Test 2 Failed: Status is ${confirmResult.payment.status}, expected SUCCESS`);
+  if (confirmResult.payment.status !== 'DEMO_SUCCESS' && confirmResult.payment.status !== 'SUCCESS') {
+    throw new Error(`Test 2 Failed: Status is ${confirmResult.payment.status}, expected DEMO_SUCCESS or SUCCESS`);
   }
 
   const updatedAppt1 = await Appointment.findById(appt1._id);
-  if (updatedAppt1.paymentStatus !== 'PAID') {
-    throw new Error(`Test 2 Failed: Appointment paymentStatus is ${updatedAppt1.paymentStatus}, expected PAID`);
+  if (updatedAppt1.paymentStatus !== 'DEMO_PAID' && updatedAppt1.paymentStatus !== 'PAID') {
+    throw new Error(`Test 2 Failed: Appointment paymentStatus is ${updatedAppt1.paymentStatus}, expected DEMO_PAID or PAID`);
   }
-  console.log(` Payment Verified and Appointment marked as ${updatedAppt1.paymentStatus}`);
+  console.log(` Payment Verified in Demo Mode and Appointment marked as ${updatedAppt1.paymentStatus}`);
 
   // TEST 3: Record Manual In-Person Payment
   console.log('\n--- Test 3: recordManualPayment (In-Clinic Cash) ---');

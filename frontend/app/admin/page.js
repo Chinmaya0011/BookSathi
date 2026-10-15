@@ -493,7 +493,7 @@ export default function AdminCommandCenter() {
                 <CreditCard className="w-3.5 h-3.5 text-amber-400" />
                 <span>Payment Engine:</span>
               </span>
-              <span className="font-bold text-amber-400">{health.activeGateway || 'Razorpay / Mock'}</span>
+              <span className="font-bold text-amber-400">{health.activeGateway || 'Cashfree (Demo Mode)'}</span>
             </div>
 
             <div className="flex justify-between py-2">

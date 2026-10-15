@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { Check, Sparkles, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import { formatINR } from '@/lib/utils';
 
 export default function PricingSection() {
   const [isAnnual, setIsAnnual] = useState(true);
@@ -28,11 +30,17 @@ export default function PricingSection() {
   ];
 
   return (
-    <section id="pricing" className="py-16 sm:py-24 bg-white border-t border-slate-100">
+    <section id="pricing" className="py-16 sm:py-24 bg-white border-t border-slate-100 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto space-y-3">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-2xl mx-auto space-y-3"
+        >
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold shadow-2xs">
             <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
             <span>Transparent Pricing</span>
@@ -50,7 +58,7 @@ export default function PricingSection() {
               <button
                 type="button"
                 onClick={() => setIsAnnual(false)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   !isAnnual
                     ? 'bg-white text-slate-900 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -61,26 +69,37 @@ export default function PricingSection() {
               <button
                 type="button"
                 onClick={() => setIsAnnual(true)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   isAnnual
                     ? 'bg-indigo-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <span>Annual Billing</span>
-                <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${isAnnual ? 'bg-indigo-700 text-white' : 'bg-emerald-100 text-emerald-800'}`}>
-                  Save 25%
+                <span
+                  className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
+                    isAnnual ? 'bg-indigo-700 text-white' : 'bg-emerald-100 text-emerald-800'
+                  }`}
+                >
+                  Save 37%
                 </span>
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* 2 Pricing Cards Grid */}
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
           
           {/* Starter Free Tier Card */}
-          <div className="p-8 sm:p-9 rounded-3xl bg-slate-50/60 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-8 hover:border-slate-300 transition-colors">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            className="p-8 sm:p-9 rounded-3xl bg-slate-50/60 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-8 hover:border-slate-300 transition-colors"
+          >
             <div className="space-y-6">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -93,7 +112,7 @@ export default function PricingSection() {
               </div>
 
               <div className="flex items-baseline gap-1.5">
-                <span className="text-4xl sm:text-5xl font-black text-slate-900">₹0</span>
+                <span className="text-4xl sm:text-5xl font-black text-slate-900 font-mono">₹0</span>
                 <span className="text-xs font-bold text-slate-500">/ free forever</span>
               </div>
 
@@ -109,15 +128,21 @@ export default function PricingSection() {
 
             <Link
               href="/register"
-              className="w-full py-3.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs text-center border border-slate-300 shadow-2xs transition-colors block"
+              className="w-full py-3.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs text-center border border-slate-300 shadow-2xs transition-colors block cursor-pointer"
             >
               Get Started Free Forever
             </Link>
-          </div>
+          </motion.div>
 
           {/* Pro Tier Card */}
-          <div className="p-8 sm:p-9 rounded-3xl bg-gradient-to-b from-indigo-50/50 via-white to-white border-2 border-indigo-600 shadow-xl shadow-indigo-600/10 flex flex-col justify-between space-y-8 relative">
-            
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            className="p-8 sm:p-9 rounded-3xl bg-gradient-to-b from-indigo-50/40 via-white to-white border-2 border-indigo-600 shadow-xl shadow-indigo-600/10 flex flex-col justify-between space-y-8 relative"
+          >
             {/* Top Recommended Tag */}
             <div className="absolute top-5 right-5">
               <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-600 text-white shadow-xs">
@@ -137,11 +162,11 @@ export default function PricingSection() {
               </div>
 
               <div className="flex items-baseline gap-1.5">
-                <span className="text-4xl sm:text-5xl font-black text-slate-900">
-                  {isAnnual ? '₹149' : '₹199'}
+                <span className="text-4xl sm:text-5xl font-black text-slate-900 font-mono">
+                  {isAnnual ? '₹125' : '₹199'}
                 </span>
                 <span className="text-xs font-bold text-slate-500">
-                  / month {isAnnual ? '(billed annually)' : ''}
+                  / month {isAnnual ? '(billed annually at ₹1,499/yr)' : ''}
                 </span>
               </div>
 
@@ -157,11 +182,11 @@ export default function PricingSection() {
 
             <Link
               href="/register"
-              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-xs text-center shadow-md shadow-indigo-600/25 transition-all active:scale-95 block"
+              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-xs text-center shadow-md shadow-indigo-600/25 transition-all active:scale-95 block cursor-pointer"
             >
               Start Free 14-Day Pro Trial
             </Link>
-          </div>
+          </motion.div>
 
         </div>
 
@@ -169,7 +194,7 @@ export default function PricingSection() {
         <div className="text-center pt-2">
           <p className="text-xs text-slate-500 flex items-center justify-center gap-2 font-medium">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Zero payment processing cut • Cancel anytime • No credit card needed for signup</span>
+            <span>0% platform cut on client fees • Cancel anytime • No credit card needed for signup</span>
           </p>
         </div>
 

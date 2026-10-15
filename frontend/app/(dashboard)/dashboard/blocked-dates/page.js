@@ -121,7 +121,7 @@ export default function BlockedDatesPage() {
         </Button>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
         {loading ? (
           <div className="p-16 flex flex-col items-center justify-center gap-2 text-slate-400">
             <RefreshCw className="w-6 h-6 animate-spin text-indigo-600" />

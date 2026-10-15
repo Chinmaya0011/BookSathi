@@ -3,6 +3,7 @@ import { QrBannerOrder } from '../models/QrBannerOrder.js';
 import { ProfessionalProfile } from '../models/ProfessionalProfile.js';
 import { getProfessionalPublicUrl } from '../utils/urlHelpers.js';
 import { QR_BANNER_PLANS, calculateQrBannerPrice } from './qrPricingEngine.js';
+import { getPaymentGateway } from './payment/index.js';
 
 export const qrBannerService = {
   /**
@@ -103,16 +104,50 @@ export const qrBannerService = {
       isActive: false,
     });
 
+    let paymentSessionId = null;
+    let gatewayOrderId = null;
+    try {
+      const gateway = getPaymentGateway('CASHFREE');
+      const gatewayOrder = await gateway.createOrder({
+        amount: pricing.finalPayableAmount,
+        currency: 'INR',
+        receipt: orderCode,
+        customer: {
+          id: userId?.toString() || professionalId.toString(),
+          name: shippingAddress.recipientName || profile.name,
+          phone: shippingAddress.phone || profile.phone,
+          email: profile.email,
+        },
+        notes: {
+          orderCode,
+          type: 'QR_BANNER_KIT',
+          planKey: pricing.planKey,
+        },
+      });
+
+      paymentSessionId = gatewayOrder.paymentSessionId;
+      gatewayOrderId = gatewayOrder.orderId;
+      newOrder.paymentSessionId = paymentSessionId;
+      newOrder.cashfreeOrderId = gatewayOrderId;
+      newOrder.isDemo = Boolean(gatewayOrder.isDemo);
+      await newOrder.save();
+    } catch (e) {
+      console.warn('QR Banner Cashfree order creation fallback:', e.message);
+    }
+
     return {
       order: newOrder,
+      paymentSessionId,
+      gatewayOrderId,
       pricing,
+      isDemo: Boolean(newOrder.isDemo),
     };
   },
 
   /**
    * Verify and activate QR Code + Banner order
    */
-  async verifyPayment({ orderId, professionalId, paymentMethod = 'UPI' }) {
+  async verifyPayment({ orderId, professionalId, paymentMethod = 'CASHFREE' }) {
     const order = await QrBannerOrder.findOne({
       _id: orderId,
       professionalId,
@@ -124,6 +159,17 @@ export const qrBannerService = {
       throw err;
     }
 
+    const gateway = getPaymentGateway('CASHFREE');
+    if (order.cashfreeOrderId) {
+      const verifyRes = await gateway.verifyPayment({ orderId: order.cashfreeOrderId });
+      if (!verifyRes.isValid || verifyRes.status === 'FAILED') {
+        const err = new Error(verifyRes.error || 'Payment verification failed with Cashfree.');
+        err.statusCode = 400;
+        throw err;
+      }
+    }
+
+    const isDemo = Boolean(order.isDemo || order.cashfreeOrderId?.includes('_demo_') || order.paymentSessionId?.startsWith('session_demo_'));
     const now = new Date();
     const expiresAt = new Date(now);
     expiresAt.setMonth(expiresAt.getMonth() + order.durationMonths);
@@ -134,10 +180,11 @@ export const qrBannerService = {
 
     const trackingNumber = `BD-${Math.floor(10000000 + Math.random() * 90000000)}`;
 
-    order.paymentStatus = 'PAID';
+    order.paymentStatus = isDemo ? 'DEMO_PAID' : 'PAID';
     order.orderStatus = 'ORDER_PLACED';
+    order.isDemo = isDemo;
     order.paymentId = `PAY-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-    order.paymentMethod = paymentMethod;
+    order.paymentMethod = isDemo ? 'CASHFREE_DEMO' : 'CASHFREE';
     order.paidAt = now;
     order.trackingNumber = trackingNumber;
     order.estimatedDeliveryDate = estDelivery;

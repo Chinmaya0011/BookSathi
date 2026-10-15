@@ -251,7 +251,7 @@ export default function SetupPage() {
       </div>
 
       {/* Main Tabs Segmented Controller */}
-      <div className="flex items-center gap-1 p-1 bg-slate-200/80 rounded-2xl border border-slate-200 overflow-x-auto">
+      <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/90 overflow-x-auto">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -260,10 +260,10 @@ export default function SetupPage() {
               key={tab.id}
               type="button"
               onClick={() => handleTabChange(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                 isActive
-                  ? 'bg-white text-indigo-700 shadow-xs ring-1 ring-black/5 font-black'
-                  : 'text-slate-600 hover:text-slate-950 hover:bg-white/60'
+                  ? 'bg-white text-indigo-700 shadow-2xs ring-1 ring-black/5 font-bold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -277,21 +277,21 @@ export default function SetupPage() {
       {/* TAB 1: BUSINESS PROFILE & PRACTICE INFO                                  */}
       {/* ========================================================================= */}
       {activeTab === 'profile' && (
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-7 shadow-xs space-y-6 animate-in fade-in duration-150 max-w-4xl">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs space-y-5 animate-in fade-in duration-150 max-w-4xl">
           <div className="border-b border-slate-100 pb-3">
-            <h2 className="text-base sm:text-lg font-black text-slate-900">Professional & Practice Details</h2>
+            <h2 className="text-base font-bold text-slate-900 tracking-tight">Professional & Practice Details</h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Select your profession category and update details shown on your public booking page.
             </p>
           </div>
 
-          <form onSubmit={handleSaveProfile} className="space-y-6">
+          <form onSubmit={handleSaveProfile} className="space-y-5">
             {/* Profession Category Selector */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">
+              <label className="block text-xs font-semibold text-slate-700 mb-2">
                 Your Profession Category <span className="text-rose-500">*</span>
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {PROFESSIONS.map((prof) => {
                   const Icon = prof.icon;
                   const isSelected = profileForm.profession === prof.id;
@@ -300,9 +300,9 @@ export default function SetupPage() {
                       key={prof.id}
                       type="button"
                       onClick={() => setProfileForm({ ...profileForm, profession: prof.id })}
-                      className={`p-3 rounded-2xl border text-left flex flex-col justify-between gap-2 transition-all cursor-pointer ${
+                      className={`p-2.5 rounded-xl border text-left flex flex-col justify-between gap-2 transition-all cursor-pointer ${
                         isSelected
-                          ? 'border-indigo-600 bg-indigo-50/70 ring-2 ring-indigo-600/30 text-indigo-950 font-black shadow-xs'
+                          ? 'border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-500/20 text-indigo-950 font-bold shadow-2xs'
                           : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white font-medium hover:bg-slate-50'
                       }`}
                     >
@@ -317,7 +317,7 @@ export default function SetupPage() {
             {/* Basic Info Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   Full Name / Title <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -480,36 +480,36 @@ export default function SetupPage() {
       {/* ========================================================================= */}
       {activeTab === 'modules' && (
         <div className="space-y-4 max-w-4xl animate-in fade-in duration-150">
-          <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 text-white rounded-3xl p-6 shadow-sm border border-slate-800 space-y-2">
+          <div className="bg-[#0c1220] text-white rounded-2xl p-5 shadow-2xs border border-slate-800 space-y-1.5">
             <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-amber-400" />
-              <h2 className="text-base font-black">Modular Practice Command Center</h2>
+              <Zap className="w-4 h-4 text-amber-400" />
+              <h2 className="text-sm sm:text-base font-bold">Modular Practice Command Center</h2>
             </div>
-            <p className="text-xs text-indigo-200">
+            <p className="text-xs text-slate-400">
               Each core setting has its own dedicated full-screen page for fast configuration and deep control.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {/* 1. Availability & Shifts */}
             <Link
               href="/dashboard/availability"
-              className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between group"
+              className="p-4 sm:p-5 bg-white rounded-xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between group"
             >
               <div className="space-y-2">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:scale-105 transition-transform">
-                  <Clock className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 transition-transform">
+                  <Clock className="w-4 h-4" />
                 </div>
-                <h3 className="text-sm font-black text-slate-900 group-hover:text-indigo-600 transition-colors">
+                <h3 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
                   Working Hours & Availability
                 </h3>
                 <p className="text-xs text-slate-500">
                   Set weekly shift timings, morning/evening split hours, lunch breaks, and one-click schedule duplication.
                 </p>
               </div>
-              <div className="pt-4 flex items-center justify-between text-xs font-bold text-indigo-600">
+              <div className="pt-3.5 flex items-center justify-between text-xs font-semibold text-indigo-600">
                 <span>Manage Shifts →</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-100">
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-100 font-mono">
                   /dashboard/availability
                 </span>
               </div>
@@ -518,22 +518,22 @@ export default function SetupPage() {
             {/* 2. Services & Fees */}
             <Link
               href="/dashboard/services"
-              className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between group"
+              className="p-4 sm:p-5 bg-white rounded-xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between group"
             >
               <div className="space-y-2">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:scale-105 transition-transform">
-                  <Briefcase className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 transition-transform">
+                  <Briefcase className="w-4 h-4" />
                 </div>
-                <h3 className="text-sm font-black text-slate-900 group-hover:text-emerald-600 transition-colors">
+                <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
                   Services & Fees Catalog
                 </h3>
                 <p className="text-xs text-slate-500">
                   Configure consultation types, follow-up visits, custom durations, and pricing with instant templates.
                 </p>
               </div>
-              <div className="pt-4 flex items-center justify-between text-xs font-bold text-emerald-600">
+              <div className="pt-3.5 flex items-center justify-between text-xs font-semibold text-emerald-600">
                 <span>Configure Services →</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-100">
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-100 font-mono">
                   /dashboard/services
                 </span>
               </div>
@@ -542,22 +542,22 @@ export default function SetupPage() {
             {/* 3. Booking Rules & Slot Gaps */}
             <Link
               href="/dashboard/settings"
-              className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between group"
+              className="p-4 sm:p-5 bg-white rounded-xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between group"
             >
               <div className="space-y-2">
-                <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 group-hover:scale-105 transition-transform">
-                  <Sliders className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 transition-transform">
+                  <Sliders className="w-4 h-4" />
                 </div>
-                <h3 className="text-sm font-black text-slate-900 group-hover:text-amber-600 transition-colors">
+                <h3 className="text-sm font-bold text-slate-900 group-hover:text-amber-600 transition-colors">
                   Booking Rules & Slot Gaps
                 </h3>
                 <p className="text-xs text-slate-500">
                   Configure rest buffer times between appointments, minimum notice periods, and maximum advance booking limits.
                 </p>
               </div>
-              <div className="pt-4 flex items-center justify-between text-xs font-bold text-amber-600">
+              <div className="pt-3.5 flex items-center justify-between text-xs font-semibold text-amber-600">
                 <span>Edit Slot Rules →</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-50 border border-amber-100">
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-50 border border-amber-100 font-mono">
                   /dashboard/settings
                 </span>
               </div>
@@ -566,22 +566,22 @@ export default function SetupPage() {
             {/* 4. Holidays & Blocked Dates */}
             <Link
               href="/dashboard/blocked-dates"
-              className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between group"
+              className="p-4 sm:p-5 bg-white rounded-xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between group"
             >
               <div className="space-y-2">
-                <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 group-hover:scale-105 transition-transform">
-                  <Palmtree className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 transition-transform">
+                  <Palmtree className="w-4 h-4" />
                 </div>
-                <h3 className="text-sm font-black text-slate-900 group-hover:text-rose-600 transition-colors">
+                <h3 className="text-sm font-bold text-slate-900 group-hover:text-rose-600 transition-colors">
                   Holidays & Blocked Leaves
                 </h3>
                 <p className="text-xs text-slate-500">
                   Block vacation dates, emergency off-days, and festival holidays to automatically close booking slots.
                 </p>
               </div>
-              <div className="pt-4 flex items-center justify-between text-xs font-bold text-rose-600">
+              <div className="pt-3.5 flex items-center justify-between text-xs font-semibold text-rose-600">
                 <span>Manage Leaves →</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-md bg-rose-50 border border-rose-100">
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-rose-50 border border-rose-100 font-mono">
                   /dashboard/blocked-dates
                 </span>
               </div>
@@ -590,14 +590,14 @@ export default function SetupPage() {
             {/* 5. My Link & QR Poster */}
             <Link
               href="/dashboard/booking-link"
-              className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between group sm:col-span-2"
+              className="p-4 sm:p-5 bg-white rounded-xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between group sm:col-span-2"
             >
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0 group-hover:scale-105 transition-transform">
-                  <QrCode className="w-5 h-5" />
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0 transition-transform">
+                  <QrCode className="w-4 h-4" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-sm font-black text-slate-900 group-hover:text-purple-600 transition-colors">
+                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-purple-600 transition-colors">
                     My Public Booking Link & Printable Standee QR
                   </h3>
                   <p className="text-xs text-slate-500">
@@ -605,9 +605,9 @@ export default function SetupPage() {
                   </p>
                 </div>
               </div>
-              <div className="pt-4 flex items-center justify-between text-xs font-bold text-purple-600">
+              <div className="pt-3.5 flex items-center justify-between text-xs font-semibold text-purple-600">
                 <span>Get Standees & Posters →</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-md bg-purple-50 border border-purple-100">
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-purple-50 border border-purple-100 font-mono">
                   /dashboard/booking-link
                 </span>
               </div>
@@ -620,17 +620,17 @@ export default function SetupPage() {
       {/* TAB 3: ACCOUNT, SECURITY & PLAN                                          */}
       {/* ========================================================================= */}
       {activeTab === 'account' && (
-        <div className="space-y-6 max-w-4xl animate-in fade-in duration-150">
+        <div className="space-y-5 max-w-4xl animate-in fade-in duration-150">
           {/* Subscription & Plan Status Card */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Current Plan</span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-indigo-100 text-indigo-800 border border-indigo-200">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Current Plan</span>
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/70">
                   {profile?.subscriptionTier || 'PRO PLAN'}
                 </span>
               </div>
-              <h3 className="text-base font-black text-slate-900">
+              <h3 className="text-base font-bold text-slate-900 tracking-tight">
                 BookSaathi Professional Edition
               </h3>
               <p className="text-xs text-slate-500">
@@ -641,16 +641,16 @@ export default function SetupPage() {
             <button
               type="button"
               onClick={() => setUpgradeModalOpen(true)}
-              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-colors shrink-0 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs shadow-2xs transition-colors shrink-0 cursor-pointer"
             >
               View Plan Features
             </button>
           </div>
 
           {/* Change Password Card */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-xs space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs space-y-4">
             <div className="border-b border-slate-100 pb-3">
-              <h3 className="text-base font-black text-slate-900">Change Password</h3>
+              <h3 className="text-base font-bold text-slate-900 tracking-tight">Change Password</h3>
               <p className="text-xs text-slate-500">
                 Update your account login password to keep your dashboard secure.
               </p>
@@ -658,44 +658,44 @@ export default function SetupPage() {
 
             <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-md">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Current Password</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Current Password</label>
                 <input
                   type="password"
                   required
                   value={passwordForm.currentPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">New Password</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">New Password</label>
                 <input
                   type="password"
                   required
                   minLength={6}
                   value={passwordForm.newPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Confirm New Password</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Confirm New Password</label>
                 <input
                   type="password"
                   required
                   minLength={6}
                   value={passwordForm.confirmPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={changingPassword}
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
               >
                 {changingPassword ? 'Updating Password...' : 'Update Password'}
               </button>

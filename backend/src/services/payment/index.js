@@ -1,5 +1,4 @@
-import './simulatedGateway.js';
-import './razorpayGateway.js';
-import './stripeGateway.js';
+import './cashfreeGateway.js';
 
 export { getPaymentGateway, registerGateway, BasePaymentGateway } from './gatewayAdapter.js';
+export { CashfreePaymentGateway } from './cashfreeGateway.js';

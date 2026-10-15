@@ -3,6 +3,8 @@ import {
   getPlans,
   getMySubscription,
   selectPlan,
+  createOrder,
+  verifyPayment,
 } from '../controllers/subscriptionController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 
@@ -14,6 +16,8 @@ router.get('/plans', getPlans);
 // Authenticated doctor subscription endpoints
 router.use(authenticate);
 router.get('/my-subscription', getMySubscription);
+router.post('/create-order', createOrder);
+router.post('/verify-payment', verifyPayment);
 router.post('/select-plan', selectPlan);
 
 export default router;

@@ -85,44 +85,44 @@ export default function BatchWhatsAppModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200 font-sans">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
         onClick={onClose}
       />
 
       {/* Modal Dialog */}
-      <div className="relative bg-white rounded-3xl shadow-2xl border border-slate-200/80 max-w-xl w-full overflow-hidden z-10 max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200">
+      <div className="relative bg-white rounded-2xl shadow-xl border border-slate-200/90 max-w-xl w-full overflow-hidden z-10 max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200">
         
         {/* Modal Header */}
-        <div className="p-5 bg-gradient-to-r from-emerald-950 via-slate-950 to-slate-900 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-bold">
-              <MessageCircle className="w-5 h-5" />
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-white">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center font-bold">
+              <MessageCircle className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h3 className="text-base font-black text-white">Batch WhatsApp Broadcast</h3>
-                <span className="px-2 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">Batch WhatsApp Broadcast</h3>
+                <span className="px-1.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200/70 text-indigo-700 text-[10px] font-bold uppercase tracking-wider">
                   PRO
                 </span>
               </div>
-              <p className="text-xs text-emerald-200/80">1-Click Patient Queue Communications</p>
+              <p className="text-xs text-slate-500">1-Click Patient Queue Communications</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-white/10 text-slate-300 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-5 overflow-y-auto space-y-4">
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-4">
           
           {/* Template Selection */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 block">Select Broadcast Template:</label>
+            <label className="text-xs font-semibold text-slate-700 block">Select Broadcast Template:</label>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(templates).map(([key, tpl]) => {
                 const Icon = tpl.icon;
@@ -134,11 +134,11 @@ export default function BatchWhatsAppModal({
                     onClick={() => setSelectedTemplateKey(key)}
                     className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
                       active
-                        ? 'border-emerald-500 bg-emerald-50/70 text-emerald-950 font-bold shadow-xs'
-                        : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+                        ? 'border-indigo-600 bg-indigo-50/70 text-indigo-950 font-semibold ring-1 ring-indigo-500/20 shadow-2xs'
+                        : 'border-slate-200/90 hover:border-slate-300 text-slate-700 bg-white hover:bg-slate-50'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-emerald-600' : 'text-slate-400'}`} />
+                    <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-indigo-600' : 'text-slate-400'}`} />
                     <span className="text-xs truncate">{tpl.title}</span>
                   </button>
                 );
@@ -148,16 +148,16 @@ export default function BatchWhatsAppModal({
 
           {/* Optional: Delay Minutes selector */}
           {selectedTemplateKey === 'DELAY' && (
-            <div className="flex items-center gap-2 bg-amber-50 p-2.5 rounded-xl border border-amber-200 text-xs">
-              <span className="font-bold text-amber-900">Delay Time:</span>
+            <div className="flex items-center gap-2 bg-amber-50/70 p-2.5 rounded-xl border border-amber-200/80 text-xs">
+              <span className="font-semibold text-amber-900">Delay Time:</span>
               {[15, 30, 45, 60].map((mins) => (
                 <button
                   key={mins}
                   type="button"
                   onClick={() => setCustomDelayMinutes(mins)}
-                  className={`px-2 py-0.5 rounded-md font-bold text-xs transition-colors cursor-pointer ${
+                  className={`px-2 py-0.5 rounded-md font-semibold text-xs transition-colors cursor-pointer ${
                     customDelayMinutes === mins
-                      ? 'bg-amber-600 text-white'
+                      ? 'bg-amber-600 text-white shadow-2xs'
                       : 'bg-white text-amber-800 border border-amber-300 hover:bg-amber-100'
                   }`}
                 >
@@ -170,16 +170,16 @@ export default function BatchWhatsAppModal({
           {/* Queue Recipients List */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-slate-700">
+              <span className="font-semibold text-slate-700">
                 Recipients ({validPatients.length} Waiting Customers):
               </span>
               <span className="text-slate-400 text-[11px]">Click WhatsApp to send</span>
             </div>
 
             {validPatients.length === 0 ? (
-              <div className="p-6 text-center text-slate-400 bg-slate-50 rounded-2xl border border-slate-200">
+              <div className="p-6 text-center text-slate-400 bg-slate-50/70 rounded-xl border border-slate-200/80">
                 <CheckCircle2 className="w-6 h-6 mx-auto mb-1 text-emerald-500" />
-                <p className="text-xs font-bold text-slate-600">No active queue waiting right now</p>
+                <p className="text-xs font-semibold text-slate-700">No active queue waiting right now</p>
                 <p className="text-[11px] text-slate-400">All today customers have completed consultations.</p>
               </div>
             ) : (
@@ -187,14 +187,14 @@ export default function BatchWhatsAppModal({
                 {validPatients.map((patient, idx) => (
                   <div
                     key={patient._id || idx}
-                    className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-3"
+                    className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/80 flex items-center justify-between gap-3"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-slate-900 truncate">
+                        <span className="text-xs font-semibold text-slate-900 truncate">
                           {patient.customerName}
                         </span>
-                        <span className="px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold">
+                        <span className="px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-semibold">
                           {format12Hour(patient.startTime)}
                         </span>
                       </div>
@@ -205,7 +205,7 @@ export default function BatchWhatsAppModal({
                       <button
                         type="button"
                         onClick={() => handleCopyMessage(patient, idx)}
-                        className="p-2 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 transition-colors"
+                        className="p-2 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 transition-colors cursor-pointer"
                         title="Copy message text"
                       >
                         {copiedIndex === idx ? (
@@ -217,7 +217,7 @@ export default function BatchWhatsAppModal({
                       <button
                         type="button"
                         onClick={() => handleSendWhatsApp(patient)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs transition-all active:scale-95 cursor-pointer"
                       >
                         <MessageCircle className="w-3.5 h-3.5" />
                         <span>WhatsApp</span>
@@ -232,14 +232,14 @@ export default function BatchWhatsAppModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+        <div className="p-3.5 sm:p-4 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between">
           <p className="text-[11px] text-slate-400">
             Powered by BookSaathi Pro Instant Pings
           </p>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors"
+            className="px-4 py-2 rounded-xl bg-slate-900 text-white font-semibold text-xs hover:bg-slate-800 transition-colors cursor-pointer"
           >
             Done
           </button>

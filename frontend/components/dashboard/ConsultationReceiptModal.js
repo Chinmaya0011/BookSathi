@@ -55,47 +55,47 @@ export default function ConsultationReceiptModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
         onClick={onClose}
       />
 
       {/* Modal Dialog */}
-      <div className="relative bg-white rounded-3xl shadow-2xl border border-slate-200/80 max-w-lg w-full overflow-hidden z-10 max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200 font-sans">
+      <div className="relative bg-white rounded-2xl shadow-xl border border-slate-200/90 max-w-lg w-full overflow-hidden z-10 max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200 font-sans">
         
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-white">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200/80 flex items-center justify-center font-bold">
               <Receipt className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-extrabold text-slate-900">Consultation Receipt</h3>
-              <p className="text-[11px] text-slate-500">Official Patient Invoice & Payment Slip</p>
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">Consultation Receipt</h3>
+              <p className="text-xs text-slate-500">Official Patient Invoice & Payment Slip</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-slate-200/60 text-slate-500 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Printable Receipt Paper */}
-        <div className="p-5 overflow-y-auto space-y-4">
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-4">
           <div
             ref={receiptRef}
-            className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 text-slate-800"
+            className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-2xs space-y-4 text-slate-800"
             id="printable-receipt"
           >
             {/* Header: Practice Info */}
-            <div className="border-b border-dashed border-slate-300 pb-3 flex justify-between items-start">
+            <div className="border-b border-dashed border-slate-200 pb-3 flex justify-between items-start">
               <div>
-                <h4 className="text-base font-black text-slate-950 tracking-tight">
+                <h4 className="text-base font-bold text-slate-950 tracking-tight">
                   {profile?.name || 'Professional Practice'}
                 </h4>
-                <p className="text-xs text-indigo-600 font-bold">
+                <p className="text-xs text-indigo-600 font-semibold">
                   {profile?.specialization || profile?.profession || 'Consultant'}
                 </p>
                 <p className="text-[11px] text-slate-500 max-w-[240px] mt-0.5">
@@ -106,7 +106,7 @@ export default function ConsultationReceiptModal({
                 )}
               </div>
               <div className="text-right">
-                <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black uppercase">
+                <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold uppercase">
                   PAID
                 </span>
                 <p className="text-[11px] font-mono text-slate-500 mt-1">{receiptNumber}</p>
@@ -117,14 +117,14 @@ export default function ConsultationReceiptModal({
             {/* Patient Details */}
             <div className="grid grid-cols-2 gap-2 text-xs py-1">
               <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Patient / Client:</span>
-                <span className="font-bold text-slate-900">{appointment.customerName || 'Walk-In Customer'}</span>
+                <span className="text-[10px] uppercase font-semibold text-slate-400 block">Patient / Client:</span>
+                <span className="font-semibold text-slate-900">{appointment.customerName || 'Walk-In Customer'}</span>
                 {appointment.customerPhone && (
-                  <span className="text-[11px] text-slate-500 block">{appointment.customerPhone}</span>
+                  <span className="text-[11px] text-slate-500 block font-mono">{appointment.customerPhone}</span>
                 )}
               </div>
               <div className="text-right">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Token / Slot:</span>
+                <span className="text-[10px] uppercase font-semibold text-slate-400 block">Token / Slot:</span>
                 <span className="font-bold text-indigo-600">
                   {appointment.queueNumber ? `Token #${appointment.queueNumber}` : format12Hour(appointment.startTime)}
                 </span>
@@ -133,21 +133,21 @@ export default function ConsultationReceiptModal({
             </div>
 
             {/* Service & Fee Breakdown Table */}
-            <div className="border-t border-b border-slate-200 py-2 space-y-1.5 text-xs">
-              <div className="flex justify-between font-bold text-slate-400 text-[10px] uppercase">
+            <div className="border-t border-b border-slate-100 py-2.5 space-y-1.5 text-xs">
+              <div className="flex justify-between font-semibold text-slate-400 text-[10px] uppercase tracking-wider">
                 <span>Description</span>
                 <span>Amount</span>
               </div>
-              <div className="flex justify-between items-center text-slate-800 font-semibold">
+              <div className="flex justify-between items-center text-slate-800 font-medium">
                 <span>{appointment.appointmentTypeName || 'Professional Consultation'}</span>
-                <span className="font-mono font-bold">{formatINR(fee)}</span>
+                <span className="font-mono font-bold text-slate-900">{formatINR(fee)}</span>
               </div>
             </div>
 
             {/* Total */}
-            <div className="flex justify-between items-center pt-1 text-sm font-black text-slate-950">
+            <div className="flex justify-between items-center pt-1 text-sm font-bold text-slate-950">
               <span>Total Received</span>
-              <span className="text-base text-indigo-600 font-mono">{formatINR(totalAmount)}</span>
+              <span className="text-base text-indigo-600 font-mono font-bold">{formatINR(totalAmount)}</span>
             </div>
 
             {/* Footer Note */}
@@ -163,18 +163,18 @@ export default function ConsultationReceiptModal({
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2">
+        <div className="p-3.5 sm:p-4 border-t border-slate-100 bg-slate-50/60 flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-100 transition-colors"
+            className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
           >
             Close
           </button>
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 active:scale-95 transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-2xs active:scale-95 transition-all cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Print Receipt</span>

@@ -380,7 +380,7 @@ function detectPlatformKnowledgeTopic(lower) {
   }
 
   if (
-    (lower.includes('payment') || lower.includes('upi') || lower.includes('razorpay') || lower.includes('stripe')) &&
+    (lower.includes('payment') || lower.includes('upi') || lower.includes('cashfree')) &&
     (lower.includes('method') || lower.includes('supported') || lower.includes('accept') || lower.includes('how') || lower.includes('option'))
   ) {
     return 'PAYMENTS';
@@ -420,7 +420,7 @@ function getPlatformKnowledgeContent(topic, role) {
     case 'REFUND_CANCELLATION':
       return {
         title: 'BookSaathi Cancellation & Refund Policy',
-        content: `• **Free Cancellation Window**: Clients can cancel up to 2 hours prior to the scheduled consultation time via their self-service booking link or dashboard.\n• **Automated Refunds**: For prepaid appointments via Razorpay or UPI, refund requests are processed back to the original payment source within 3-5 business days.\n• **Practitioner Cancellations**: If a professional cancels or reschedules, a 100% full refund is automatically initiated with SMS/Email notifications.`,
+        content: `• **Free Cancellation Window**: Clients can cancel up to 2 hours prior to the scheduled consultation time via their self-service booking link or dashboard.\n• **Automated Refunds**: For prepaid appointments via Cashfree, refund requests are processed back to the original payment source.\n• **Practitioner Cancellations**: If a professional cancels or reschedules, a 100% full refund is automatically initiated with SMS/Email notifications.`,
         action: { label: 'View Appointments', action: 'VIEW_APPOINTMENTS', href: '/dashboard/appointments' },
       };
     case 'RESCHEDULING':
@@ -443,8 +443,8 @@ function getPlatformKnowledgeContent(topic, role) {
       };
     case 'PAYMENTS':
       return {
-        title: 'Integrated Indian & Global Payments',
-        content: `• **Payment Methods**: Supports UPI (GPay, PhonePe, Paytm), Credit/Debit Cards, Net Banking (Razorpay), Stripe, and In-Clinic Cash.\n• **Settlement**: Consultation fees are securely tracked and settled according to practice preferences.`,
+        title: 'Integrated Indian Payments via Cashfree',
+        content: `• **Payment Methods**: Supports Cashfree Payments (UPI, Credit/Debit Cards, Net Banking) and In-Clinic Cash.\n• **Settlement**: Consultation fees are securely tracked and settled according to practice preferences.`,
         action: { label: 'Billing Settings', action: 'VIEW_SERVICES', href: '/dashboard/services' },
       };
     case 'AVAILABILITY_GUIDE':

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import {
   Calculator,
   Clock,
@@ -12,6 +13,7 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
+  Info,
 } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 
@@ -33,11 +35,17 @@ export default function RoiCalculator() {
   const commissionSaved = Math.round(monthlyGrossRevenue * typicalAggregatorCommission);
 
   return (
-    <section id="roi-calculator" className="py-16 sm:py-24 bg-gradient-to-b from-white via-slate-50 to-white border-t border-slate-100">
+    <section id="roi-calculator" className="py-16 sm:py-24 bg-gradient-to-b from-white via-slate-50 to-white border-t border-slate-100 font-sans">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto space-y-3">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-2xl mx-auto space-y-3"
+        >
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold shadow-2xs">
             <Calculator className="w-3.5 h-3.5 text-indigo-600" />
             <span>Interactive ROI & Time-Saved Calculator</span>
@@ -48,10 +56,16 @@ export default function RoiCalculator() {
           <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
             Slide the controls to calculate your monthly hours saved and direct commission savings.
           </p>
-        </div>
+        </motion.div>
 
         {/* Calculator Main Box */}
-        <div className="rounded-3xl bg-white border border-slate-200/90 shadow-xl shadow-slate-900/5 p-6 sm:p-8 md:p-10">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          className="rounded-3xl bg-white border border-slate-200/90 shadow-xl shadow-slate-900/5 p-6 sm:p-8 md:p-10"
+        >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             
             {/* Left Inputs / Sliders */}
@@ -63,7 +77,7 @@ export default function RoiCalculator() {
                   <label className="text-xs sm:text-sm font-bold text-slate-800">
                     Appointments / Patients Per Day
                   </label>
-                  <span className="px-3 py-1 rounded-xl bg-indigo-50 text-indigo-700 font-black text-sm border border-indigo-100">
+                  <span className="px-3 py-1 rounded-xl bg-indigo-50 text-indigo-700 font-black text-sm border border-indigo-100 font-mono">
                     {appointmentsPerDay} / day
                   </span>
                 </div>
@@ -89,8 +103,8 @@ export default function RoiCalculator() {
                   <label className="text-xs sm:text-sm font-bold text-slate-800">
                     Average Consultation / Session Fee
                   </label>
-                  <span className="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 font-black text-sm border border-emerald-200">
-                    ₹{consultationFee}
+                  <span className="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 font-black text-sm border border-emerald-200 font-mono">
+                    {formatINR(consultationFee)}
                   </span>
                 </div>
                 <input
@@ -116,7 +130,7 @@ export default function RoiCalculator() {
                   <span>BookSaathi takes 0% commission on your fees</span>
                 </div>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Unlike traditional discovery aggregators that charge 15% to 20% cut on every booking, 100% of client UPI payments settle directly to your bank account with zero deductions.
+                  Unlike traditional discovery aggregators that take a 15% to 20% cut on every booking, 100% of client UPI payments settle directly to your bank account with zero deductions.
                 </p>
               </div>
 
@@ -124,7 +138,7 @@ export default function RoiCalculator() {
 
             {/* Right Calculated Results Showcase */}
             <div className="lg:col-span-6 space-y-4">
-              <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white shadow-lg space-y-6 relative overflow-hidden">
+              <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white shadow-lg space-y-6 relative overflow-hidden">
                 
                 {/* Subtle Background Glow */}
                 <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
@@ -133,7 +147,7 @@ export default function RoiCalculator() {
                   <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">
                     Your Monthly Practice Impact
                   </span>
-                  <span className="text-[11px] bg-emerald-400/20 text-emerald-300 font-mono px-2 py-0.5 rounded-full border border-emerald-400/30">
+                  <span className="text-[11px] bg-emerald-400/20 text-emerald-300 font-mono px-2 py-0.5 rounded-full border border-emerald-400/30 font-bold">
                     26 Work Days
                   </span>
                 </div>
@@ -142,12 +156,12 @@ export default function RoiCalculator() {
                 <div className="grid grid-cols-2 gap-4">
                   
                   {/* Hours Saved */}
-                  <div className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-1">
+                  <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-1">
                     <div className="flex items-center gap-1.5 text-xs text-indigo-300 font-semibold">
                       <Clock className="w-3.5 h-3.5" />
                       <span>Time Saved</span>
                     </div>
-                    <div className="text-2xl sm:text-3xl font-black text-white">
+                    <div className="text-2xl sm:text-3xl font-black text-white font-mono">
                       ~{hoursSavedPerMonth} hrs
                     </div>
                     <div className="text-[10px] text-slate-400">
@@ -156,12 +170,12 @@ export default function RoiCalculator() {
                   </div>
 
                   {/* Calls Eliminated */}
-                  <div className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-1">
+                  <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-1">
                     <div className="flex items-center gap-1.5 text-xs text-sky-300 font-semibold">
                       <PhoneOff className="w-3.5 h-3.5" />
                       <span>Calls Avoided</span>
                     </div>
-                    <div className="text-2xl sm:text-3xl font-black text-white">
+                    <div className="text-2xl sm:text-3xl font-black text-white font-mono">
                       {phoneCallsEliminated}+
                     </div>
                     <div className="text-[10px] text-slate-400">
@@ -170,24 +184,24 @@ export default function RoiCalculator() {
                   </div>
 
                   {/* Direct UPI Commission Retained */}
-                  <div className="col-span-2 p-4 rounded-xl bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-emerald-500/40 space-y-1">
+                  <div className="col-span-2 p-4.5 rounded-2xl bg-gradient-to-r from-emerald-950/70 to-slate-900 border border-emerald-500/40 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-bold">
                         <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Commission Saved (vs 15% Portals)</span>
+                        <span>Commission Retained (vs 15% Aggregators)</span>
                       </div>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500 text-slate-950">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950">
                         100% Retained
                       </span>
                     </div>
 
                     <div className="text-2xl sm:text-3xl font-black text-emerald-300 font-mono">
-                      +₹{commissionSaved.toLocaleString('en-IN')}{' '}
+                      +{formatINR(commissionSaved)}{' '}
                       <span className="text-xs font-sans text-slate-300 font-normal">/ month retained</span>
                     </div>
 
                     <div className="text-[11px] text-slate-400 pt-0.5">
-                      Based on ₹{monthlyGrossRevenue.toLocaleString('en-IN')} gross monthly consultation bookings.
+                      Based on {formatINR(monthlyGrossRevenue)} gross monthly consultation bookings.
                     </div>
                   </div>
 
@@ -195,20 +209,27 @@ export default function RoiCalculator() {
 
                 {/* Call To Action */}
                 <div className="pt-2">
-                  <Link
-                    href="/register"
-                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold text-xs text-center shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
-                  >
-                    <span>Claim Your Free Practice Page Now</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Link
+                      href="/register"
+                      className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-extrabold text-xs text-center shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>Claim Your Free Practice Page Now</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </motion.div>
                 </div>
 
               </div>
             </div>
 
           </div>
-        </div>
+        </motion.div>
+
+        {/* Footnote Assumptions */}
+        <p className="text-[11px] text-slate-400 text-center max-w-2xl mx-auto">
+          * Calculation assumptions: 26 practice working days per month, estimated 8 minutes saved per appointment across patient inquiries and phone calls, and standard 15% aggregator platform commissions avoided.
+        </p>
 
       </div>
     </section>

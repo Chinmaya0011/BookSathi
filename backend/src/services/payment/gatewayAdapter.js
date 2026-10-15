@@ -2,7 +2,7 @@ import crypto from 'crypto';
 
 /**
  * Base Payment Gateway Adapter Interface
- * All concrete gateway implementations (Simulated, Razorpay, Stripe, Cashfree, etc.) must implement these methods.
+ * Cashfree is the exclusive payment gateway driver for BookSaathi.
  */
 export class BasePaymentGateway {
   constructor(name) {
@@ -53,14 +53,11 @@ export const registerGateway = (name, gatewayInstance) => {
   registeredGateways.set(name.toUpperCase(), gatewayInstance);
 };
 
-export const getPaymentGateway = (providerName) => {
-  const selected = (providerName || process.env.PAYMENT_GATEWAY_DEFAULT || 'SIMULATED').toUpperCase();
-  const gateway = registeredGateways.get(selected);
+export const getPaymentGateway = (providerName = 'CASHFREE') => {
+  // Cashfree is the sole payment gateway in the application
+  const gateway = registeredGateways.get('CASHFREE') || registeredGateways.get((providerName || 'CASHFREE').toUpperCase());
   if (!gateway) {
-    // Fallback to SIMULATED if requested driver is not initialized
-    const fallback = registeredGateways.get('SIMULATED');
-    if (fallback) return fallback;
-    throw new Error(`Payment gateway provider '${selected}' is not registered.`);
+    throw new Error(`Cashfree payment gateway driver is not registered.`);
   }
   return gateway;
 };

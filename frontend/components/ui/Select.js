@@ -17,7 +17,7 @@ export default function Select({
   return (
     <div className="w-full">
       {label && (
-        <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+        <label className="text-xs font-semibold text-slate-700 block mb-1.5 tracking-tight">
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
       )}
@@ -27,8 +27,8 @@ export default function Select({
         onChange={onChange}
         required={required}
         className={cn(
-          'w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all',
-          error && 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500',
+          'w-full px-3.5 py-2.5 bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all cursor-pointer',
+          error && 'border-rose-400 focus:ring-rose-500/20 focus:border-rose-500',
           className
         )}
         {...props}

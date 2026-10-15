@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import {
   Users,
   Star,
@@ -7,8 +8,6 @@ import {
   Scale,
   Calculator,
   GraduationCap,
-  Sparkles,
-  CheckCircle2,
   Quote,
 } from 'lucide-react';
 
@@ -60,12 +59,37 @@ export default function LandingTestimonials() {
     },
   ];
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+    },
+  };
+
   return (
-    <section id="testimonials" className="py-16 sm:py-24 bg-white border-t border-slate-100">
+    <section id="testimonials" className="py-16 sm:py-24 bg-white border-t border-slate-100 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 sm:space-y-16">
         
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto space-y-3">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-2xl mx-auto space-y-3"
+        >
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold shadow-2xs">
             <Users className="w-3.5 h-3.5 text-indigo-600" />
             <span>Practitioner Stories</span>
@@ -76,16 +100,24 @@ export default function LandingTestimonials() {
           <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
             See how clinics, legal chambers, and financial consultancies elevated their appointment booking experience.
           </p>
-        </div>
+        </motion.div>
 
         {/* Testimonials 4-Card Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-50px' }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8"
+        >
           {testimonials.map((t, idx) => {
             const Icon = t.icon;
             return (
-              <div
+              <motion.div
                 key={idx}
-                className="p-6 sm:p-8 rounded-3xl bg-slate-50/70 border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:bg-white transition-all flex flex-col justify-between space-y-6 group"
+                variants={cardVariants}
+                whileHover={{ y: -3, transition: { duration: 0.2 } }}
+                className="p-6 sm:p-8 rounded-3xl bg-slate-50/70 border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:bg-white transition-all flex flex-col justify-between space-y-6 group cursor-default"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -99,24 +131,26 @@ export default function LandingTestimonials() {
                     </span>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal italic">
+                  <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
                     &ldquo;{t.quote}&rdquo;
                   </p>
                 </div>
 
-                <div className="pt-4 border-t border-slate-200/70 flex items-center gap-3.5">
-                  <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center shrink-0 shadow-2xs ${t.color}`}>
+                <div className="flex items-center gap-3 pt-2 border-t border-slate-200/60">
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 shadow-2xs ${t.color}`}>
                     <Icon className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">{t.name}</h4>
-                    <p className="text-xs text-slate-500 font-medium">{t.role} • {t.location}</p>
+                    <h4 className="text-xs font-bold text-slate-900">{t.name}</h4>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      {t.role} • {t.location}
+                    </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
 
       </div>
     </section>

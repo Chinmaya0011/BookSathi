@@ -14,6 +14,11 @@ const paymentSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      index: true,
+    },
     professionalId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'ProfessionalProfile',
@@ -45,16 +50,21 @@ const paymentSchema = new mongoose.Schema(
       default: 'INR',
       uppercase: true,
     },
+    isDemo: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     status: {
       type: String,
-      enum: ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED', 'PARTIALLY_REFUNDED', 'CANCELLED'],
+      enum: ['CREATED', 'PENDING', 'SUCCESS', 'FAILED', 'REFUNDED', 'PARTIALLY_REFUNDED', 'CANCELLED', 'DEMO_SUCCESS', 'DEMO_FAILED'],
       default: 'PENDING',
       index: true,
     },
     paymentMethod: {
       type: String,
-      enum: ['UPI', 'CARD', 'NETBANKING', 'WALLET', 'CASH', 'SIMULATED', 'GATEWAY', 'FREE'],
-      default: 'SIMULATED',
+      enum: ['CASHFREE', 'CASHFREE_DEMO', 'UPI', 'CARD', 'NETBANKING', 'WALLET', 'CASH', 'FREE'],
+      default: 'CASHFREE',
     },
     paymentMode: {
       type: String,
@@ -63,8 +73,8 @@ const paymentSchema = new mongoose.Schema(
     },
     gatewayProvider: {
       type: String,
-      enum: ['SIMULATED', 'RAZORPAY', 'STRIPE', 'CASHFREE', 'MANUAL_CASH', 'NONE'],
-      default: 'SIMULATED',
+      enum: ['CASHFREE', 'NONE'],
+      default: 'CASHFREE',
     },
     gatewayOrderId: {
       type: String,
@@ -80,10 +90,31 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    cashfreeOrderId: {
+      type: String,
+      default: '',
+      index: true,
+    },
+    cashfreePaymentId: {
+      type: String,
+      default: '',
+      index: true,
+    },
+    paymentSessionId: {
+      type: String,
+      default: '',
+    },
     gatewayRawResponse: {
       type: mongoose.Schema.Types.Mixed,
       default: null,
     },
+    webhookEvents: [
+      {
+        event: { type: String, required: true },
+        receivedAt: { type: Date, default: Date.now },
+        payload: { type: mongoose.Schema.Types.Mixed },
+      },
+    ],
     refundStatus: {
       type: String,
       enum: ['NONE', 'REQUESTED', 'PROCESSED', 'FAILED'],
@@ -98,6 +129,10 @@ const paymentSchema = new mongoose.Schema(
       default: '',
     },
     refundId: {
+      type: String,
+      default: '',
+    },
+    cfRefundId: {
       type: String,
       default: '',
     },

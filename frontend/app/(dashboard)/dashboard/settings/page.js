@@ -148,7 +148,7 @@ export default function SettingsPage() {
       {activeTab === 'security' ? (
         <LoginActivityCard />
       ) : (
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 sm:p-8">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-6 sm:p-8">
           <form onSubmit={handleSave} className="space-y-6">
             <div className="space-y-4">
               <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">

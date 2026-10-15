@@ -141,6 +141,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
         title: 'Settings & Setup',
         items: [
           { label: 'Business Profile', href: '/dashboard/setup', icon: User },
+          { label: 'Subscription & Plans', href: '/dashboard/subscription', icon: Sparkles },
           { label: 'Booking Rules & Security', href: '/dashboard/settings', icon: Settings },
           { label: 'Payments & Slips', href: '/dashboard/payments', icon: CreditCard },
         ],
@@ -172,13 +173,13 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
       {/* Sidebar Container */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 bg-[#0c111d] text-slate-300 flex flex-col transition-all duration-250 ease-in-out md:translate-x-0 md:sticky md:top-0 md:h-screen md:shrink-0 select-none border-r border-slate-800/70 shadow-2xl md:shadow-none overflow-hidden font-sans',
+          'fixed inset-y-0 left-0 z-50 bg-[#090d16] text-slate-300 flex flex-col transition-all duration-200 ease-in-out md:translate-x-0 md:sticky md:top-0 md:h-screen md:shrink-0 select-none border-r border-slate-800/80 shadow-2xl md:shadow-none overflow-hidden font-sans',
           mobileOpen ? 'translate-x-0 w-68 max-w-[85vw]' : '-translate-x-full md:translate-x-0',
           isCollapsed ? 'md:w-[70px]' : 'md:w-64'
         )}
       >
         {/* Brand Header with Top Clearance & Margin */}
-        <div className="h-16 px-4 pt-2 pb-1 border-b border-slate-800/60 shrink-0 flex items-center justify-between">
+        <div className="h-15 px-4 border-b border-slate-800/80 shrink-0 flex items-center justify-between">
           {!isCollapsed ? (
             <>
               <Link
@@ -186,11 +187,11 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
                 onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-2.5 min-w-0 flex-1 group"
               >
-                <div className="w-8.5 h-8.5 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-600/30 shrink-0 transition-transform group-hover:scale-105">
-                  <CalendarCheck className="w-4.5 h-4.5" />
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white font-bold shadow-xs shadow-indigo-600/30 shrink-0 transition-transform group-hover:scale-105">
+                  <CalendarCheck className="w-4 h-4 stroke-[2.25]" />
                 </div>
                 <div className="overflow-hidden min-w-0 flex items-center gap-2">
-                  <span className="text-[15px] font-black text-white tracking-tight">
+                  <span className="text-sm font-black text-white tracking-tight">
                     Book<span className="text-indigo-400">Saathi</span>
                   </span>
                   <span className="text-[10px] font-bold text-slate-300 bg-slate-800/90 border border-slate-700/80 px-1.5 py-0.5 rounded-md">
@@ -217,7 +218,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 md:hidden shrink-0 cursor-pointer"
                 aria-label="Close sidebar"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4.5 h-4.5" />
               </button>
             </>
           ) : (
@@ -226,11 +227,11 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
               <button
                 type="button"
                 onClick={toggleCollapse}
-                className="w-8.5 h-8.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white transition-transform active:scale-95 cursor-pointer shadow-md shadow-indigo-600/30"
+                className="w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white transition-transform active:scale-95 cursor-pointer shadow-xs shadow-indigo-600/30"
                 title="Expand sidebar"
                 aria-label="Expand sidebar"
               >
-                <PanelLeftOpen className="w-4.5 h-4.5" />
+                <PanelLeftOpen className="w-4 h-4" />
               </button>
             </div>
           )}
@@ -239,21 +240,21 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
         {/* Navigation Groups with Generous Margin Gaps */}
         <nav
           className={cn(
-            'flex-1 overflow-y-auto overscroll-contain no-scrollbar transition-all py-4',
-            isCollapsed ? 'px-2 space-y-4' : 'px-3 space-y-5'
+            'flex-1 overflow-y-auto overscroll-contain no-scrollbar transition-all py-3.5',
+            isCollapsed ? 'px-2 space-y-3.5' : 'px-3 space-y-4'
           )}
         >
           {navGroups.map((group, gIdx) => (
-            <div key={gIdx} className="space-y-1.5">
+            <div key={gIdx} className="space-y-1">
               {!isCollapsed ? (
-                <div className="px-3 pb-1 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">
+                <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400/90">
                   {group.title}
                 </div>
               ) : (
                 gIdx > 0 && <div className="my-2 border-t border-slate-800/60 mx-1" />
               )}
 
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const [itemBase, itemQuery] = item.href.split('?');
@@ -283,11 +284,11 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
                       onClick={() => setMobileOpen(false)}
                       title={isCollapsed ? item.label : undefined}
                       className={cn(
-                        'group flex items-center rounded-xl text-[13px] font-semibold transition-all duration-150 cursor-pointer',
+                        'group flex items-center rounded-xl text-[13px] font-medium transition-all duration-150 cursor-pointer',
                         isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2',
                         isActive
-                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold'
-                          : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
+                          ? 'bg-indigo-600 text-white shadow-xs shadow-indigo-600/30 font-semibold'
+                          : 'text-slate-400 hover:text-slate-100 hover:bg-slate-850/60'
                       )}
                     >
                       <div
@@ -300,8 +301,8 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
                           className={cn(
                             'w-4 h-4 shrink-0 transition-colors',
                             isActive
-                              ? 'text-white stroke-[2.5]'
-                              : 'text-slate-400 group-hover:text-slate-200'
+                              ? 'text-white stroke-[2.25]'
+                              : 'text-slate-400 group-hover:text-slate-200 stroke-[1.75]'
                           )}
                         />
                         {!isCollapsed && <span className="truncate">{item.label}</span>}
@@ -325,18 +326,18 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
           ))}
         </nav>
 
-        {/* Profile Card & Signout Footer with Margin Clearance */}
+        {/* Profile Card & Signout Footer */}
         <div
           className={cn(
-            'border-t border-slate-800/60 shrink-0 bg-[#090d16] transition-all',
-            isCollapsed ? 'p-2 space-y-2' : 'p-3.5 space-y-2.5'
+            'border-t border-slate-800/80 shrink-0 bg-[#070b12] transition-all',
+            isCollapsed ? 'p-2 space-y-2' : 'p-3 space-y-2'
           )}
         >
           {/* User Preview Container */}
           <div
             className={cn(
-              'flex items-center rounded-xl bg-slate-900/60 border border-slate-800/70 transition-colors',
-              isCollapsed ? 'p-1.5 justify-center' : 'p-2.5 gap-2.5'
+              'flex items-center rounded-xl bg-slate-900/70 border border-slate-800/80 transition-colors',
+              isCollapsed ? 'p-1.5 justify-center' : 'p-2 gap-2.5'
             )}
             title={`${displayName} • ${displayRole}`}
           >
@@ -345,17 +346,17 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
                 <img
                   src={profile?.profileImage || user?.avatar}
                   alt={displayName}
-                  className="w-8 h-8 rounded-lg object-cover border border-slate-700"
+                  className="w-7.5 h-7.5 rounded-lg object-cover border border-slate-700"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}
                 />
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 flex items-center justify-center font-black text-xs">
+                <div className="w-7.5 h-7.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 flex items-center justify-center font-bold text-xs">
                   {displayName.charAt(0).toUpperCase()}
                 </div>
               )}
-              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#090d16]" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-[#070b12]" />
             </div>
 
             {!isCollapsed && (
@@ -381,8 +382,8 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
             onClick={logout}
             title={isCollapsed ? 'Sign Out' : undefined}
             className={cn(
-              'w-full flex items-center justify-center rounded-xl text-xs font-bold text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors cursor-pointer',
-              isCollapsed ? 'p-2' : 'gap-2 px-3 py-2'
+              'w-full flex items-center justify-center rounded-xl text-xs font-medium text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors cursor-pointer',
+              isCollapsed ? 'p-1.5' : 'gap-1.5 px-3 py-1.5'
             )}
           >
             <LogOut className="w-3.5 h-3.5 shrink-0" />

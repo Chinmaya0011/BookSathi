@@ -167,7 +167,7 @@ export const getSystemOverviewStats = async () => {
       database: dbStatus,
       uptimeSeconds,
       memoryUsageMB,
-      activeGateway: process.env.PAYMENT_GATEWAY_DEFAULT || 'SIMULATED',
+      activeGateway: Boolean(process.env.CASHFREE_APP_ID && process.env.CASHFREE_SECRET_KEY) ? 'Cashfree' : 'Cashfree (Demo Mode)',
       nodeVersion: process.version,
       environment: process.env.NODE_ENV || 'development',
     },

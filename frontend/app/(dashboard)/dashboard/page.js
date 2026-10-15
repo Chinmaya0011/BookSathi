@@ -129,6 +129,9 @@ export default function DashboardOverviewPage() {
         toast.success('Dashboard metrics refreshed');
       }
     } catch (e) {
+      if (e?.response?.status === 401) {
+        return;
+      }
       console.error('Error loading dashboard stats:', e);
       toast.error('Failed to load dashboard metrics');
     } finally {
@@ -138,6 +141,9 @@ export default function DashboardOverviewPage() {
   };
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) return;
+
     if (role === 'ADMIN') {
       router.push('/admin');
       return;

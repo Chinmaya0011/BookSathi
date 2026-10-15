@@ -4,7 +4,7 @@ import { authService } from '@/services/auth.service';
 export const useAuthStore = create((set, get) => ({
   user: null,
   profile: null,
-  loading: false,
+  loading: typeof window !== 'undefined' ? !!localStorage.getItem('bs_token') : true,
   isAuthenticated: false,
 
   setUser: (user) => {
@@ -23,12 +23,19 @@ export const useAuthStore = create((set, get) => ({
   fetchCurrentUser: async () => {
     try {
       if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('bs_token');
+        if (!token) {
+          localStorage.removeItem('bs_user');
+          set({ user: null, profile: null, isAuthenticated: false, loading: false });
+          return;
+        }
+
         const raw = localStorage.getItem('bs_user');
         if (raw) {
           try {
             const cachedUser = JSON.parse(raw);
             if (cachedUser) {
-              set({ user: cachedUser, isAuthenticated: true });
+              set({ user: cachedUser, isAuthenticated: true, loading: true });
             }
           } catch (e) {}
         }

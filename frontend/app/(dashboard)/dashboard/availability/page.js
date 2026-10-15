@@ -564,54 +564,54 @@ export default function AvailabilityPage() {
       </div>
 
       {/* 0. PRIMARY BOOKING MODE SELECTOR */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-7 shadow-xs space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">
               CORE SYSTEM SETTING
             </span>
-            <h2 className="text-base sm:text-lg font-black text-slate-900 mt-0.5">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight mt-0.5">
               Select Booking System Type
             </h2>
             <p className="text-xs text-slate-500">
               Only one mode is active at a time. Your public booking link adjusts automatically.
             </p>
           </div>
-          <span className="px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold">
+          <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200/70 text-indigo-700 text-xs font-semibold">
             Active: {bookingMode === 'QUEUE' ? 'Live Token Queue' : 'Fixed Time Slots'}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
           {/* Option 1: Time Slot Mode */}
           <button
             type="button"
             onClick={() => handleRequestModeChange('TIME_SLOT')}
             className={cn(
-              'p-5 rounded-3xl border text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between gap-3',
+              'p-4 sm:p-5 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between gap-3',
               bookingMode === 'TIME_SLOT'
-                ? 'bg-gradient-to-br from-indigo-50/90 via-white to-indigo-50/50 border-indigo-600 ring-2 ring-indigo-600/20 shadow-md'
-                : 'bg-slate-50/60 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                ? 'bg-indigo-50/50 border-indigo-600 ring-1 ring-indigo-500/20 shadow-2xs'
+                : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50'
             )}
           >
             <div className="flex items-start justify-between">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/25">
-                <Clock className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-2xs">
+                <Clock className="w-4 h-4" />
               </div>
               {bookingMode === 'TIME_SLOT' ? (
-                <span className="inline-flex items-center gap-1 text-xs font-black text-indigo-700 bg-indigo-100/80 px-2.5 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded-full">
                   <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
                   <span>ACTIVE</span>
                 </span>
               ) : (
-                <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600">
+                <span className="text-xs font-semibold text-slate-400 group-hover:text-slate-600">
                   Switch to Slots →
                 </span>
               )}
             </div>
 
             <div>
-              <h3 className="text-sm font-black text-slate-900">Type 1: Fixed Time Slots</h3>
+              <h3 className="text-sm font-bold text-slate-900">Type 1: Fixed Time Slots</h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                 Clients book specific times (e.g. 09:00 AM – 09:30 AM). Best for planned consultations, video calls, legal/financial advice, and scheduled appointments.
               </p>
@@ -627,30 +627,30 @@ export default function AvailabilityPage() {
             type="button"
             onClick={() => handleRequestModeChange('QUEUE')}
             className={cn(
-              'p-5 rounded-3xl border text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between gap-3',
+              'p-4 sm:p-5 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between gap-3',
               bookingMode === 'QUEUE'
-                ? 'bg-gradient-to-br from-indigo-50/90 via-white to-indigo-50/50 border-indigo-600 ring-2 ring-indigo-600/20 shadow-md'
-                : 'bg-slate-50/60 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                ? 'bg-indigo-50/50 border-indigo-600 ring-1 ring-indigo-500/20 shadow-2xs'
+                : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50'
             )}
           >
             <div className="flex items-start justify-between">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/25">
-                <Ticket className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-2xs">
+                <Ticket className="w-4 h-4" />
               </div>
               {bookingMode === 'QUEUE' ? (
-                <span className="inline-flex items-center gap-1 text-xs font-black text-indigo-700 bg-indigo-100/80 px-2.5 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded-full">
                   <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
                   <span>ACTIVE</span>
                 </span>
               ) : (
-                <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600">
+                <span className="text-xs font-semibold text-slate-400 group-hover:text-slate-600">
                   Switch to Queue →
                 </span>
               )}
             </div>
 
             <div>
-              <h3 className="text-sm font-black text-slate-900">Type 2: Live Token Queue</h3>
+              <h3 className="text-sm font-bold text-slate-900">Type 2: Live Token Queue</h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                 Sequential tokens (#1, #2, #3...) with live queue tracking, estimated wait time, and dashboard "Call Next Token" controls. Best for clinics, OPDs, salons, and walk-ins.
               </p>

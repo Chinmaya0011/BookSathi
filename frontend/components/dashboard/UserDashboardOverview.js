@@ -127,55 +127,55 @@ export default function UserDashboardOverview({ user }) {
       </div>
 
       {/* 2. Key Customer Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-            <Calendar className="w-6 h-6" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+            <Calendar className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Confirmed</p>
-            <p className="text-2xl font-black text-slate-900">{confirmedCount}</p>
+            <p className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Confirmed</p>
+            <p className="text-xl sm:text-2xl font-black text-slate-900">{confirmedCount}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
-            <Clock className="w-6 h-6" />
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+            <Clock className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pending</p>
-            <p className="text-2xl font-black text-slate-900">{pendingCount}</p>
+            <p className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pending</p>
+            <p className="text-xl sm:text-2xl font-black text-slate-900">{pendingCount}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-            <CheckCircle2 className="w-6 h-6" />
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+            <CheckCircle2 className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Completed</p>
-            <p className="text-2xl font-black text-slate-900">{completedCount}</p>
+            <p className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Completed</p>
+            <p className="text-xl sm:text-2xl font-black text-slate-900">{completedCount}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shrink-0">
-            <CalendarCheck className="w-6 h-6" />
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shrink-0">
+            <CalendarCheck className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Visits</p>
-            <p className="text-2xl font-black text-slate-900">{appointments.length}</p>
+            <p className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Visits</p>
+            <p className="text-xl sm:text-2xl font-black text-slate-900">{appointments.length}</p>
           </div>
         </div>
       </div>
 
       {/* 3. Next Upcoming Appointment Spotlight */}
       {nextAppointment ? (
-        <div className="bg-slate-900 rounded-3xl p-6 sm:p-7 text-white shadow-md relative overflow-hidden border border-slate-800">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative z-10">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
-                <CalendarCheck className="w-6 h-6" />
+        <div className="bg-slate-900 rounded-2xl p-5 sm:p-6 text-white shadow-xs relative overflow-hidden border border-slate-800">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+                <CalendarCheck className="w-5 h-5" />
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
@@ -192,13 +192,13 @@ export default function UserDashboardOverview({ user }) {
                     {nextAppointment.status}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-white">
+                <h3 className="text-base sm:text-lg font-bold text-white">
                   {nextAppointment.professionalId?.name || 'Practitioner'}
                 </h3>
                 <p className="text-xs text-slate-300">
                   {nextAppointment.appointmentTypeName || 'Consultation'} • {nextAppointment.duration || 30} mins
                 </p>
-                <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300 pt-1">
+                <div className="flex flex-wrap items-center gap-3.5 text-xs text-slate-300 pt-1">
                   <div className="flex items-center gap-1.5 font-medium">
                     <Calendar className="w-3.5 h-3.5 text-indigo-400" />
                     <span>{formatDisplayDate(nextAppointment.dateString)}</span>
@@ -218,7 +218,7 @@ export default function UserDashboardOverview({ user }) {
             <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
               <Link
                 href="/dashboard/appointments"
-                className="flex-1 md:flex-none text-center bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs px-4.5 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer"
+                className="flex-1 md:flex-none text-center bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs px-4 py-2.5 rounded-xl shadow-2xs transition-all cursor-pointer"
               >
                 View Pass & Details
               </Link>
@@ -233,9 +233,9 @@ export default function UserDashboardOverview({ user }) {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-8 text-center shadow-2xs space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mx-auto">
-            <Calendar className="w-6 h-6" />
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 text-center shadow-2xs space-y-3">
+          <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mx-auto">
+            <Calendar className="w-5 h-5" />
           </div>
           <div className="space-y-1">
             <h3 className="text-sm font-bold text-slate-900">No Upcoming Appointments</h3>
@@ -246,7 +246,7 @@ export default function UserDashboardOverview({ user }) {
           <div className="pt-2">
             <Link
               href="/lookup"
-              className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4.5 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-2xs transition-all cursor-pointer"
             >
               <Search className="w-3.5 h-3.5" />
               <span>Lookup Existing Appointment</span>
@@ -256,68 +256,68 @@ export default function UserDashboardOverview({ user }) {
       )}
 
       {/* 4. Quick Customer Shortcuts */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Link
           href="/dashboard/appointments"
-          className="bg-white hover:bg-slate-50 p-5 rounded-3xl border border-slate-200/90 shadow-2xs transition-all flex items-center gap-4 group cursor-pointer"
+          className="bg-white hover:bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs transition-all flex items-center gap-3.5 group cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-            <CalendarCheck className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+            <CalendarCheck className="w-5 h-5" />
           </div>
           <div>
             <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-indigo-600">My Bookings</h4>
-            <p className="text-[11px] text-slate-500">Track passes & queue</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-500">Track passes & queue</p>
           </div>
         </Link>
 
         <Link
           href="/lookup"
-          className="bg-white hover:bg-slate-50 p-5 rounded-3xl border border-slate-200/90 shadow-2xs transition-all flex items-center gap-4 group cursor-pointer"
+          className="bg-white hover:bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs transition-all flex items-center gap-3.5 group cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0 group-hover:bg-sky-600 group-hover:text-white transition-colors">
-            <QrCode className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0 group-hover:bg-sky-600 group-hover:text-white transition-colors">
+            <QrCode className="w-5 h-5" />
           </div>
           <div>
             <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-sky-600">Lookup Pass</h4>
-            <p className="text-[11px] text-slate-500">Check by phone number</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-500">Check by phone number</p>
           </div>
         </Link>
 
         <Link
           href="/dashboard/payments"
-          className="bg-white hover:bg-slate-50 p-5 rounded-3xl border border-slate-200/90 shadow-2xs transition-all flex items-center gap-4 group cursor-pointer"
+          className="bg-white hover:bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs transition-all flex items-center gap-3.5 group cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-            <CreditCard className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+            <CreditCard className="w-5 h-5" />
           </div>
           <div>
             <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-emerald-600">Invoices & Slips</h4>
-            <p className="text-[11px] text-slate-500">Download payment slips</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-500">Download payment slips</p>
           </div>
         </Link>
 
         <Link
           href="/dashboard/grievance"
-          className="bg-white hover:bg-slate-50 p-5 rounded-3xl border border-slate-200/90 shadow-2xs transition-all flex items-center gap-4 group cursor-pointer"
+          className="bg-white hover:bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs transition-all flex items-center gap-3.5 group cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-            <LifeBuoy className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+            <LifeBuoy className="w-5 h-5" />
           </div>
           <div>
             <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-purple-600">Help & Support</h4>
-            <p className="text-[11px] text-slate-500">Grievance & inquiries</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-500">Grievance & inquiries</p>
           </div>
         </Link>
       </div>
 
       {/* 5. Recent Bookings Summary List */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 p-7 sm:p-8 lg:p-9 shadow-2xs space-y-6">
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm sm:text-base font-bold text-slate-900 uppercase tracking-wider">
               Recent Consultations & Passes
             </h2>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 mt-0.5">
               Your recent in-clinic and on-visit appointment history
             </p>
           </div>
@@ -331,15 +331,15 @@ export default function UserDashboardOverview({ user }) {
         </div>
 
         {appointments.length === 0 ? (
-          <div className="p-6 text-center text-xs text-slate-500 bg-slate-50 rounded-2xl border border-slate-100">
+          <div className="p-6 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-100">
             No booking history yet. Appointments booked with practitioners will appear here.
           </div>
         ) : (
-          <div className="divide-y divide-slate-100 border border-slate-100 rounded-2xl overflow-hidden">
+          <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden">
             {appointments.slice(0, 5).map((appt) => (
               <div
                 key={appt._id}
-                className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:bg-slate-50 transition-colors"
+                className="p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">

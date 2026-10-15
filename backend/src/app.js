@@ -68,8 +68,15 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// Body parsers with request size limits
-app.use(express.json({ limit: '1mb' }));
+// Body parsers with request size limits and raw body capture for webhook signature verification
+app.use(
+  express.json({
+    limit: '1mb',
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString();
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Cookie Parser Middleware

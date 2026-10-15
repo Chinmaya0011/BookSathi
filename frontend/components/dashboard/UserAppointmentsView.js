@@ -66,6 +66,8 @@ export default function UserAppointmentsView({ user }) {
       socket.on('appointment:cancelled', handleUpdate);
       socket.on('appointment:rescheduled', handleUpdate);
       socket.on('appointment:completed', handleUpdate);
+      socket.on('payment:received', handleUpdate);
+      socket.on('payment:refunded', handleUpdate);
 
       return () => {
         socket.off('appointment:created', handleUpdate);
@@ -74,6 +76,8 @@ export default function UserAppointmentsView({ user }) {
         socket.off('appointment:cancelled', handleUpdate);
         socket.off('appointment:rescheduled', handleUpdate);
         socket.off('appointment:completed', handleUpdate);
+        socket.off('payment:received', handleUpdate);
+        socket.off('payment:refunded', handleUpdate);
       };
     }
   }, [tab]);
@@ -192,51 +196,51 @@ export default function UserAppointmentsView({ user }) {
       </div>
 
       {/* KPI Analytics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 shadow-2xs">
-            <Calendar className="w-5 h-5" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+            <Calendar className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Confirmed</p>
-            <p className="text-xl sm:text-2xl font-black text-slate-900">{confirmedCount}</p>
+            <p className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Confirmed</p>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900">{confirmedCount}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0 shadow-2xs">
-            <Clock className="w-5 h-5" />
+        <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+            <Clock className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Pending / Requests</p>
-            <p className="text-xl sm:text-2xl font-black text-slate-900">{pendingCount}</p>
+            <p className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Pending / Requests</p>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900">{pendingCount}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 shadow-2xs">
-            <CheckCircle2 className="w-5 h-5" />
+        <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+            <CheckCircle2 className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Completed</p>
-            <p className="text-xl sm:text-2xl font-black text-slate-900">{completedCount}</p>
+            <p className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Completed</p>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900">{completedCount}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shrink-0 shadow-2xs">
-            <CalendarCheck className="w-5 h-5" />
+        <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shrink-0">
+            <CalendarCheck className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Total in View</p>
-            <p className="text-xl sm:text-2xl font-black text-slate-900">{appointments.length}</p>
+            <p className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Total in View</p>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900">{appointments.length}</p>
           </div>
         </div>
       </div>
 
       {/* Tabs & Search */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+      <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-1 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
           {[
             { id: 'upcoming', label: 'Upcoming Consultations' },
             { id: 'pending', label: 'Pending Approval' },
@@ -246,10 +250,10 @@ export default function UserAppointmentsView({ user }) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                 tab === t.id
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:bg-slate-100'
+                  ? 'bg-indigo-600 text-white shadow-2xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               {t.label}
@@ -263,7 +267,7 @@ export default function UserAppointmentsView({ user }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             prefix={<Search className="w-4 h-4 text-slate-400" />}
-            className="py-2 text-xs"
+            className="py-1.5 text-xs"
           />
         </form>
       </div>
@@ -271,12 +275,12 @@ export default function UserAppointmentsView({ user }) {
       {/* Appointment Cards List */}
       <div className="space-y-4">
         {loading ? (
-          <div className="bg-white rounded-3xl p-16 flex flex-col items-center justify-center text-slate-400 border border-slate-200">
+          <div className="bg-white rounded-2xl p-16 flex flex-col items-center justify-center text-slate-400 border border-slate-200/80 shadow-2xs">
             <RefreshCw className="w-6 h-6 animate-spin text-indigo-600 mb-2" />
             <p className="text-xs font-semibold">Loading appointments...</p>
           </div>
         ) : appointments.length === 0 ? (
-          <div className="bg-white rounded-3xl p-12 text-center border border-slate-200">
+          <div className="bg-white rounded-2xl p-12 text-center border border-slate-200/80 shadow-2xs">
             <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <h3 className="text-base font-bold text-slate-900">No appointments found in this section</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-5">
@@ -284,7 +288,7 @@ export default function UserAppointmentsView({ user }) {
             </p>
             <Link
               href="/lookup"
-              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-2xs transition-all cursor-pointer"
             >
               <Search className="w-4 h-4" />
               <span>Lookup Booking with Phone Number</span>
@@ -299,15 +303,15 @@ export default function UserAppointmentsView({ user }) {
               return (
                 <div
                   key={appt._id}
-                  className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                  className="bg-white rounded-xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between"
                 >
-                  <div className="space-y-3.5">
+                  <div className="space-y-3">
                     {/* Header: Pro Info & Status Badge */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 min-w-0">
                         <Link
                           href={`/profile/${pro.bookingSlug || pro._id}`}
-                          className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold flex items-center justify-center text-base shrink-0 shadow-md hover:opacity-90 transition-opacity"
+                          className="w-11 h-11 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shrink-0 shadow-2xs hover:opacity-95 transition-opacity"
                         >
                           {pro.profileImage ? (
                             <img
@@ -322,11 +326,11 @@ export default function UserAppointmentsView({ user }) {
                         <div className="min-w-0">
                           <Link
                             href={`/profile/${pro.bookingSlug || pro._id}`}
-                            className="text-sm font-bold text-slate-900 truncate hover:text-indigo-600 transition-colors block"
+                            className="text-sm font-semibold text-slate-900 truncate hover:text-indigo-600 transition-colors block"
                           >
                             {pro.name || 'Professional'}
                           </Link>
-                          <p className="text-xs font-semibold text-indigo-600 truncate">{pro.profession || 'Specialist'}</p>
+                          <p className="text-xs font-medium text-indigo-600 truncate">{pro.profession || 'Specialist'}</p>
                           <p className="text-[11px] text-slate-400 truncate">{pro.specialization || pro.city}</p>
                         </div>
                       </div>
@@ -338,20 +342,45 @@ export default function UserAppointmentsView({ user }) {
                     </div>
 
                     {/* Date, Time & Service Details */}
-                    <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-2 text-xs text-slate-700">
+                    <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-100 space-y-1.5 text-xs text-slate-700">
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500 font-medium">Service:</span>
-                        <span className="font-bold text-slate-900">{appt.appointmentTypeName || 'Consultation'}</span>
+                        <span className="font-semibold text-slate-900">{appt.appointmentTypeName || 'Consultation'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500 font-medium">Date & Time:</span>
-                        <span className="font-bold text-indigo-700">
+                        <span className="font-semibold text-indigo-700">
                           {formatDisplayDate(appt.dateString)} • {format12Hour(appt.startTime)} - {format12Hour(appt.endTime)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500 font-medium">Consultation Fee:</span>
-                        <span className="font-extrabold text-slate-900">{formatINR(appt.fee)}</span>
+                        <span className="font-bold text-slate-900">{formatINR(appt.fee)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-medium">Payment Status:</span>
+                        <span
+                          className={`inline-flex items-center gap-1 font-semibold px-2 py-0.5 rounded-md text-[11px] ${
+                            appt.paymentStatus === 'PAID'
+                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                              : appt.paymentStatus === 'PAY_AT_CLINIC'
+                              ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                              : appt.paymentStatus === 'REFUNDED'
+                              ? 'bg-purple-50 text-purple-800 border border-purple-200'
+                              : 'bg-orange-50 text-orange-800 border border-orange-200'
+                          }`}
+                        >
+                          {appt.paymentStatus === 'PAID' && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                          <span>
+                            {appt.paymentStatus === 'PAID'
+                              ? (appt.paymentMode === 'ONLINE' ? 'Paid Online' : 'Paid (Offline)')
+                              : appt.paymentStatus === 'PAY_AT_CLINIC'
+                              ? 'Pay at Clinic'
+                              : appt.paymentStatus === 'REFUNDED'
+                              ? 'Refunded'
+                              : 'Pending'}
+                          </span>
+                        </span>
                       </div>
                     </div>
 
@@ -391,6 +420,17 @@ export default function UserAppointmentsView({ user }) {
                       <Download className="w-3.5 h-3.5" />
                       <span>{downloadingId === appt._id ? 'Generating...' : 'Receipt PDF'}</span>
                     </button>
+
+                    {(appt.paymentStatus === 'PAID' || appt.paymentId) && (
+                      <Link
+                        href={`/payments/invoice/${appt.paymentId || appt._id}`}
+                        target="_blank"
+                        className="inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Tax Invoice</span>
+                      </Link>
+                    )}
 
                     {isCancelable && (
                       <>

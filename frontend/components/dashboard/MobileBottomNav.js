@@ -382,11 +382,11 @@ export default function MobileBottomNav({ onOpenManualModal }) {
                     type="button"
                     onClick={item.action}
                     aria-label={item.label}
-                    className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-sky-400 text-white flex items-center justify-center shadow-lg shadow-indigo-600/40 active:scale-90 transition-transform cursor-pointer border-2 border-white"
+                    className="w-12 h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-md shadow-indigo-600/30 active:scale-95 transition-all cursor-pointer border-2 border-white"
                   >
-                    <item.icon className="w-6 h-6 stroke-[2.5]" />
+                    <item.icon className="w-5.5 h-5.5 stroke-[2.25]" />
                   </button>
-                  <span className="text-[10px] font-extrabold text-indigo-600 mt-0.5">
+                  <span className="text-[10px] font-bold text-indigo-600 mt-0.5">
                     {item.label}
                   </span>
                 </div>

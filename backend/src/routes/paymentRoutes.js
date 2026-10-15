@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import {
   createOrder,
+  getOrderStatus,
   verifyPayment,
+  handleWebhook,
   recordManual,
   processRefund,
   getPayments,
@@ -22,15 +24,19 @@ const router = Router();
 
 // --- Public / Checkout Endpoints ---
 router.post('/create-order', validate(createOrderSchema), createOrder);
+router.get('/:orderId/status', getOrderStatus);
+router.get('/order/:orderId/status', getOrderStatus);
 router.post('/verify', validate(verifyPaymentSchema), verifyPayment);
-router.get('/:id/invoice', optionalAuth, getInvoice);
+router.post('/webhook', handleWebhook);
 router.post('/webhook/simulate', simulateWebhook);
+router.get('/:id/invoice', optionalAuth, getInvoice);
 
-// --- Protected Doctor Dashboard Endpoints ---
+// --- Protected Doctor / Admin Dashboard Endpoints ---
 router.use(authenticate);
 router.get('/', getPayments);
 router.get('/stats', getAnalytics);
 router.post('/record-manual', validate(recordManualPaymentSchema), recordManual);
+router.post('/:orderId/refund', validate(refundPaymentSchema), processRefund);
 router.post('/:id/refund', validate(refundPaymentSchema), processRefund);
 
 export default router;

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, HelpCircle, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, HelpCircle } from 'lucide-react';
 
 export default function FaqSection() {
   const [openIdx, setOpenIdx] = useState(0);
@@ -50,12 +51,22 @@ export default function FaqSection() {
       ? faqs
       : faqs.filter((item) => item.category === selectedCategory);
 
+  const toggleAccordion = (idx) => {
+    setOpenIdx(openIdx === idx ? null : idx);
+  };
+
   return (
-    <section id="faq" className="py-16 sm:py-24 bg-slate-50/50 border-t border-slate-100">
+    <section id="faq" className="py-16 sm:py-24 bg-slate-50/50 border-t border-slate-100 font-sans">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto space-y-3">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-2xl mx-auto space-y-3"
+        >
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold shadow-2xs">
             <HelpCircle className="w-3.5 h-3.5 text-indigo-600" />
             <span>Got Questions?</span>
@@ -66,99 +77,76 @@ export default function FaqSection() {
           <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
             Everything you need to know about setting up your practice and accepting bookings.
           </p>
-        </div>
+        </motion.div>
 
         {/* Category Filter Chips */}
         <div className="flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => setSelectedCategory('all')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              selectedCategory === 'all'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
-            }`}
-          >
-            All Questions
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedCategory('clients')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              selectedCategory === 'clients'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
-            }`}
-          >
-            Client Experience
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedCategory('payments')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              selectedCategory === 'payments'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
-            }`}
-          >
-            Payments & UPI
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedCategory('queue')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              selectedCategory === 'queue'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
-            }`}
-          >
-            Queue & Tokens
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedCategory('setup')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              selectedCategory === 'setup'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
-            }`}
-          >
-            Setup & Customization
-          </button>
+          {[
+            { id: 'all', label: 'All Questions' },
+            { id: 'clients', label: 'Client Experience' },
+            { id: 'payments', label: 'UPI Payments & Fees' },
+            { id: 'queue', label: 'Queue & Tokens' },
+            { id: 'setup', label: 'Setup & Standees' },
+          ].map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                selectedCategory === cat.id
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
         </div>
 
-        {/* FAQ Accordion List */}
+        {/* Accordion List */}
         <div className="space-y-3">
           {filteredFaqs.map((faq, idx) => {
             const isOpen = openIdx === idx;
             return (
-              <div
+              <motion.div
                 key={faq.q}
-                className="rounded-2xl bg-white border border-slate-200/90 shadow-2xs overflow-hidden transition-all"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: idx * 0.04 }}
+                className="rounded-2xl bg-white border border-slate-200/90 shadow-2xs overflow-hidden"
               >
                 <button
                   type="button"
-                  onClick={() => setOpenIdx(isOpen ? null : idx)}
-                  className="w-full p-5 text-left flex items-center justify-between gap-4 hover:bg-slate-50/80 transition-colors"
+                  onClick={() => toggleAccordion(idx)}
+                  className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50/50 transition-colors"
+                  aria-expanded={isOpen}
                 >
-                  <span className="font-bold text-sm sm:text-base text-slate-900">
+                  <span className="text-sm font-bold text-slate-900 leading-snug">
                     {faq.q}
                   </span>
-                  <div
-                    className={`w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 shrink-0 transition-transform duration-200 ${
-                      isOpen ? 'rotate-180 bg-indigo-50 text-indigo-600' : ''
+                  <ChevronDown
+                    className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                      isOpen ? 'rotate-180 text-indigo-600' : ''
                     }`}
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </div>
+                  />
                 </button>
 
-                {isOpen && (
-                  <div className="px-5 pb-5 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3.5 font-normal">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 sm:px-5 sm:pb-5 pt-0 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100">
+                        {faq.a}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             );
           })}
         </div>

@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/landing/Navbar';
@@ -112,7 +111,7 @@ export default function BlogIndexPage() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-r from-indigo-100/40 via-violet-100/30 to-emerald-100/30 blur-3xl -z-10 pointer-events-none" />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 text-center">
-            
+
             {/* Breadcrumb */}
             <nav aria-label="Breadcrumb" className="flex items-center justify-center gap-2 text-xs font-semibold text-slate-500">
               <Link href="/" className="hover:text-indigo-600 transition-colors">
@@ -165,11 +164,10 @@ export default function BlogIndexPage() {
                     setSelectedCategory(cat.id);
                     setVisibleCount(POSTS_PER_PAGE);
                   }}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                    selectedCategory === cat.id
-                      ? 'bg-slate-900 text-white shadow-sm'
-                      : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:border-slate-300'
-                  }`}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedCategory === cat.id
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:border-slate-300'
+                    }`}
                 >
                   {cat.label}
                 </button>
@@ -184,7 +182,7 @@ export default function BlogIndexPage() {
           <section className="py-10 sm:py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white shadow-xl border border-slate-800 overflow-hidden group">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-                
+
                 {/* Left Content */}
                 <div className="lg:col-span-7 p-6 sm:p-8 md:p-10 space-y-4">
                   <div className="flex items-center gap-2.5">
@@ -255,7 +253,7 @@ export default function BlogIndexPage() {
 
         {/* Articles Grid Section */}
         <section className="py-8 sm:py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          
+
           <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
             <div>
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">

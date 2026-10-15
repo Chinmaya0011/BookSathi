@@ -1,17 +1,23 @@
 'use client';
 
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { ArrowRight, Search, Sparkles, Check, ShieldCheck, Zap } from 'lucide-react';
 
 export default function FinalCta() {
   return (
-    <section className="py-20 sm:py-28 bg-slate-950 text-white relative overflow-hidden">
+    <section className="py-20 sm:py-28 bg-slate-950 text-white relative overflow-hidden font-sans">
       {/* Background Ambient Glowing Blobs */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-r from-indigo-600/20 via-violet-600/20 to-emerald-600/10 blur-3xl rounded-full pointer-events-none" />
       <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-8">
-        
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-8"
+      >
         {/* Pill Badge */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold border border-indigo-500/30">
           <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
@@ -30,21 +36,25 @@ export default function FinalCta() {
 
         {/* CTA Group */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-          <Link
-            href="/register"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-indigo-500/25 transition-all active:scale-95 group"
-          >
-            <span>Create Your Free Practice Page</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
+            <Link
+              href="/register"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-indigo-500/25 transition-all group cursor-pointer"
+            >
+              <span>Create Your Free Practice Page</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </motion.div>
 
-          <Link
-            href="/lookup"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-850 text-slate-200 hover:text-white border border-slate-800 font-bold text-sm sm:text-base shadow-xs transition-all active:scale-95"
-          >
-            <Search className="w-4 h-4 text-slate-400" />
-            <span>Find Booking Pass</span>
-          </Link>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
+            <Link
+              href="/lookup"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-850 text-slate-200 hover:text-white border border-slate-800 font-bold text-sm sm:text-base shadow-xs transition-all cursor-pointer"
+            >
+              <Search className="w-4 h-4 text-slate-400" />
+              <span>Find Booking Pass</span>
+            </Link>
+          </motion.div>
         </div>
 
         {/* Reassurance Feature Strip */}
@@ -62,7 +72,7 @@ export default function FinalCta() {
           </span>
         </div>
 
-      </div>
+      </motion.div>
     </section>
   );
 }

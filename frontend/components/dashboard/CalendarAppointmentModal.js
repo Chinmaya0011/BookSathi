@@ -38,6 +38,7 @@ export default function CalendarAppointmentModal({
   onOpenNotes,
   onOpenCancel,
   onOpenClientDrawer,
+  onRecordPayment,
 }) {
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -89,7 +90,7 @@ export default function CalendarAppointmentModal({
     >
       <div className="space-y-4">
         {/* Header Status Bar */}
-        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200/90">
+        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200/90 gap-2 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge status={appointment.status} />
             <span
@@ -109,7 +110,26 @@ export default function CalendarAppointmentModal({
             </span>
           </div>
 
-          <div className="text-right">
+          <div className="flex items-center gap-2 ml-auto">
+            <span
+              className={`text-[10px] font-bold px-2 py-1 rounded-xl border ${
+                appointment.paymentStatus === 'PAID'
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                  : appointment.paymentStatus === 'PAY_AT_CLINIC'
+                  ? 'bg-amber-100 text-amber-800 border-amber-200'
+                  : appointment.paymentStatus === 'REFUNDED'
+                  ? 'bg-purple-100 text-purple-800 border-purple-200'
+                  : 'bg-orange-100 text-orange-800 border-orange-200'
+              }`}
+            >
+              {appointment.paymentStatus === 'PAID'
+                ? (appointment.paymentMode === 'ONLINE' ? 'Paid Online' : 'Paid (Offline)')
+                : appointment.paymentStatus === 'PAY_AT_CLINIC'
+                ? 'Pay at Clinic'
+                : appointment.paymentStatus === 'REFUNDED'
+                ? 'Refunded'
+                : 'Unpaid'}
+            </span>
             <div className="text-xs font-black text-emerald-700 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200/80 inline-block font-mono">
               {formatINR(appointment.fee)}
             </div>
@@ -302,9 +322,37 @@ export default function CalendarAppointmentModal({
             )}
           </div>
 
-          {/* Secondary Actions (Reschedule, Cancel, Close) */}
-          <div className="flex items-center justify-between gap-2 pt-1">
-            <div className="flex items-center gap-2">
+          {/* Secondary Actions (Record Payment, Tax Invoice, Reschedule, Cancel, Close) */}
+          <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Record Payment Button if Unpaid */}
+              {appointment.paymentStatus !== 'PAID' && !isCancelled && onRecordPayment && Number(appointment.fee) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onRecordPayment(appointment);
+                  }}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span>Record Payment</span>
+                </button>
+              )}
+
+              {/* View Tax Invoice if Paid */}
+              {appointment.paymentStatus === 'PAID' && (
+                <a
+                  href={`/payments/invoice/${appointment.paymentId || appointment._id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 transition-colors inline-flex items-center gap-1.5"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Tax Invoice</span>
+                </a>
+              )}
+
               {!isCompleted && !isCancelled && onOpenReschedule && (
                 <button
                   type="button"

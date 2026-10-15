@@ -32,12 +32,12 @@ export default function SetupReminderBanner() {
   return (
     <aside
       aria-label="Profile setup reminder"
-      className="bg-amber-50/80 border-b border-amber-200/80 px-3.5 sm:px-6 lg:px-8 py-2.5 transition-all animate-in slide-in-from-top duration-300 relative z-20"
+      className="bg-amber-50/90 border-b border-amber-200/80 px-3.5 sm:px-6 lg:px-8 py-2.5 transition-all animate-in slide-in-from-top duration-200 relative z-20 font-sans"
     >
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5">
         {/* Left Side: Icon & Message */}
         <div className="flex items-start sm:items-center gap-2.5 min-w-0">
-          <div className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+          <div className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0 border border-amber-200/60">
             <Sparkles className="w-3.5 h-3.5 text-amber-600" />
           </div>
 
@@ -60,10 +60,10 @@ export default function SetupReminderBanner() {
                 key={item.id}
                 href={item.path}
                 className={cn(
-                  'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all border',
+                  'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border shadow-2xs',
                   isActivePage
-                    ? 'bg-amber-600 text-white border-amber-700 shadow-2xs'
-                    : 'bg-white hover:bg-amber-100/50 text-amber-900 border-amber-200 shadow-2xs'
+                    ? 'bg-amber-600 text-white border-amber-700 font-bold'
+                    : 'bg-white hover:bg-amber-100/60 text-amber-950 border-amber-200/90'
                 )}
               >
                 {item.id === 'availability' && <Calendar className="w-3 h-3 text-amber-700" />}
@@ -78,7 +78,7 @@ export default function SetupReminderBanner() {
           {primaryActionPath && (
             <Link
               href={primaryActionPath}
-              className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-900 hover:bg-indigo-600 text-white text-xs font-semibold transition-all shrink-0 group"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition-all shrink-0 group active:scale-[0.98]"
             >
               <span>{primaryActionText || 'Complete Setup'}</span>
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />

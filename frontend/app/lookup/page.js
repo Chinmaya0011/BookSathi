@@ -156,15 +156,41 @@ export default function BookingLookupPage() {
                         <Badge status={appt.status} />
                       </div>
 
-                      {/* Middle row: Schedule info */}
-                      <div className="p-3 bg-slate-50 rounded-2xl grid grid-cols-2 gap-2 text-xs">
+                      {/* Middle row: Schedule info & Payment Status */}
+                      <div className="p-3 bg-slate-50 rounded-2xl grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                         <div className="flex items-center gap-2 text-slate-700">
                           <Calendar className="w-4 h-4 text-indigo-600 shrink-0" />
                           <span className="font-bold">{formatDisplayDate(dateStr)}</span>
                         </div>
                         <div className="flex items-center gap-2 text-slate-700">
                           <Clock className="w-4 h-4 text-indigo-600 shrink-0" />
-                          <span className="font-bold">{format12Hour(appt.startTime)}</span>
+                          <span className="font-bold">
+                            {appt.bookingType === 'QUEUE'
+                              ? `Token #${appt.queueNumber || 'Queue'}`
+                              : format12Hour(appt.startTime)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between sm:justify-end gap-2">
+                          <span className="font-bold font-mono text-slate-900">
+                            {appt.fee === 0 ? 'Free' : formatINR(appt.fee)}
+                          </span>
+                          {appt.paymentStatus === 'PAID' ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              Paid
+                            </span>
+                          ) : appt.paymentMode === 'PAY_AT_CLINIC' ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                              Pay at Clinic
+                            </span>
+                          ) : appt.fee === 0 ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                              Free
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800 border border-orange-200">
+                              Pending
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -174,7 +200,18 @@ export default function BookingLookupPage() {
                           Code: <strong className="text-slate-700">{appt.appointmentCode}</strong>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* Tax Receipt Link */}
+                          {appt.paymentStatus === 'PAID' && (
+                            <Link
+                              href={`/payments/invoice/${appt.paymentId || appt._id}`}
+                              target="_blank"
+                              className="p-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all inline-flex items-center gap-1.5 border border-emerald-200"
+                            >
+                              <span>Receipt</span>
+                            </Link>
+                          )}
+
                           {/* WhatsApp Doctor */}
                           {proPhone && (
                             <a

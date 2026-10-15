@@ -90,6 +90,7 @@ export default function PublicBookingPage() {
     handleSlotSelect,
     handleBackToStep1,
     handleSubmitBooking,
+    handlePaymentSuccess,
     handleSimulatedPayment,
     handleDownloadPdf,
     handleBookAnother,
@@ -245,6 +246,7 @@ export default function PublicBookingPage() {
               onDownloadPdf={handleDownloadPdf}
               icsDownloadUrl={icsDownloadUrl}
               whatsappShareUrl={whatsappShareUrl}
+              onOpenInvoice={openInvoice}
               onBookAnother={handleBookAnother}
               queueStatus={queueStatus}
             />
@@ -362,6 +364,7 @@ export default function PublicBookingPage() {
         selectedMethod={selectedCheckoutMethod}
         onSelectMethod={setSelectedCheckoutMethod}
         onProcessPayment={handleSimulatedPayment}
+        onPaymentSuccess={handlePaymentSuccess}
         processing={processingCheckout}
         error={checkoutError}
       />

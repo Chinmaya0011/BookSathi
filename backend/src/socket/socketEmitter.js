@@ -564,3 +564,117 @@ export const emitQueueCalled = async ({ professionalId, bookingSlug, dateString,
     ioInstance.to(`user:${appointment.userId.toString()}`).emit('queue:called', payload);
   }
 };
+
+/**
+ * Real-time Payment Received Event
+ * Emitted when an online payment or manual in-clinic payment succeeds
+ */
+export const emitPaymentReceived = async ({ payment, appointment, professional, user = null }) => {
+  if (!ioInstance) return;
+
+  const proId = (professional?._id || payment.professionalId || '').toString();
+  const userId = (appointment?.userId || payment.userId || '').toString();
+
+  const payload = {
+    event: 'payment:received',
+    payment: {
+      id: payment._id,
+      paymentCode: payment.paymentCode,
+      invoiceNumber: payment.invoiceNumber,
+      amount: payment.amount,
+      currency: payment.currency,
+      status: payment.status,
+      paymentMethod: payment.paymentMethod,
+      paymentMode: payment.paymentMode,
+      paidAt: payment.paidAt,
+    },
+    appointment: appointment ? toSocketAppointment(appointment) : null,
+    timestamp: new Date().toISOString(),
+  };
+
+  if (proId) {
+    ioInstance.to(`professional:${proId}`).emit('payment:received', payload);
+    ioInstance.to(`professional:${proId}`).emit('appointment:status_changed', {
+      appointmentId: appointment?._id,
+      status: appointment?.status || 'CONFIRMED',
+      paymentStatus: 'PAID',
+    });
+  }
+
+  if (userId) {
+    ioInstance.to(`user:${userId}`).emit('payment:received', payload);
+  }
+
+  if (appointment?.appointmentCode) {
+    ioInstance.to(`booking:${appointment.appointmentCode}`).emit('payment:received', payload);
+  }
+
+  ioInstance.to('admin:ops').emit('payment:received', payload);
+  ioInstance.to('role:admin').emit('payment:received', payload);
+
+  // In-app notification for Doctor
+  if (proId) {
+    await sendAndPersistNotification({
+      professionalId: proId,
+      recipientRole: 'PROFESSIONAL',
+      type: 'PAYMENT_RECEIVED',
+      title: 'Payment Received',
+      message: `₹${payment.amount} received from ${payment.customerName || 'Patient'} via ${payment.paymentMethod || 'Online'} (${payment.invoiceNumber}).`,
+      link: '/dashboard/payments',
+      appointmentId: appointment?._id,
+      metadata: { invoiceNumber: payment.invoiceNumber, amount: payment.amount },
+    }).catch(() => {});
+  }
+
+  // In-app notification for Patient (if registered)
+  if (userId) {
+    await sendAndPersistNotification({
+      userId,
+      recipientRole: 'USER',
+      type: 'PAYMENT_RECEIVED',
+      title: 'Payment Successful',
+      message: `Payment of ₹${payment.amount} confirmed for your consultation with ${professional?.name || 'Professional'}.`,
+      link: '/dashboard/payments',
+      appointmentId: appointment?._id,
+      metadata: { invoiceNumber: payment.invoiceNumber, amount: payment.amount },
+    }).catch(() => {});
+  }
+};
+
+/**
+ * Real-time Payment Refunded Event
+ */
+export const emitPaymentRefunded = async ({ payment, appointment, professional }) => {
+  if (!ioInstance) return;
+
+  const proId = (professional?._id || payment.professionalId || '').toString();
+  const userId = (appointment?.userId || payment.userId || '').toString();
+
+  const payload = {
+    event: 'payment:refunded',
+    payment: {
+      id: payment._id,
+      paymentCode: payment.paymentCode,
+      refundAmount: payment.refundAmount,
+      refundStatus: payment.refundStatus,
+      status: payment.status,
+    },
+    appointment: appointment ? toSocketAppointment(appointment) : null,
+    timestamp: new Date().toISOString(),
+  };
+
+  if (proId) {
+    ioInstance.to(`professional:${proId}`).emit('payment:refunded', payload);
+    ioInstance.to(`professional:${proId}`).emit('appointment:status_changed', {
+      appointmentId: appointment?._id,
+      paymentStatus: 'REFUNDED',
+    });
+  }
+
+  if (userId) {
+    ioInstance.to(`user:${userId}`).emit('payment:refunded', payload);
+  }
+
+  ioInstance.to('admin:ops').emit('payment:refunded', payload);
+};
+

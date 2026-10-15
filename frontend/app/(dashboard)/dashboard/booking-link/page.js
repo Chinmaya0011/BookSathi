@@ -37,8 +37,11 @@ import { bookingLinkService } from '@/services/public.service';
 import { subscriptionService } from '@/services/subscription.service';
 import { getProfessionalPublicUrl, getProfessionalDisplayUrl } from '@/lib/urlHelpers';
 import { generateReceptionStandeePdf } from '@/lib/generateReceptionStandeePdf';
+import { launchCashfreeCheckout } from '@/lib/cashfree';
+import confetti from 'canvas-confetti';
 import Button from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import SubscriptionCheckoutModal from '@/components/dashboard/SubscriptionCheckoutModal';
 
 export default function UnifiedBookingLinkAndPlanPage() {
   const router = useRouter();
@@ -58,6 +61,7 @@ export default function UnifiedBookingLinkAndPlanPage() {
   // Plan upgrade states
   const [annualBilling, setAnnualBilling] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [subData, setSubData] = useState(null);
 
   useEffect(() => {
@@ -178,17 +182,33 @@ export default function UnifiedBookingLinkAndPlanPage() {
   };
 
   const handlePlanAction = async (planKey) => {
-    setUpgrading(true);
-    try {
-      const cycle = annualBilling ? 'YEARLY' : 'MONTHLY';
-      await subscriptionService.selectPlan({ planKey, billingCycle: cycle });
-      toast.success(`Plan updated to ${planKey === 'PRO' ? 'Pro' : 'Free'}!`);
-      if (refreshProfile) await refreshProfile();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update plan');
-    } finally {
-      setUpgrading(false);
+    if (planKey === 'FREE') {
+      setUpgrading(true);
+      try {
+        const cycle = annualBilling ? 'YEARLY' : 'MONTHLY';
+        await subscriptionService.selectPlan({ planKey: 'FREE', billingCycle: cycle });
+        toast.success('Switched to Free plan');
+        if (refreshProfile) await refreshProfile();
+        const updatedSub = await subscriptionService.getMySubscription();
+        if (updatedSub?.data) setSubData(updatedSub.data);
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to switch to Free plan');
+      } finally {
+        setUpgrading(false);
+      }
+      return;
     }
+
+    // Pro Plan Upgrade: open the dedicated Payment Checkout Modal
+    setCheckoutModalOpen(true);
+  };
+
+  const handleCheckoutSuccess = async () => {
+    if (refreshProfile) await refreshProfile();
+    try {
+      const res = await subscriptionService.getMySubscription();
+      if (res?.data) setSubData(res.data);
+    } catch (e) {}
   };
 
   // Helper to extract QR Data URL
@@ -507,7 +527,7 @@ export default function UnifiedBookingLinkAndPlanPage() {
             href={bookingUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
           >
             <span>Visit Public Booking Page</span>
             <ExternalLink className="w-3.5 h-3.5" />
@@ -516,18 +536,18 @@ export default function UnifiedBookingLinkAndPlanPage() {
       </div>
 
       {/* SECTION 1: Personal Booking Link & Vanity Handle */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-7 space-y-6">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 sm:p-6 space-y-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-              <Globe className="w-4.5 h-4.5" />
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-bold">
+              <Globe className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-black text-slate-900">Your Shareable Booking Link</h2>
+              <h2 className="text-base font-bold text-slate-900 tracking-tight">Your Shareable Booking Link</h2>
               <p className="text-xs text-slate-500">Instant direct access for clients and patients</p>
             </div>
           </div>
-          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+          <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
             ● Active & Live
           </span>
         </div>
@@ -617,17 +637,17 @@ export default function UnifiedBookingLinkAndPlanPage() {
       </div>
 
       {/* SECTION 2: EXECUTIVE RECEPTION DESK STANDEE & QR SHOWCASE */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8 space-y-8">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 sm:p-6 space-y-6">
         
         {/* Section Header with Theme Selector */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-100">
           <div>
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center font-black shadow-md shadow-indigo-600/25">
-                <QrCode className="w-5 h-5" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-bold">
+                <QrCode className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-slate-900">Reception Desk QR Standee</h2>
+                <h2 className="text-base font-bold text-slate-900 tracking-tight">Reception Desk QR Standee</h2>
                 <p className="text-xs text-slate-500">
                   Ready-to-print acrylic standee & poster for your clinic front-desk
                 </p>
@@ -636,9 +656,9 @@ export default function UnifiedBookingLinkAndPlanPage() {
           </div>
 
           {/* Standee Theme Switcher */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold text-slate-400 flex items-center gap-1 mr-1">
-              <Palette className="w-3.5 h-3.5 text-slate-500" />
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs font-semibold text-slate-400 flex items-center gap-1 mr-1">
+              <Palette className="w-3.5 h-3.5 text-slate-400" />
               <span>Theme:</span>
             </span>
 
@@ -646,20 +666,20 @@ export default function UnifiedBookingLinkAndPlanPage() {
               { id: 'sapphire', label: 'Sapphire', color: 'bg-indigo-600' },
               { id: 'emerald', label: 'Emerald', color: 'bg-emerald-600' },
               { id: 'obsidian', label: 'Obsidian', color: 'bg-slate-900' },
-              { id: 'clean', label: 'Minimalist', color: 'bg-slate-100 text-slate-800' },
+              { id: 'clean', label: 'Minimalist', color: 'bg-slate-200 text-slate-800' },
             ].map((th) => (
               <button
                 key={th.id}
                 type="button"
                 onClick={() => setStandeeTheme(th.id)}
                 className={cn(
-                  'px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border',
+                  'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 border',
                   standeeTheme === th.id
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                 )}
               >
-                <span className={cn('w-2.5 h-2.5 rounded-full', th.color)} />
+                <span className={cn('w-2 h-2 rounded-full', th.color)} />
                 <span>{th.label}</span>
               </button>
             ))}
@@ -1156,6 +1176,14 @@ export default function UnifiedBookingLinkAndPlanPage() {
           </div>
         </div>
       </div>
+
+      {/* Subscription Payment Checkout Dialog */}
+      <SubscriptionCheckoutModal
+        isOpen={checkoutModalOpen}
+        onClose={() => setCheckoutModalOpen(false)}
+        initialBillingCycle={annualBilling ? 'YEARLY' : 'MONTHLY'}
+        onSuccess={handleCheckoutSuccess}
+      />
 
     </div>
   );

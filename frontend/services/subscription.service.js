@@ -18,6 +18,29 @@ export const subscriptionService = {
   },
 
   /**
+   * Create an official Cashfree payment order for Pro membership
+   */
+  async createOrder({ planKey = 'PRO', billingCycle = 'MONTHLY' } = {}) {
+    const res = await api.post('/subscriptions/create-order', {
+      planKey,
+      billingCycle,
+    });
+    return res.data;
+  },
+
+  /**
+   * Verify Cashfree payment completion and activate Pro membership
+   */
+  async verifyPayment({ orderId, planKey = 'PRO', billingCycle = 'MONTHLY' }) {
+    const res = await api.post('/subscriptions/verify-payment', {
+      orderId,
+      planKey,
+      billingCycle,
+    });
+    return res.data;
+  },
+
+  /**
    * Upgrade to Pro plan
    */
   async upgradeToPro(billingCycle = 'MONTHLY') {

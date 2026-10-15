@@ -202,9 +202,13 @@ const appointmentSchema = new mongoose.Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ['PENDING', 'PAID', 'FAILED', 'REFUNDED', 'NOT_REQUIRED', 'PAY_AT_CLINIC'],
+      enum: ['PENDING', 'PAID', 'FAILED', 'REFUNDED', 'NOT_REQUIRED', 'PAY_AT_CLINIC', 'DEMO_PAID'],
       default: 'PENDING',
       index: true,
+    },
+    isDemo: {
+      type: Boolean,
+      default: false,
     },
     paymentMode: {
       type: String,

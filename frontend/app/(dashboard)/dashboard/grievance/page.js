@@ -159,56 +159,52 @@ export default function ProfessionalGrievancePage() {
   return (
     <div className="space-y-6 w-full pb-12 animate-in fade-in duration-300">
       {/* Top Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-slate-800 shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-bold text-indigo-200 border border-white/15 mb-3">
-              <LifeBuoy className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Practitioner Support & Grievance Redressal</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Grievance & Issue Desk
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
-              Report payment mismatches, booking anomalies, platform bugs, or verification queries directly to the BookSaathi Admin Team.
-            </p>
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-5">
+        <div>
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-50 text-[11px] font-bold text-indigo-700 border border-indigo-200/70 mb-2.5">
+            <LifeBuoy className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Support & Grievance Redressal</span>
           </div>
+          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+            Grievance & Issue Desk
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-xl">
+            Report payment mismatches, booking anomalies, platform bugs, or verification queries directly to the BookSaathi Admin Team.
+          </p>
+        </div>
 
-          {/* Tab Selector Buttons */}
-          <div className="flex items-center p-1.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 shrink-0 self-start md:self-auto">
-            <button
-              type="button"
-              onClick={() => setActiveTab('create')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'create'
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Lodge Grievance</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('list')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'list'
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              <span>My Tickets ({grievances.length})</span>
-            </button>
-          </div>
+        {/* Tab Selector Buttons */}
+        <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200/80 shrink-0 self-start md:self-auto">
+          <button
+            type="button"
+            onClick={() => setActiveTab('create')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'create'
+                ? 'bg-white text-slate-900 shadow-2xs'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>Lodge Grievance</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('list')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'list'
+                ? 'bg-white text-slate-900 shadow-2xs'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>My Tickets ({grievances.length})</span>
+          </button>
         </div>
       </div>
 
       {/* Tab 1: Lodge Grievance Form */}
       {activeTab === 'create' && (
-        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-6 sm:p-8 space-y-6">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-6 sm:p-8 space-y-6">
           <div className="border-b border-slate-100 pb-4">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <MessageSquareWarning className="w-5 h-5 text-indigo-600" />
@@ -325,7 +321,7 @@ export default function ProfessionalGrievancePage() {
 
       {/* Tab 2: My Submitted Tickets List */}
       {activeTab === 'list' && (
-        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <div>
               <h2 className="text-base font-bold text-slate-900">Your Submitted Grievance History</h2>

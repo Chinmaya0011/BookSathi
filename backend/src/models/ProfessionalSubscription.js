@@ -38,9 +38,13 @@ const professionalSubscriptionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['ACTIVE', 'TRIAL', 'PENDING_PAYMENT', 'EXPIRED', 'CANCELLED'],
+      enum: ['ACTIVE', 'TRIAL', 'PENDING_PAYMENT', 'EXPIRED', 'CANCELLED', 'DEMO_ACTIVE'],
       default: 'ACTIVE',
       index: true,
+    },
+    isDemo: {
+      type: Boolean,
+      default: false,
     },
     amountPaid: {
       type: Number,

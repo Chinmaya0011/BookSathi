@@ -32,9 +32,11 @@ import {
   Sparkles,
   CreditCard,
   Building,
+  Receipt,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { appointmentService } from '@/services/appointment.service';
+import { paymentService } from '@/services/payment.service';
 import { appointmentTypeService } from '@/services/appointmentType.service';
 import { availabilityService, blockedDateService } from '@/services/availability.service';
 import { format12Hour, formatDisplayDate, formatINR } from '@/lib/utils';
@@ -106,6 +108,43 @@ export default function AppointmentsPage() {
   });
   const [rescheduling, setRescheduling] = useState(false);
 
+  // Offline Payment Modal State
+  const [recordPaymentModalOpen, setRecordPaymentModalOpen] = useState(false);
+  const [paymentAppt, setPaymentAppt] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('CASH');
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentNotes, setPaymentNotes] = useState('');
+  const [recordingPayment, setRecordingPayment] = useState(false);
+
+  const openRecordPaymentModal = (appt) => {
+    setPaymentAppt(appt);
+    setPaymentAmount(String(appt.fee ?? 500));
+    setPaymentMethod('CASH');
+    setPaymentNotes('');
+    setRecordPaymentModalOpen(true);
+  };
+
+  const handleRecordPaymentSubmit = async (e) => {
+    e.preventDefault();
+    if (!paymentAppt) return;
+    setRecordingPayment(true);
+    try {
+      await paymentService.recordManualPayment({
+        appointmentId: paymentAppt._id,
+        amount: Number(paymentAmount) || Number(paymentAppt.fee) || 0,
+        paymentMethod,
+        notes: paymentNotes,
+      });
+      toast.success(`Payment of ${formatINR(Number(paymentAmount) || paymentAppt.fee)} recorded successfully!`);
+      setRecordPaymentModalOpen(false);
+      fetchAppointments();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to record payment');
+    } finally {
+      setRecordingPayment(false);
+    }
+  };
+
   // Walk-In Modal
   const [manualModalOpen, setManualModalOpen] = useState(false);
   const [services, setServices] = useState([]);
@@ -153,6 +192,8 @@ export default function AppointmentsPage() {
       socket.on('appointment:cancelled', handleSocketUpdate);
       socket.on('appointment:rescheduled', handleSocketUpdate);
       socket.on('appointment:completed', handleSocketUpdate);
+      socket.on('payment:received', handleSocketUpdate);
+      socket.on('payment:refunded', handleSocketUpdate);
 
       return () => {
         socket.off('appointment:created', handleSocketUpdate);
@@ -161,6 +202,8 @@ export default function AppointmentsPage() {
         socket.off('appointment:cancelled', handleSocketUpdate);
         socket.off('appointment:rescheduled', handleSocketUpdate);
         socket.off('appointment:completed', handleSocketUpdate);
+        socket.off('payment:received', handleSocketUpdate);
+        socket.off('payment:refunded', handleSocketUpdate);
       };
     }
   }, []);
@@ -212,6 +255,7 @@ export default function AppointmentsPage() {
       const res = await appointmentService.getAppointments(params);
       setAppointments(res.data?.appointments || []);
     } catch (e) {
+      if (e?.response?.status === 401) return;
       console.error('Error fetching appointments:', e);
       toast.error('Failed to load appointments');
     } finally {
@@ -516,41 +560,41 @@ export default function AppointmentsPage() {
   return (
     <div className="space-y-6 w-full animate-in fade-in duration-200">
       {/* 🌟 Top Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-3xl text-white shadow-xl relative overflow-hidden">
-        {/* Subtle decorative glow */}
-        <div className="absolute -top-12 -right-12 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-indigo-200 mb-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-[11px] font-semibold text-indigo-700 mb-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Live Practice Ledger
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
             Appointment Operations
           </h1>
-          <p className="text-xs sm:text-sm text-indigo-200/90 mt-1 max-w-xl">
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 max-w-xl">
             Clear, date-organized schedule across Online, Walk-in, and WhatsApp bookings.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap relative z-10">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setManualModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-lg shadow-emerald-900/30 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
           >
-            <PlusCircle className="w-4 h-4" /> Add Walk-In
+            <PlusCircle className="w-4 h-4" />
+            <span>Add Walk-In</span>
           </button>
 
           <button
             onClick={exportToCSV}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white font-semibold text-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-xs shadow-2xs transition-colors cursor-pointer"
           >
-            <Download className="w-4 h-4" /> Export CSV
+            <Download className="w-4 h-4" />
+            <span>Export CSV</span>
           </button>
 
           <button
             onClick={fetchAppointments}
             title="Refresh appointments"
-            className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 transition-colors cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -558,37 +602,37 @@ export default function AppointmentsPage() {
       </div>
 
       {/* 📊 Quick Insight Metrics Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Bookings</div>
-          <div className="text-2xl font-black text-slate-900 mt-1">{metrics.total}</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">In selected view</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Bookings</div>
+          <div className="text-2xl font-bold text-slate-900 mt-1">{metrics.total}</div>
+          <div className="text-[11px] text-slate-500 mt-0.5 font-medium">In selected view</div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-amber-200/70 bg-amber-50/20 shadow-2xs">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-amber-700">Waiting / Live</div>
-          <div className="text-2xl font-black text-amber-600 mt-1">{metrics.waiting}</div>
-          <div className="text-[11px] text-amber-700/80 mt-0.5">At clinic / in-session</div>
+        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-amber-200/70 bg-amber-50/20 shadow-2xs">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-700">Waiting / Live</div>
+          <div className="text-2xl font-bold text-amber-600 mt-1">{metrics.waiting}</div>
+          <div className="text-[11px] text-amber-700/80 mt-0.5 font-medium">At clinic / in-session</div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-indigo-200/70 bg-indigo-50/20 shadow-2xs">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">Upcoming / Confirmed</div>
-          <div className="text-2xl font-black text-indigo-600 mt-1">{metrics.confirmed}</div>
-          <div className="text-[11px] text-indigo-700/80 mt-0.5">Ready for consultation</div>
+        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-indigo-200/70 bg-indigo-50/20 shadow-2xs">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-indigo-700">Upcoming / Confirmed</div>
+          <div className="text-2xl font-bold text-indigo-600 mt-1">{metrics.confirmed}</div>
+          <div className="text-[11px] text-indigo-700/80 mt-0.5 font-medium">Ready for consultation</div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-emerald-200/70 bg-emerald-50/20 shadow-2xs">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Completed</div>
-          <div className="text-2xl font-black text-emerald-600 mt-1">{metrics.completed}</div>
-          <div className="text-[11px] text-emerald-700/80 mt-0.5">Finished sessions</div>
+        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-emerald-200/70 bg-emerald-50/20 shadow-2xs">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">Completed</div>
+          <div className="text-2xl font-bold text-emerald-600 mt-1">{metrics.completed}</div>
+          <div className="text-[11px] text-emerald-700/80 mt-0.5 font-medium">Finished sessions</div>
         </div>
       </div>
 
       {/* 🎛️ Navigation Tabs & Filter Bar */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-xs space-y-3.5">
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
         {/* Row 1: Status Category Tabs + View Switcher */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-thin">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 lg:pb-0 scrollbar-thin">
             {[
               { id: 'today', label: "Today's Schedule", countTag: tab === 'today' ? filteredAppointments.length : null },
               { id: 'queue', label: 'Waiting Queue', countTag: tab === 'queue' ? filteredAppointments.length : null },
@@ -602,17 +646,17 @@ export default function AppointmentsPage() {
                   setTab(t.id);
                   setSelectedDateFilter('');
                 }}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
                   tab === t.id
-                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    ? 'bg-indigo-600 text-white shadow-2xs'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 <span>{t.label}</span>
                 {t.countTag !== null && (
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                      tab === t.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                      tab === t.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
                     }`}
                   >
                     {t.countTag}
@@ -626,7 +670,7 @@ export default function AppointmentsPage() {
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl self-end lg:self-auto shrink-0">
             <button
               onClick={() => setViewMode('calendar')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 viewMode === 'calendar'
                   ? 'bg-white text-indigo-700 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -637,7 +681,7 @@ export default function AppointmentsPage() {
             </button>
             <button
               onClick={() => setViewMode('grouped')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 viewMode === 'grouped'
                   ? 'bg-white text-indigo-700 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -648,7 +692,7 @@ export default function AppointmentsPage() {
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 viewMode === 'table'
                   ? 'bg-white text-indigo-700 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -661,7 +705,7 @@ export default function AppointmentsPage() {
         </div>
 
         {/* Row 2: Search Bar + Service Filter + Specific Date Filter */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
           <form onSubmit={handleSearchSubmit} className="flex-1">
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -670,7 +714,7 @@ export default function AppointmentsPage() {
                 placeholder="Search by client name, mobile (+91), or appointment code..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                className="w-full pl-9 pr-3.5 py-2 bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-200/90 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
               />
             </div>
           </form>
@@ -680,7 +724,7 @@ export default function AppointmentsPage() {
             <select
               value={selectedServiceFilter}
               onChange={(e) => setSelectedServiceFilter(e.target.value)}
-              className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 cursor-pointer min-w-[140px]"
+              className="px-3 py-2 bg-slate-50 border border-slate-200/90 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 cursor-pointer min-w-[140px]"
             >
               <option value="ALL">All Services</option>
               {services.map((s) => (
@@ -691,7 +735,7 @@ export default function AppointmentsPage() {
             </select>
 
             {/* Specific Date Filter */}
-            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-600">
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/90 rounded-xl px-2.5 py-1.5 text-xs text-slate-600">
               <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <input
                 type="date"
@@ -704,7 +748,7 @@ export default function AppointmentsPage() {
                 <button
                   onClick={() => setSelectedDateFilter('')}
                   title="Clear date filter"
-                  className="p-1 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-700"
+                  className="p-1 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-700 cursor-pointer"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -729,6 +773,7 @@ export default function AppointmentsPage() {
           onOpenCancel={openCancelModal}
           onOpenManualModal={handleOpenManualModal}
           onOpenClientDrawer={setDrawerClient}
+          onRecordPayment={openRecordPaymentModal}
         />
       ) : loading ? (
         <div className="bg-white rounded-3xl border border-slate-200/80 p-20 flex flex-col items-center justify-center gap-3 text-slate-400 shadow-xs">
@@ -947,13 +992,37 @@ export default function AppointmentsPage() {
                               )}
                             </div>
 
-                            {/* Service, Fee, and Note preview */}
+                            {/* Service, Fee, and Payment Status preview */}
                             <div className="flex items-center gap-2 flex-wrap pt-0.5">
                               <span className="text-xs font-bold text-slate-800">
                                 {appt.appointmentTypeName || 'Consultation'}
                               </span>
                               <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
                                 {formatINR(appt.fee)}
+                              </span>
+
+                              {/* Payment Status Badge */}
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1 ${
+                                  appt.paymentStatus === 'PAID'
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : appt.paymentStatus === 'PAY_AT_CLINIC'
+                                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                    : appt.paymentStatus === 'REFUNDED'
+                                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                    : 'bg-orange-100 text-orange-800 border border-orange-200'
+                                }`}
+                              >
+                                {appt.paymentStatus === 'PAID' && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                                <span>
+                                  {appt.paymentStatus === 'PAID'
+                                    ? (appt.paymentMode === 'ONLINE' ? 'Paid Online' : 'Paid (Offline)')
+                                    : appt.paymentStatus === 'PAY_AT_CLINIC'
+                                    ? 'Pay at Clinic'
+                                    : appt.paymentStatus === 'REFUNDED'
+                                    ? 'Refunded'
+                                    : 'Unpaid'}
+                                </span>
                               </span>
 
                               {appt.reason && (
@@ -1022,6 +1091,30 @@ export default function AppointmentsPage() {
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" /> Done
                               </button>
+                            )}
+
+                            {/* Record Offline Payment Button */}
+                            {appt.paymentStatus !== 'PAID' && !isCancelled && Number(appt.fee) > 0 && (
+                              <button
+                                onClick={() => openRecordPaymentModal(appt)}
+                                className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs rounded-xl transition-colors cursor-pointer inline-flex items-center gap-1"
+                                title="Record Clinic Payment (Cash/UPI/Card)"
+                              >
+                                <CreditCard className="w-3.5 h-3.5" />
+                                <span>Record Pay</span>
+                              </button>
+                            )}
+
+                            {/* View Tax Invoice Button */}
+                            {appt.paymentStatus === 'PAID' && (
+                              <Link
+                                href={`/payments/invoice/${appt.paymentId || appt._id}`}
+                                target="_blank"
+                                className="p-1.5 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 hover:bg-slate-50 transition-colors inline-flex items-center"
+                                title="View Tax Invoice & Receipt"
+                              >
+                                <Receipt className="w-4 h-4" />
+                              </Link>
                             )}
 
                             {/* Reschedule */}
@@ -1141,8 +1234,23 @@ export default function AppointmentsPage() {
                             <div className="font-semibold text-slate-800">
                               {appt.appointmentTypeName || 'Consultation'}
                             </div>
-                            <div className="font-bold text-emerald-600 mt-0.5">
-                              {formatINR(appt.fee)}
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="font-bold text-emerald-600">
+                                {formatINR(appt.fee)}
+                              </span>
+                              <span
+                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                  appt.paymentStatus === 'PAID'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : appt.paymentStatus === 'PAY_AT_CLINIC'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : appt.paymentStatus === 'REFUNDED'
+                                    ? 'bg-purple-100 text-purple-800'
+                                    : 'bg-orange-100 text-orange-800'
+                                }`}
+                              >
+                                {appt.paymentStatus === 'PAID' ? 'PAID' : appt.paymentStatus === 'PAY_AT_CLINIC' ? 'CLINIC' : 'UNPAID'}
+                              </span>
                             </div>
                           </td>
 
@@ -1204,6 +1312,27 @@ export default function AppointmentsPage() {
                                 >
                                   Done
                                 </button>
+                              )}
+
+                              {appt.paymentStatus !== 'PAID' && !['DONE', 'COMPLETED', 'CANCELLED', 'REJECTED'].includes(appt.status) && Number(appt.fee) > 0 && (
+                                <button
+                                  onClick={() => openRecordPaymentModal(appt)}
+                                  className="px-2 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg font-bold text-[11px] cursor-pointer inline-flex items-center gap-1"
+                                  title="Record Clinic Payment (Cash/UPI)"
+                                >
+                                  <CreditCard className="w-3 h-3" /> Pay
+                                </button>
+                              )}
+
+                              {appt.paymentStatus === 'PAID' && (
+                                <Link
+                                  href={`/payments/invoice/${appt.paymentId || appt._id}`}
+                                  target="_blank"
+                                  className="p-1 rounded-lg border border-slate-200 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 inline-flex items-center"
+                                  title="Tax Invoice"
+                                >
+                                  <Receipt className="w-3.5 h-3.5" />
+                                </Link>
                               )}
 
                               {!['DONE', 'COMPLETED', 'CANCELLED', 'REJECTED'].includes(appt.status) && (
@@ -1386,6 +1515,80 @@ export default function AppointmentsPage() {
           setManualModalOpen(true);
         }}
       />
+
+      {/* 💳 Record Clinic Payment Modal */}
+      <Modal
+        isOpen={recordPaymentModalOpen}
+        onClose={() => setRecordPaymentModalOpen(false)}
+        title={`Record Payment: ${paymentAppt?.appointmentCode}`}
+      >
+        <form onSubmit={handleRecordPaymentSubmit} className="space-y-4">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+            <p className="text-xs font-bold text-slate-900">{paymentAppt?.customerName}</p>
+            <p className="text-xs text-slate-500">
+              {paymentAppt?.appointmentTypeName || 'Consultation'} • {paymentAppt && formatDisplayDate(paymentAppt.dateString)} at {paymentAppt && format12Hour(paymentAppt.startTime)}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Payment Method
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {['CASH', 'UPI', 'CARD'].map((m) => (
+                <button
+                  type="button"
+                  key={m}
+                  onClick={() => setPaymentMethod(m)}
+                  className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                    paymentMethod === m
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Input
+            label="Amount Collected (₹)"
+            type="number"
+            min="0"
+            step="1"
+            required
+            value={paymentAmount}
+            onChange={(e) => setPaymentAmount(e.target.value)}
+          />
+
+          <Input
+            label="Reference / Transaction ID / Notes (Optional)"
+            placeholder="e.g. UPI Ref: 123456789 or Cash collected at front desk"
+            value={paymentNotes}
+            onChange={(e) => setPaymentNotes(e.target.value)}
+          />
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setRecordPaymentModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              loading={recordingPayment}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              Confirm Payment (Mark as Paid)
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

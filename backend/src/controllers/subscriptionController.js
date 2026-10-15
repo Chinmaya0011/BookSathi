@@ -25,6 +25,35 @@ export const getMySubscription = async (req, res, next) => {
   }
 };
 
+export const createOrder = async (req, res, next) => {
+  try {
+    const { planKey = 'PRO', billingCycle = 'MONTHLY' } = req.body;
+    const result = await subscriptionService.createSubscriptionOrder({
+      userId: req.user._id,
+      planKey,
+      billingCycle,
+    });
+    return successResponse(res, 201, 'Subscription payment order created', result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const verifyPayment = async (req, res, next) => {
+  try {
+    const { orderId, planKey = 'PRO', billingCycle = 'MONTHLY' } = req.body;
+    const result = await subscriptionService.verifySubscriptionPayment({
+      userId: req.user._id,
+      orderId,
+      planKey,
+      billingCycle,
+    });
+    return successResponse(res, 200, 'Subscription payment verified and Pro activated', result);
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const selectPlan = async (req, res, next) => {
   try {
     const { planKey = 'PRO', billingCycle = 'MONTHLY' } = req.body;
@@ -40,7 +69,7 @@ export const selectPlan = async (req, res, next) => {
       billingCycle,
     });
 
-    return successResponse(res, 200, `Upgraded to ${planKey} successfully`, result);
+    return successResponse(res, 200, `Plan action processed for ${planKey}`, result);
   } catch (err) {
     next(err);
   }

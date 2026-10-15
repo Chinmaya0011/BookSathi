@@ -200,6 +200,11 @@ export default function BookingPatientForm({
             icon={<Mail className="w-4 h-4 text-slate-400" />}
             className="w-full text-sm"
           />
+          {patientEmail && (
+            <p className="text-[11px] text-indigo-600 font-medium mt-1">
+              A 6-digit verification code will be sent to this email upon confirmation.
+            </p>
+          )}
         </div>
 
         {/* 5. Payment Selection */}
@@ -251,7 +256,7 @@ export default function BookingPatientForm({
           <Button
             type="submit"
             disabled={submitting}
-            isLoading={submitting}
+            loading={submitting}
             className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-600/20 active:scale-98 transition-all"
           >
             {submitting ? 'Confirming Your Slot...' : `Confirm Appointment • ${currentFee === 0 ? 'Free' : formatINR(currentFee)}`}

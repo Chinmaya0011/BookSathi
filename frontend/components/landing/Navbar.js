@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import {
   CalendarCheck,
@@ -17,8 +18,6 @@ import {
   Calculator,
   Scale,
   GraduationCap,
-  Zap,
-  BookOpen,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -33,59 +32,77 @@ export default function Navbar() {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const navLinks = [
+    { label: 'Product Suite', href: '#interactive-demo' },
+    { label: 'How It Works', href: '#how-it-works' },
+    { label: 'Features', href: '#features' },
+    { label: 'Pricing', href: '#pricing' },
+    { label: 'Blog', href: '/blog', isLink: true },
+    { label: 'FAQ', href: '#faq' },
+  ];
+
   return (
     <>
-      {/* Top Announcement Banner */}
-      <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-violet-950 text-white text-xs py-2 px-3 sm:px-4 text-center font-medium border-b border-indigo-900/60 relative z-50">
+      {/* Top Announcement Bar */}
+      <div className="bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-950 text-white text-xs py-2 px-3 sm:px-4 text-center font-medium border-b border-indigo-900/50 relative z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 text-[10px] sm:text-[11px] font-bold border border-indigo-400/30">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/25 text-indigo-200 text-[10px] sm:text-[11px] font-bold border border-indigo-400/30">
             <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
             <span>0% Commission</span>
           </span>
           <span className="text-slate-200 text-[11px] sm:text-xs">
-            Direct UPI settlements to your bank account for Doctors, CAs & Advocates.
+            Direct UPI settlements for Doctors, CAs, Advocates & Consultants across India.
           </span>
           <Link
             href="/register"
             className="inline-flex items-center gap-1 text-white font-bold underline hover:text-indigo-200 text-[11px] sm:text-xs ml-1 transition-colors"
           >
-            <span>Claim Your Link</span>
+            <span>Claim Your Practice Page</span>
             <ChevronRight className="w-3 h-3" />
           </Link>
         </div>
       </div>
 
-      {/* Floating Glassmorphism Sticky Navbar */}
-      <header className="sticky top-0 inset-x-0 z-50 flex justify-center px-3 sm:px-6 py-2.5 sm:py-3 transition-all duration-300">
+      {/* Floating Sticky Header */}
+      <motion.header
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="sticky top-0 inset-x-0 z-50 flex justify-center px-3 sm:px-6 py-2.5 sm:py-3 transition-all duration-300 pointer-events-auto"
+      >
         <div
           className={`w-full max-w-7xl rounded-2xl transition-all duration-300 ${
             scrolled
               ? 'bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-lg shadow-slate-900/5 py-2 px-3 sm:px-5'
-              : 'bg-white/85 backdrop-blur-md border border-slate-200/70 shadow-xs py-2.5 px-3 sm:px-5'
+              : 'bg-white/90 backdrop-blur-md border border-slate-200/70 shadow-xs py-2.5 px-3 sm:px-5'
           }`}
         >
           <div className="flex items-center justify-between gap-2 lg:gap-4">
             
             {/* Left: Brand Logo */}
-            <Link href="/" className="flex items-center gap-2 group shrink-0">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/25 group-hover:scale-105 transition-transform">
+            <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.96 }}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/25 transition-transform"
+              >
                 <CalendarCheck className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
+              </motion.div>
               <div className="flex items-center gap-1.5">
                 <span className="text-base sm:text-lg font-black tracking-tight text-slate-900">
                   Book<span className="text-indigo-600">Saathi</span>
                 </span>
-                <span className="hidden xl:inline-flex px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
+                <span className="hidden xl:inline-flex px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
                   India
                 </span>
               </div>
             </Link>
 
-            {/* Center: Desktop Navigation Links (Clean & Responsive) */}
+            {/* Center: Desktop Navigation Links */}
             <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 text-slate-600 font-semibold text-xs">
               <a
                 href="#interactive-demo"
@@ -119,69 +136,96 @@ export default function Navbar() {
                   className="px-2.5 xl:px-3 py-1.5 rounded-lg hover:text-slate-900 hover:bg-slate-100/80 transition-colors inline-flex items-center gap-1 whitespace-nowrap"
                 >
                   <span>For Practices</span>
-                  <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${practiceDropdownOpen ? 'rotate-180 text-indigo-600' : ''}`} />
+                  <ChevronDown
+                    className={`w-3 h-3 transition-transform duration-200 ${
+                      practiceDropdownOpen ? 'rotate-180 text-indigo-600' : ''
+                    }`}
+                  />
                 </a>
 
-                {/* Dropdown Menu */}
-                {practiceDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-64 p-2 bg-white rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-900/10 space-y-1 animate-in fade-in zoom-in-95 duration-150 z-50">
-                    <a
-                      href="#for-practice"
-                      onClick={() => setPracticeDropdownOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition-colors group"
+                <AnimatePresence>
+                  {practiceDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      className="absolute top-full left-0 mt-1.5 w-64 p-2 bg-white rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-900/10 space-y-1 z-50"
                     >
-                      <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                        <Stethoscope className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-slate-900 group-hover:text-indigo-600">Doctors & OPD Clinics</div>
-                        <div className="text-[10px] text-slate-500 font-normal">Live Queue Calling & Tokens</div>
-                      </div>
-                    </a>
+                      <a
+                        href="#for-practice"
+                        onClick={() => setPracticeDropdownOpen(false)}
+                        className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition-colors group"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                          <Stethoscope className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 group-hover:text-indigo-600">
+                            Doctors & OPD Clinics
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-normal">
+                            Live Queue Calling & Tokens
+                          </div>
+                        </div>
+                      </a>
 
-                    <a
-                      href="#for-practice"
-                      onClick={() => setPracticeDropdownOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition-colors group"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                        <Calculator className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-slate-900 group-hover:text-indigo-600">CAs & Tax Advisors</div>
-                        <div className="text-[10px] text-slate-500 font-normal">Fixed Slots & Document Lists</div>
-                      </div>
-                    </a>
+                      <a
+                        href="#for-practice"
+                        onClick={() => setPracticeDropdownOpen(false)}
+                        className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition-colors group"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                          <Calculator className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 group-hover:text-indigo-600">
+                            CAs & Tax Advisors
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-normal">
+                            Fixed Slots & Document Lists
+                          </div>
+                        </div>
+                      </a>
 
-                    <a
-                      href="#for-practice"
-                      onClick={() => setPracticeDropdownOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition-colors group"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
-                        <Scale className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-slate-900 group-hover:text-indigo-600">Advocates & Legal</div>
-                        <div className="text-[10px] text-slate-500 font-normal">Chambers & Court Buffers</div>
-                      </div>
-                    </a>
+                      <a
+                        href="#for-practice"
+                        onClick={() => setPracticeDropdownOpen(false)}
+                        className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition-colors group"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
+                          <Scale className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 group-hover:text-indigo-600">
+                            Advocates & Legal
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-normal">
+                            Chambers & Court Buffers
+                          </div>
+                        </div>
+                      </a>
 
-                    <a
-                      href="#for-practice"
-                      onClick={() => setPracticeDropdownOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition-colors group"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-                        <GraduationCap className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-slate-900 group-hover:text-indigo-600">Mentors & Tutors</div>
-                        <div className="text-[10px] text-slate-500 font-normal">1:1 Paid Session Scheduler</div>
-                      </div>
-                    </a>
-                  </div>
-                )}
+                      <a
+                        href="#for-practice"
+                        onClick={() => setPracticeDropdownOpen(false)}
+                        className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition-colors group"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                          <GraduationCap className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 group-hover:text-indigo-600">
+                            Mentors & Tutors
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-normal">
+                            1:1 Paid Session Scheduler
+                          </div>
+                        </div>
+                      </a>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               <a
@@ -193,9 +237,9 @@ export default function Navbar() {
 
               <Link
                 href="/blog"
-                className="px-2.5 xl:px-3 py-1.5 rounded-lg hover:text-slate-900 hover:bg-slate-100/80 transition-colors whitespace-nowrap flex items-center gap-1"
+                className="px-2.5 xl:px-3 py-1.5 rounded-lg hover:text-slate-900 hover:bg-slate-100/80 transition-colors whitespace-nowrap"
               >
-                <span>Blog</span>
+                Blog
               </Link>
 
               <a
@@ -217,13 +261,15 @@ export default function Navbar() {
               </Link>
 
               {mounted && user ? (
-                <Link
-                  href="/dashboard"
-                  className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs font-bold shadow-sm shadow-indigo-600/20 transition-all active:scale-95 whitespace-nowrap"
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>Dashboard</span>
-                </Link>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs font-bold shadow-sm shadow-indigo-600/20 transition-all whitespace-nowrap"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    <span>Dashboard</span>
+                  </Link>
+                </motion.div>
               ) : (
                 <>
                   <Link
@@ -232,13 +278,15 @@ export default function Navbar() {
                   >
                     Sign In
                   </Link>
-                  <Link
-                    href="/register"
-                    className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs font-bold shadow-sm shadow-indigo-600/25 transition-all active:scale-95 whitespace-nowrap"
-                  >
-                    <span>Get Started</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
+                  <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                    <Link
+                      href="/register"
+                      className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-bold shadow-sm shadow-indigo-600/25 transition-all whitespace-nowrap group"
+                    >
+                      <span>Get Started</span>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </Link>
+                  </motion.div>
                 </>
               )}
 
@@ -255,86 +303,96 @@ export default function Navbar() {
 
           </div>
 
-          {/* Mobile Dropdown Drawer */}
-          {mobileMenuOpen && (
-            <div className="mt-3 pt-3 pb-2 border-t border-slate-200/80 space-y-1 text-sm font-semibold text-slate-700 lg:hidden animate-in fade-in slide-in-from-top-2 duration-200">
-              <a
-                href="#interactive-demo"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+          {/* Mobile Animated Dropdown Drawer */}
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+                className="overflow-hidden lg:hidden"
               >
-                Product Suite Showcase
-              </a>
-              <a
-                href="#how-it-works"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
-              >
-                How It Works
-              </a>
-              <a
-                href="#features"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
-              >
-                Features & Capabilities
-              </a>
-              <a
-                href="#for-practice"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
-              >
-                For Practice (Doctors, CAs, Advocates)
-              </a>
-              <a
-                href="#pricing"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
-              >
-                Pricing & Plans
-              </a>
-              <Link
-                href="/blog"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100 font-bold text-indigo-600"
-              >
-                Blog & Practice Guides
-              </Link>
-              <a
-                href="#faq"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
-              >
-                FAQ
-              </a>
-              <div className="pt-2 border-t border-slate-100 space-y-1.5">
-                <Link
-                  href="/lookup"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-indigo-600 font-bold hover:bg-indigo-50"
-                >
-                  <Search className="w-4 h-4" />
-                  <span>Find Booking Pass</span>
-                </Link>
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-lg hover:bg-slate-100 font-bold"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-lg bg-indigo-600 text-white font-bold text-center shadow-xs"
-                >
-                  Create Free Account
-                </Link>
-              </div>
-            </div>
-          )}
+                <div className="mt-3 pt-3 pb-2 border-t border-slate-200/80 space-y-1 text-sm font-semibold text-slate-700">
+                  <a
+                    href="#interactive-demo"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                  >
+                    Product Suite Showcase
+                  </a>
+                  <a
+                    href="#how-it-works"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                  >
+                    How It Works
+                  </a>
+                  <a
+                    href="#features"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                  >
+                    Features & Capabilities
+                  </a>
+                  <a
+                    href="#for-practice"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                  >
+                    For Practices (Doctors, CAs, Advocates)
+                  </a>
+                  <a
+                    href="#pricing"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                  >
+                    Pricing & Plans
+                  </a>
+                  <Link
+                    href="/blog"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-lg hover:bg-slate-100 font-bold text-indigo-600"
+                  >
+                    Blog & Practice Guides
+                  </Link>
+                  <a
+                    href="#faq"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                  >
+                    FAQ
+                  </a>
+                  <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                    <Link
+                      href="/lookup"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-indigo-600 font-bold hover:bg-indigo-50"
+                    >
+                      <Search className="w-4 h-4" />
+                      <span>Find Booking Pass</span>
+                    </Link>
+                    <Link
+                      href="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-3 py-2 rounded-lg hover:bg-slate-100 font-bold"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/register"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-3 py-2 rounded-lg bg-indigo-600 text-white font-bold text-center shadow-xs"
+                    >
+                      Create Free Account
+                    </Link>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </header>
+      </motion.header>
     </>
   );
 }

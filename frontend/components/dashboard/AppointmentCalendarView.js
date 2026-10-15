@@ -173,6 +173,7 @@ export default function AppointmentCalendarView({
   onOpenCancel,
   onOpenManualModal,
   onOpenClientDrawer,
+  onRecordPayment,
 }) {
   // Navigation & View state
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -1573,6 +1574,7 @@ export default function AppointmentCalendarView({
         onOpenNotes={onOpenNotes}
         onOpenCancel={onOpenCancel}
         onOpenClientDrawer={onOpenClientDrawer}
+        onRecordPayment={onRecordPayment}
       />
     </div>
   );

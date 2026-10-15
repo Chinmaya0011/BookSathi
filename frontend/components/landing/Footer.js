@@ -7,7 +7,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-slate-950 text-slate-400 border-t border-slate-800 text-xs">
+    <footer className="bg-slate-950 text-slate-400 border-t border-slate-800 text-xs font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
           
@@ -21,7 +21,7 @@ export default function Footer() {
                 <span className="text-lg font-black tracking-tight text-white">
                   Book<span className="text-indigo-400">Saathi</span>
                 </span>
-                <span className="px-2 py-0.5 text-[10px] font-bold bg-indigo-950 text-indigo-300 rounded-full border border-indigo-800/80">
+                <span className="px-2 py-0.5 text-[10px] font-extrabold bg-indigo-950 text-indigo-300 rounded-full border border-indigo-800/80">
                   India
                 </span>
               </div>
@@ -112,6 +112,11 @@ export default function Footer() {
                 <a href="#faq" className="hover:text-white transition-colors">
                   Frequently Asked Questions
                 </a>
+              </li>
+              <li>
+                <Link href="/support" className="hover:text-white transition-colors">
+                  Customer Support & Help
+                </Link>
               </li>
             </ul>
           </div>

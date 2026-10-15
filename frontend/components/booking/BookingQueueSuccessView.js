@@ -20,6 +20,8 @@ import {
   Bell,
   MapPin,
   ShieldCheck,
+  Receipt,
+  CreditCard,
 } from 'lucide-react';
 import { formatINR, formatDisplayDate } from '@/lib/utils';
 
@@ -32,6 +34,7 @@ export default function BookingQueueSuccessView({
   onDownloadPdf,
   icsDownloadUrl,
   whatsappShareUrl,
+  onOpenInvoice,
   onBookAnother,
   queueStatus,
 }) {
@@ -207,6 +210,32 @@ export default function BookingQueueSuccessView({
             </span>
           </div>
 
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
+            <span className="text-slate-500 flex items-center gap-1.5">
+              <CreditCard className="w-4 h-4 text-indigo-600" />
+              <span>Payment Status:</span>
+            </span>
+            <div>
+              {confirmedPayment?.status === 'SUCCESS' || confirmedBooking.paymentStatus === 'PAID' ? (
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[11px] inline-flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Paid Online
+                </span>
+              ) : confirmedBooking.paymentMode === 'PAY_AT_CLINIC' || confirmedBooking.paymentStatus === 'PAY_AT_CLINIC' ? (
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-extrabold text-[11px] inline-flex items-center gap-1">
+                  <Building2 className="w-3 h-3" /> Pay at Clinic
+                </span>
+              ) : (currentFee === 0 || confirmedBooking.paymentMode === 'FREE') ? (
+                <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-extrabold text-[11px]">
+                  Free Consultation
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-extrabold text-[11px]">
+                  Pending
+                </span>
+              )}
+            </div>
+          </div>
+
           {profile?.address && (
             <div className="flex items-start justify-between gap-2">
               <span className="text-slate-500 flex items-center gap-1.5 mt-0.5">
@@ -235,28 +264,37 @@ export default function BookingQueueSuccessView({
           </a>
         )}
 
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-3 gap-2">
           <button
             type="button"
             onClick={onDownloadPdf}
             disabled={downloadingPdf}
-            className="inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 transition-all active:scale-95 cursor-pointer"
+            className="inline-flex items-center justify-center gap-1 py-2.5 px-2 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 transition-all active:scale-95 cursor-pointer"
           >
             {downloadingPdf ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0" />
             ) : (
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 shrink-0" />
             )}
-            <span>{downloadingPdf ? 'Generating...' : 'Download Pass'}</span>
+            <span>{downloadingPdf ? 'Saving...' : 'Pass Slip'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpenInvoice}
+            className="inline-flex items-center justify-center gap-1 py-2.5 px-2 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 transition-all active:scale-95 cursor-pointer"
+          >
+            <Receipt className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+            <span>Tax Invoice</span>
           </button>
 
           <button
             type="button"
             onClick={onBookAnother}
-            className="inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all active:scale-95 cursor-pointer"
+            className="inline-flex items-center justify-center gap-1 py-2.5 px-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all active:scale-95 cursor-pointer"
           >
-            <Repeat className="w-3.5 h-3.5" />
-            <span>Get Another Token</span>
+            <Repeat className="w-3.5 h-3.5 shrink-0" />
+            <span>Next Token</span>
           </button>
         </div>
 

@@ -79,7 +79,7 @@ function ManageContent() {
       });
 
       const data = res.data || res;
-      if (data.isAuthorized) {
+      if (data.isAuthorized || data.authenticated) {
         setAppointment(data.appointment);
         setProfessional(data.professional);
         setNeedsOtp(false);
@@ -375,6 +375,59 @@ function ManageContent() {
                   <p className="text-xs font-semibold text-slate-600 mt-0.5">
                     {appointment.customerPhone}
                   </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Consultation Fee & Payment Status */}
+            <div className="px-6 sm:px-8">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-blue-100 text-blue-700 rounded-xl">
+                    <Receipt className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Consultation Fee</p>
+                    <p className="text-sm font-extrabold text-slate-900 mt-0.5">
+                      {appointment.fee > 0 ? formatINR(appointment.fee) : 'Free Consultation'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                      appointment.paymentStatus === 'PAID'
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        : appointment.paymentStatus === 'PAY_AT_CLINIC'
+                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                        : appointment.paymentStatus === 'REFUNDED'
+                        ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                        : 'bg-orange-100 text-orange-800 border border-orange-200'
+                    }`}
+                  >
+                    {appointment.paymentStatus === 'PAID' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+                    <span>
+                      {appointment.paymentStatus === 'PAID'
+                        ? (appointment.paymentMode === 'ONLINE' ? 'Paid Online' : 'Paid at Clinic')
+                        : appointment.paymentStatus === 'PAY_AT_CLINIC'
+                        ? 'Pay at Clinic'
+                        : appointment.paymentStatus === 'REFUNDED'
+                        ? 'Refunded'
+                        : 'Payment Pending'}
+                    </span>
+                  </span>
+
+                  {(appointment.paymentStatus === 'PAID' || appointment.paymentId) && (
+                    <Link
+                      href={`/payments/invoice/${appointment.paymentId || appointment._id}`}
+                      target="_blank"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-slate-100 text-indigo-600 rounded-full text-xs font-bold border border-indigo-200 shadow-2xs transition-colors"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Tax Invoice</span>
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>

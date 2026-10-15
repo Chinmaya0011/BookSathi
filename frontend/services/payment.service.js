@@ -7,6 +7,12 @@ export const paymentService = {
     return res.data;
   },
 
+  // Public checkout: check order / payment status from backend
+  async getOrderStatus(orderId) {
+    const res = await api.get(`/payments/${orderId}/status`);
+    return res.data;
+  },
+
   // Public checkout: verify & confirm payment
   async verifyPayment(data) {
     const res = await api.post('/payments/verify', data);
@@ -14,8 +20,8 @@ export const paymentService = {
   },
 
   // Public / Doctor: get invoice data
-  async getInvoice(paymentId) {
-    const res = await api.get(`/payments/${paymentId}/invoice`);
+  async getInvoice(paymentId, params = {}) {
+    const res = await api.get(`/payments/${paymentId}/invoice`, { params });
     return res.data;
   },
 
@@ -37,9 +43,9 @@ export const paymentService = {
     return res.data;
   },
 
-  // Doctor Dashboard: issue refund
-  async processRefund(paymentId, data) {
-    const res = await api.post(`/payments/${paymentId}/refund`, data);
+  // Doctor Dashboard: issue refund (by orderId or paymentId)
+  async processRefund(paymentOrOrderId, data) {
+    const res = await api.post(`/payments/${paymentOrOrderId}/refund`, data);
     return res.data;
   },
 

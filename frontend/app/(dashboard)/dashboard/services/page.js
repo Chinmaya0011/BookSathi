@@ -251,53 +251,53 @@ export default function ServicesPage() {
       </div>
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/80 shadow-2xs">
           <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider">All Services</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider">All Services</span>
             <Layers className="w-4 h-4 text-slate-400" />
           </div>
-          <p className="text-2xl font-black text-slate-900">{stats.total}</p>
-          <span className="text-[11px] text-slate-500 font-semibold">{stats.total} total offerings</span>
+          <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+          <span className="text-[11px] text-slate-500 font-medium">{stats.total} total offerings</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/80 shadow-2xs">
           <div className="flex items-center justify-between text-emerald-500 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Active Services</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Active Services</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-2xl font-black text-emerald-600">{stats.active}</p>
-          <span className="text-[11px] text-emerald-600 font-semibold">Open for client bookings</span>
+          <p className="text-2xl font-bold text-emerald-600">{stats.active}</p>
+          <span className="text-[11px] text-emerald-600 font-medium">Open for client bookings</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/80 shadow-2xs">
           <div className="flex items-center justify-between text-indigo-500 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Average Fee</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Average Fee</span>
             <IndianRupee className="w-4 h-4 text-indigo-600" />
           </div>
-          <p className="text-2xl font-black text-slate-900">{formatINR(stats.avgFee)}</p>
-          <span className="text-[11px] text-indigo-600 font-semibold">Per consultation</span>
+          <p className="text-2xl font-bold text-slate-900">{formatINR(stats.avgFee)}</p>
+          <span className="text-[11px] text-indigo-600 font-medium">Per consultation</span>
         </div>
 
-        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-2xl border border-indigo-100 shadow-xs">
-          <div className="flex items-center justify-between text-indigo-600 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-800">Quick Setup</span>
+        <div className="bg-slate-50/80 p-3.5 sm:p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500 mb-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Quick Setup</span>
             <Sparkles className="w-4 h-4 text-indigo-600" />
           </div>
-          <p className="text-xs text-indigo-950 font-medium">Add pre-configured popular consultation packages in 1 click.</p>
+          <p className="text-xs text-slate-600 font-medium leading-relaxed">Add pre-configured consultation packages in 1 click.</p>
         </div>
       </div>
 
       {/* Quick Templates Strip */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-2.5">
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs space-y-2.5">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+          <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span>1-Click Popular Templates:</span>
           </span>
           <span className="text-[11px] text-slate-400">Click any card to pre-fill</span>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           {QUICK_TEMPLATES.map((tmpl, idx) => (
             <button
               key={idx}
@@ -306,15 +306,15 @@ export default function ServicesPage() {
               className="text-left p-3 rounded-xl border border-slate-200/90 bg-slate-50/70 hover:bg-indigo-50/60 hover:border-indigo-300 transition-all group cursor-pointer"
             >
               <div className="flex items-center justify-between gap-1 mb-1">
-                <span className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 truncate">
+                <span className="text-xs font-semibold text-slate-900 group-hover:text-indigo-600 truncate">
                   {tmpl.name}
                 </span>
                 <Plus className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 shrink-0" />
               </div>
-              <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500">
+              <div className="flex items-center gap-2 text-[11px] font-medium text-slate-500">
                 <span>{tmpl.duration}m</span>
                 <span>•</span>
-                <span className="text-emerald-600 font-bold">{formatINR(tmpl.fee)}</span>
+                <span className="text-emerald-600 font-semibold">{formatINR(tmpl.fee)}</span>
               </div>
             </button>
           ))}
@@ -327,9 +327,9 @@ export default function ServicesPage() {
           <button
             onClick={() => setActiveTab('ALL')}
             className={cn(
-              'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5',
+              'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
               activeTab === 'ALL'
-                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                ? 'bg-indigo-600 text-white shadow-2xs'
                 : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
             )}
           >
@@ -340,9 +340,9 @@ export default function ServicesPage() {
           <button
             onClick={() => setActiveTab('ACTIVE')}
             className={cn(
-              'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5',
+              'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
               activeTab === 'ACTIVE'
-                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                ? 'bg-indigo-600 text-white shadow-2xs'
                 : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
             )}
           >
@@ -353,9 +353,9 @@ export default function ServicesPage() {
           <button
             onClick={() => setActiveTab('INACTIVE')}
             className={cn(
-              'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5',
+              'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
               activeTab === 'INACTIVE'
-                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                ? 'bg-indigo-600 text-white shadow-2xs'
                 : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
             )}
           >
@@ -365,7 +365,7 @@ export default function ServicesPage() {
       </div>
 
       {/* Services List */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
         {loading ? (
           <div className="p-16 flex flex-col items-center justify-center gap-2 text-slate-400">
             <RefreshCw className="w-6 h-6 animate-spin text-indigo-600" />

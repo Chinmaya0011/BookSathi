@@ -470,14 +470,29 @@ export function usePublicBooking(slug) {
       setHoldToken(null);
       setHoldExpiresAt(null);
 
-      if (paymentMode === 'ONLINE' && res.data?.paymentRequired) {
-        setPendingOrder({
-          appointment: finalAppointment,
-          payment: res.data.payment,
-          paymentToken: res.data.paymentToken,
-        });
-        setShowCheckoutModal(true);
-        toast.info('Proceeding to secure checkout gateway...');
+      if (paymentMode === 'ONLINE' && (currentFee > 0 || finalAppointment.fee > 0)) {
+        try {
+          const orderRes = await paymentService.createOrder({
+            appointmentId: finalAppointment._id,
+            gatewayProvider: 'CASHFREE',
+            paymentMode: 'ONLINE',
+          });
+
+          setPendingOrder({
+            appointment: finalAppointment,
+            payment: orderRes.data?.payment,
+            paymentSessionId: orderRes.data?.paymentSessionId,
+            orderId: orderRes.data?.orderId,
+            environment: orderRes.data?.environment || 'SANDBOX',
+          });
+          setShowCheckoutModal(true);
+          toast.info('Proceeding to Cashfree secure checkout...');
+        } catch (payErr) {
+          console.error('Online order initiation error:', payErr);
+          toast.error(payErr.response?.data?.message || 'Could not initiate online payment order.');
+          setConfirmedBooking(finalAppointment);
+          setCurrentStep(3);
+        }
       } else {
         setConfirmedBooking(finalAppointment);
         setCurrentStep(3);
@@ -495,6 +510,25 @@ export function usePublicBooking(slug) {
       const errorMsg =
         err.response?.data?.message ||
         'Booking request could not be processed. Please try again.';
+
+      // If server requires Email OTP verification, open the OTP verification modal directly
+      if (
+        (errorMsg.toLowerCase().includes('email verification') ||
+          errorMsg.toLowerCase().includes('otp') ||
+          err.response?.data?.requiresEmailOtp) &&
+        patientEmail.trim()
+      ) {
+        setShowOtpModal(true);
+        setOtpModalError(errorMsg);
+        publicService
+          .sendEmailOtp(slug, {
+            email: patientEmail.trim(),
+            customerName: patientName.trim(),
+          })
+          .catch(() => {});
+        return;
+      }
+
       toast.error(errorMsg);
       if (err.response?.status === 409 && profile?.bookingType !== 'QUEUE') {
         setCurrentStep(1);
@@ -518,7 +552,29 @@ export function usePublicBooking(slug) {
       return;
     }
 
-    // Fast, frictionless direct booking for Indian mobile users
+    const cleanEmail = patientEmail.trim();
+
+    // If an email is provided and user is not an authenticated user, prompt for email OTP verification
+    if (cleanEmail && !user) {
+      setSendingBookingOtp(true);
+      setOtpModalError(null);
+      try {
+        await publicService.sendEmailOtp(slug, {
+          email: cleanEmail,
+          customerName: patientName.trim(),
+        });
+        setShowOtpModal(true);
+        toast.info(`Verification code sent to ${cleanEmail}`);
+      } catch (err) {
+        console.warn('Could not pre-send email OTP, attempting booking directly:', err.message);
+        await executeBooking();
+      } finally {
+        setSendingBookingOtp(false);
+      }
+      return;
+    }
+
+    // Direct booking (phone-only or authenticated user)
     await executeBooking();
   };
 
@@ -566,7 +622,28 @@ export function usePublicBooking(slug) {
     }
   };
 
-  // 6. Simulated / Live Payment Finalizer
+  // 6. Cashfree / Live Payment Verification and Completion
+  const handlePaymentSuccess = useCallback(async (verifiedPaymentData) => {
+    setShowCheckoutModal(false);
+    const targetPayment = verifiedPaymentData?.payment || pendingOrder?.payment;
+    const isDemo = Boolean(verifiedPaymentData?.isDemo || pendingOrder?.isDemo || targetPayment?.isDemo);
+    setConfirmedPayment(targetPayment);
+    setConfirmedBooking((prev) => ({
+      ...(prev || pendingOrder?.appointment),
+      paymentStatus: verifiedPaymentData?.appointment?.paymentStatus || (isDemo ? 'DEMO_PAID' : 'PAID'),
+      isDemo,
+    }));
+    setCurrentStep(3);
+    if (isDemo) {
+      toast.success('Consultation confirmed via Cashfree (Demo Mode)!');
+    } else {
+      toast.success('Payment verified & consultation confirmed!');
+    }
+    try {
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    } catch { }
+  }, [pendingOrder]);
+
   const handleSimulatedPayment = async (success = true) => {
     if (!pendingOrder) return;
     setProcessingCheckout(true);
@@ -574,24 +651,16 @@ export function usePublicBooking(slug) {
 
     try {
       if (success) {
-        const verifyRes = await paymentService.verifyMockPayment({
+        const verifyRes = await paymentService.verifyPayment({
+          orderId: pendingOrder.orderId || pendingOrder.payment?.gatewayOrderId,
           paymentId: pendingOrder.payment?._id || pendingOrder.payment?.id,
-          method: selectedCheckoutMethod,
+          paymentMethod: selectedCheckoutMethod || 'UPI',
+          simulateFailure: false,
         });
 
-        setShowCheckoutModal(false);
-        setConfirmedPayment(verifyRes.data?.payment);
-        setConfirmedBooking({
-          ...pendingOrder.appointment,
-          paymentStatus: 'PAID',
-        });
-        setCurrentStep(3);
-        toast.success('Payment verified & token confirmed!');
-        try {
-          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-        } catch { }
+        await handlePaymentSuccess(verifyRes.data);
       } else {
-        setCheckoutError('Payment authorization failed. Please retry.');
+        setCheckoutError('Payment authorization failed or was cancelled by user. Please retry.');
       }
     } catch (err) {
       setCheckoutError(err.response?.data?.message || 'Payment processing failed');
@@ -754,6 +823,7 @@ export function usePublicBooking(slug) {
     handleSlotSelect,
     handleBackToStep1,
     handleSubmitBooking,
+    handlePaymentSuccess,
     handleSimulatedPayment,
     handleDownloadPdf,
     handleBookAnother,

@@ -106,7 +106,10 @@ export function useQrBannerOrder() {
       };
 
       const res = await qrBannerService.createOrder(payload);
-      const createdOrder = res.data?.order;
+      const createdOrder = {
+        ...(res.data?.order || {}),
+        paymentSessionId: res.data?.paymentSessionId || res.data?.order?.paymentSessionId,
+      };
 
       setPendingCreatedOrder(createdOrder);
       setReviewModalOpen(false);
